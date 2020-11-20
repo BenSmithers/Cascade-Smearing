@@ -20,16 +20,30 @@ Then, we can take a tuple of reconstructed event params (energy, cos(Zenith)) an
 ## The files:
 
 What do each of the files do, at a glance? 
+
     - convolve.cpp : this calculates the fluxes from mceq, and propagates them through the Earth using nusquids
+
     - cross_section_test : this just holds some macros for accessing nusquids cross section functions
+
     - deporeco : handles the probabilities for reconstructing an energy given a deposited energy 
+
     - deposit : does the work for taking the neutrino fluxes and building that true E vs. depo E array 
+
     - imagescan : not really used anymore. Scans a picture from the cascades paper to get probabilities for reconstructing some energy given a deposited energy 
+
     - mceq_flux : the mceq fluxes
+
     - nus_compile.sh : this is a bash script for compiling convolve.cpp
+
     - nus_utils : more nusquids utilities 
+
     - plot_contour: plots the 2D likelihood plots discussed in the Introduction
+
     - plot_fluxes: plots some of the outputs from `deposit.py`, used now mainly as tests 
+
     - reconstruct: makes the 4D lattice discussed in the Inroduction 
+
     - tau_funcs: focuses on the weirder tau-energy-deposition probabilities 
+
     - utils: a bunch of cool utility functions! 
+
