@@ -260,7 +260,7 @@ int main(){
     nus_atm.EvolveState();
     std::cout<<"Done. Writing!"<<std::endl;
 
-    std::ofstream file("atmosphere.txt");
+    std::ofstream file("atmosphere.dat");
     // doing some interpolation
     int int_en = 700;
     int int_cos = 100;

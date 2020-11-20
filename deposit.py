@@ -56,7 +56,7 @@ n_colors = 6
 def get_color(which, how_many=n_colors):
     return( cmap( float(which)/how_many ) )
 
-# load the data using the default filename, 'atmosphere.txt'
+# load the data using the default filename, 'atmosphere.dat'
 data = Data()
 tauData = TauData()
 

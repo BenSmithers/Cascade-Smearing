@@ -1,4 +1,4 @@
 *.png
 *.o
-*.txt
 *.dat
+__pycache__/*

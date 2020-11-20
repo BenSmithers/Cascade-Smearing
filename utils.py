@@ -194,14 +194,14 @@ class Data:
     
     It loads it up into a convenient format for access, and provides a function for interpolating what is loaded. 
     """
-    def __init__(self, filename='atmosphere.txt'):
+    def __init__(self, filename='atmosphere.dat'):
         """
         Loads in the specified nuSQuIDS datafile. 
 
         Creates a "flux" dictionary for each type of neutrino and interaction. This is in units of N/s/GeV/cm2/sr
         """
         print("Extracting Data")
-        data = np.loadtxt(os.path.join( os.path.dirname(__file__), 'atmosphere.txt'), dtype=float, comments='#',delimiter=' ')
+        data = np.loadtxt(os.path.join( os.path.dirname(__file__), filename), dtype=float, comments='#',delimiter=' ')
         n_energies = 701
         n_angles = 100
         GeV=1e9
