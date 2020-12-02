@@ -194,6 +194,9 @@ def do_for_key(event_edges,cascade_edges, key, angles=None):
             for cas_bin in range(len(cascade_energies)): 
                 deposited_energy = cascade_energies[cas_bin] # energy going to the leptonic component! 
                  
+                amount =data.get_flux(deposited_energy,key, angle=angle)
+                amount *= get_diff_xs(deposited_energy, get_flavor(key), get_neut(key), get_curr(key))
+                
                 if flav.lower()=='tau':
                     # Etau is cascade_energies[cas_bin]
                     # How much energy is visible in the various tau decays though? 
@@ -202,9 +205,7 @@ def do_for_key(event_edges,cascade_edges, key, angles=None):
                         deposited_energy = tauData(deposited_energy/const.GeV,-1)
                     else: # nu
                         deposited_energy = tauData(deposited_energy/const.GeV, 1)
-
-                amount =data.get_flux(deposited_energy,key, angle=angle)
-                amount *= get_diff_xs(deposited_energy, get_flavor(key), get_neut(key), get_curr(key))
+                
                 try:
                     if angle is None:
                         flux.register( amount, cascade_energies[cas_bin], deposited_energy) # add it in! 
