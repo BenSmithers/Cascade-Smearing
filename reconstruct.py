@@ -134,9 +134,13 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges):
     # these will be associeed with each of the bins in nuflux 
     
     cascade_centers = bhist([cascade_edges]).centers
+    depo_widths = bhist([cascade_edges]).widths
     true_e_centers = bhist([event_edges]).centers
     true_ang_centers = bhist([angle_edges]).centers
    
+    true_e_widths = bhist([event_edges]).widths
+    true_ang_widths = bhist([angle_edges]).widths
+
     # these are reconstruction objects 
     r_energy = bhist([ np.logspace(np.log10(e_min), np.log10(e_max), int(len(cascade_edges)/2)) ])
     r_angle  = bhist([ np.linspace( z_min, z_max, int(len(angle_edges)/2))])
@@ -164,18 +168,19 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges):
         total_flux[key] = np.zeros(shape=(len(r_energy_centers), len(r_angle_centers)))
         for i_e_reco in range(len(r_energy_centers)):
             for i_e_depo in range(len(cascade_centers)):
-                depo_odds = dataobj.get_energy_reco_odds(i_e_depo, i_e_reco) #per 
+                depo_odds = dataobj.get_energy_reco_odds(i_e_depo, i_e_reco) # unitless
                 if depo_odds<=0.:
                     continue
                 for i_a_true in range(len(true_ang_centers)):
                     for i_a_reco in range(len(r_angle_centers)):
-                        ang_odds = dataobj.get_czenith_reco_odds(i_a_true, i_a_reco,i_e_depo) #per sr
+                        ang_odds = dataobj.get_czenith_reco_odds(i_a_true, i_a_reco,i_e_depo) # unitless 
                         if ang_odds<0.:
                             continue
                         for i_e_true in range(len(true_e_centers)):
-                            amt = nuflux[key][i_e_depo][i_e_true][i_a_true]*depo_odds*ang_odds #per angle per gev depo
+                            amt = nuflux[key][i_e_depo][i_e_true][i_a_true]*depo_odds*ang_odds 
+                            amt *= true_ang_widths[i_a_true]*true_e_widths[i_e_true]*depo_widths[i_e_depo]
                             if amt>=0:
-                                recoflux[key][i_e_reco][i_e_true][i_a_reco][i_a_true] += amt
+                                recoflux[key][i_e_reco][i_e_true][i_a_reco][i_a_true] += amt 
                                 total_flux[key][i_e_reco][i_a_reco] += amt
 
     _save_data(r_energy.edges, event_edges, r_angle.edges, angle_edges, recoflux)
