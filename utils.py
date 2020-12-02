@@ -15,6 +15,28 @@ flavors = ['E', 'Mu', 'Tau']
 neuts = ['nu', 'nuBar']
 currents = ['NC', 'CC']
 
+def sep_by_flavor(nuflux):
+    """
+    So this takes that nuflux object, a dictionary of 3D arrays, and separates it into two 3D arrays: one for muons and one for non-muons
+    """
+
+    if not isinstance(nuflux, dict):
+        raise TypeError("nuflux should be a {}, not a {}".format(dict, type(nuflux)))
+    if not isinstance(nuflux[list(nuflux.keys())[0]], np.ndarray):
+        raise TypeError("Entries in nuflux should all be {}, not {}".format(np.ndarray, type(nuflux[list(nuflux.keys())[0]])))
+
+    entry_shape = np.shape(nuflux[list(nuflux.keys())[0]])
+    from_muons = np.zeros(shape=entry_shape)
+    from_not = np.zeros(shape=entry_shape)
+
+    for key in nuflux:
+        flavor = key.split('_')[0]
+        if flavor=="Mu":
+            from_muons+=nuflux[key]
+        else:
+            from_not+=nuflux[key]
+    return(from_muons, from_not)
+
 def sci(number, precision=4):
     """
     Returns a string representing the number in scientific notation
@@ -403,7 +425,6 @@ class bhist:
         # build the function needed to register additions to the histograms.
         dims = tuple([len(self._edges[i])-1 for i in range(len(self._edges))])
         self._fill = np.zeros( shape=dims, dtype=self._dtype )
-        # this function has *args, a lambda, AND arcane numpy stuff. Woo! 
         def register( amt, *args):
             """
             Tries to bin some data passed to the bhist. Arbitrarily dimensioned cause I was moving from 2D-3D and this seemed like a good opportunity 

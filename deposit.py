@@ -172,11 +172,12 @@ def do_for_key(event_edges,cascade_edges, key, angles=None):
 
     flav = key.split("_")[0]
     curr = key.split("_")[2]
+    neut = key.split("_")[1]
 
     if angles is None:
         ang_list = [None]
     else:
-        ang_list = angles
+        ang_list = bhist([angles]).centers
 
     if angles is None:
         flux = bhist((cascade_edges, event_edges))
@@ -197,7 +198,10 @@ def do_for_key(event_edges,cascade_edges, key, angles=None):
                     # Etau is cascade_energies[cas_bin]
                     # How much energy is visible in the various tau decays though? 
                     # going from zero->deposited energy
-                    deposited_energy =  0.5*(tauData(deposited_energy/const.GeV,1)+tauData(deposited_energy/const.GeV,-1))
+                    if neut.lower()=="nubar":
+                        deposited_energy = tauData(deposited_energy/const.GeV,-1)
+                    else: # nu
+                        deposited_energy = tauData(deposited_energy/const.GeV, 1)
 
                 amount =data.get_flux(deposited_energy,key, angle=angle)
                 amount *= get_diff_xs(deposited_energy, get_flavor(key), get_neut(key), get_curr(key))
@@ -245,7 +249,7 @@ def generate_singly_diff_fluxes(n_bins,debug=False):
         the dimensionality depends on whether or we are integrating over the zenith angles
     """
     e_min = 10*const.GeV
-    e_max = 10*const.PeV
+    e_max = 1*const.PeV
     extra = 2
     
     all_angles = data.angles
@@ -270,26 +274,4 @@ def generate_singly_diff_fluxes(n_bins,debug=False):
     # if global variable "angle" isn't none, then we can separate out just a single angle
 
     return(event_edges,cascade_edges, nuflux, angle_edges)
-
-def sep_by_flavor(nuflux):
-    """
-    So this takes that nuflux object, a dictionary of 3D arrays, and separates it into two 3D arrays: one for muons and one for non-muons
-    """
-
-    if not isinstance(nuflux, dict):
-        raise TypeError("nuflux should be a {}, not a {}".format(dict, type(nuflux)))
-    if not isinstance(nuflux[list(nuflux.keys())[0]], np.ndarray):
-        raise TypeError("Entries in nuflux should all be {}, not {}".format(np.ndarray, type(nuflux[list(nuflux.keys())[0]])))
-
-    entry_shape = np.shape(nuflux[list(nuflux.keys())[0]])
-    from_muons = np.zeros(shape=entry_shape)
-    from_not = np.zeros(shape=entry_shape)
-
-    for key in nuflux:
-        flavor = key.split('_')[0]
-        if flavor=="Mu":
-            from_muons+=nuflux[key]
-        else:
-            from_not+=nuflux[key]
-    return(from_muons, from_not)
 
