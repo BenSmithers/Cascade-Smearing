@@ -1,8 +1,8 @@
-from math import exp, sqrt, pi, log, acos
+from math import exp, sqrt, pi, log, acos, log10, sinh
 import numpy as np
 import os
-from utils import bhist, get_loc
-
+from utils import bhist, get_loc, get_closest
+import sys 
 """
 This script is here to approximate the uncertainties in going from "energy deposited" to "energy reconstructed"
 """
@@ -25,7 +25,47 @@ from utils import get_closest
 
 rtwolog = sqrt(2*log(2))
 
+# Load in the datafile that has the angular error as a function of particle energy 
+angdata = np.transpose(np.loadtxt("angerror.txt", delimiter=","))
 
+# the fit is best when done in log-space of energy 
+# so we do a little fitty-fit
+logged = np.log10(angdata[0])
+from scipy.optimize import curve_fit as fit
+def func(x, a, gamma):
+    return( a*(x**(-gamma)) )
+popt, pcov = fit(func, logged, angdata[1])
+
+
+def get_ang_error(energy):
+    """
+    Returns a best-guess for the angular error - the FIFTYth percentile
+
+    Energy should be a float and in GeV
+    """
+    if not isinstance(energy, (int,float)):
+        raise TypeError("Expected {}, got {}".format(float, type(energy)))
+    
+    try:
+        # we really want to just use the data, so let's try interpolating first 
+        error = get_closest( energy, angdata[0], angdata[1] )
+    except ValueError: # failing that we use the fit (which isn't as good)
+        error = func( log10(energy), popt[0], popt[1])
+    return(min(max(error, 0), 180))
+
+if False:
+    import matplotlib
+    matplotlib.use('TkAgg')
+    import matplotlib.pyplot as plt
+    plt.plot( angdata[0], angdata[1],'d', label="Data")
+    xs = np.logspace(2,7.5,100)
+    #ys = func(np.log10(xs), popt[0], popt[1])
+    ys = [get_ang_error(en) for en in xs]
+    plt.plot(xs, ys, label='Fit')
+    plt.legend()
+    plt.xscale('log')
+    plt.show()
+    sys.exit()
 
 class DataReco:
     def __init__(self, reco_energy_edges, reco_czenith_edges, depo_energy_edges, true_czenith_edges):
@@ -42,7 +82,8 @@ class DataReco:
         # these are now filled with the values of the probability DENSITY functions for each angle/energy combo 
         # TODO right now there is no assumed covariance ... this should be improved 
         self._energy_odds_array = np.array([[ get_odds_energy(deposited, reconstructed) for reconstructed in self.reco_energy_centers] for deposited in self.depo_energy_centers])
-        self._angle_odds_array = np.array([[ get_odds_angle(true, reconstructed) for reconstructed in self.reco_czenith_centers] for true in self.true_czenith_centers]) 
+#        self._angle_odds_array = np.array([[ get_odds_angle(true, reconstructed) for reconstructed in self.reco_czenith_centers] for true in self.true_czenith_centers]) 
+        self._angle_odds_array = np.array([[[ get_odds_angle(true, reconstructed, deposited) for reconstructed in self.reco_czenith_centers] for deposited in self.depo_energy_centers]for true in self.true_czenith_centers])
 
         # Avoid equating two floats. Look for a sufficiently small difference! 
         max_diff = 1e-12
@@ -52,16 +93,20 @@ class DataReco:
         for depo in range(len(self._energy_odds_array)):
             self._energy_odds_array[depo] *= 1./sum(self._energy_odds_array[depo]*self.reco_energy_widths)
             assert(abs(1-sum(self._energy_odds_array[depo]*self.reco_energy_widths)) <= max_diff)
+   
+        for true in range(len(self._angle_odds_array)):
+            # for each of the possible true values
+            for deposited in range(len(self._angle_odds_array[true])):
+                # and each of the possible energies deposited
+                self._angle_odds_array[true][deposited] *= 1./sum(self._angle_odds_array[true][deposited]*self.reco_czenith_widths)
+                assert(abs(1-sum(self._angle_odds_array[true][deposited]*self.reco_czenith_widths)) <= max_diff)
 
-        for depo in range(len(self._angle_odds_array)):
-            self._angle_odds_array[depo] *= 1./sum(self._angle_odds_array[depo]*self.reco_czenith_widths)
-            assert(abs(1-sum(self._angle_odds_array[depo]*self.reco_czenith_widths)) <= max_diff)
-    
+   
     def get_energy_reco_odds(self, i_depo, i_reco ):
         return(self._energy_odds_array[i_depo][i_reco]*self.reco_energy_widths[i_reco])
 
     def get_czenith_reco_odds(self, i_true, i_reco, i_e_true):
-        return(self._angle_odds_array[i_true][i_reco]*self.reco_czenith_widths[i_reco])
+        return(self._angle_odds_array[i_true][i_e_true][i_reco]*self.reco_czenith_widths[i_reco])
    
     @property
     def reco_energy_centers(self):
@@ -94,12 +139,54 @@ mu = deg*6.1983e-1
 fwhm = deg*(13.223 + 11.983)
 sigma =  fwhm/rtwolog
 
-def get_odds_angle(true, reconstructed):
+def check_angle(value, cosmode=False):
+    if not isinstance(value, (int, float)):
+        raise TypeError("Expected {}, got {}".format(float, type(value)))
+    if cosmode:
+        if not (value<=1. and value>=-1.):
+            raise ValueError("cos(theta) outside allowed bounds: {}".format(value))
+    else:
+        pass # value can be any number of radians 
+
+
+def get_odds_angle( reco, true, energy_depo ):
+    """
+    Uses kent_pdf to get the zenith error. Uses a modified verion of Alex's work 
+
+    MBSF: 
+    The first three terms in the expansion of the Modifed Bessel Function of the First Kind where nu=0
+    I_{0}(x)
+    See: https://www.wolframalpha.com/input/?i=I_0%28x%29
+    And: https://mathworld.wolfram.com/ModifiedBesselFunctionoftheFirstKind.html
+    """
+    check_angle(reco, True)
+    check_angle(true, True)
+    if not isinstance(energy_depo, (int, float)):
+        raise TypeError("Energy of type {}, not {}".format(type(energy_depo), float))
+    
+    error = get_ang_error( energy_depo )*deg
+
+    #this is the bessel part of the kent_pdf
+    value = sqrt((1-reco*reco )*(1-true*true))
+    mbsf = 1 + pow(value,2)/4 + pow(value,4)/64 # we use the polynomial verion since it should be faster
+    
+    try:
+        prob = error/(2*sinh(error))
+    except OverflowError:
+        print(error)
+        sys.exit()
+
+    # Based on Alex's Kent Distribution work 
+    return( prob*exp(error*true*reco)*mbsf )
+
+def get_odds_angle_deprecated(true, reconstructed, energy_depo):
     """
     The returns the probability density of an RA/zenith angle of 'true' being reconstructed as 'reconstructed'
 
     It uses the 7-year cascade analysis' evaluation of angular reconstruction from Monopod 
     """
+    sigma_fifty = get_ang_error( energy_depo )
+
     x = acos(reconstructed) - acos(true)
     
     value = (rtwo/sigma)*exp(-1*((x-mu)**2)/(2*sigma*sigma))
