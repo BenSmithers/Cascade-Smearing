@@ -148,7 +148,7 @@ struct inter{
             y2 = nutau_bar_fluxes[upper_b];
             y1 = nutau_bar_fluxes[lower_b];
         }else{
-            throw std::invalid_argument("");
+            return 0.; // this is like, steriles 
         }
 
         // linear interpolation 
@@ -193,7 +193,7 @@ int main(){
     inter FluxMachine; 
 
     // define some properties for our atmosphere 
-    long unsigned int n_nu = 3;
+    long unsigned int n_nu = 4;
     double Emin = 1.*un.GeV;
     double Emax = 10*un.PeV;
     double cos_zenith_min = -0.999;
@@ -215,6 +215,11 @@ int main(){
     nus_atm.Set_MixingAngle(0,1,0.563942);
     nus_atm.Set_MixingAngle(0,2,0.154085);
     nus_atm.Set_MixingAngle(1,2,0.785398);
+    
+
+    nus_atm.Set_MixingAngle(3,0,0.07);
+    nus_atm.Set_MixingAngle(2,3,0.0);
+    nus_atm.Set_SquareMassDifference(3,1.3);
 
     nus_atm.Set_SquareMassDifference(1,7.65e-05);
     nus_atm.Set_SquareMassDifference(2,0.00247);
