@@ -92,7 +92,8 @@ from deposit import generate_singly_diff_fluxes
 from deporeco import DataReco
 
 savefile = ".analysis_level.dat"
-   
+fluxfile = ".flux_data.dat"
+
 def _save_data(e_reco, e_true, a_reco, a_true, flux):
     """
     Saves the generated data for use later. 
@@ -107,6 +108,14 @@ def _save_data(e_reco, e_true, a_reco, a_true, flux):
     f.close()   
     print("Data Saved!")
 
+def _save_flux(e_reco, a_reco, flux):
+    all_data = {"e_reco": e_reco,
+                "a_reco": a_reco,
+                "flux": flux}
+    f = open(fluxfile, 'wb')
+    pickle.dump( all_data, f, -1)
+    f.close()
+    print("Flux File Saved")
 
 def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges):
     """
@@ -147,10 +156,12 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges):
 
     # may god have mercy on our souls 
     recoflux = {}
+    total_flux = {}
     for key in nuflux.keys():
         print("Reconstructing {} Flux".format(key))
         # energy x, angle y
         recoflux[key] = np.zeros(shape=(len(r_energy_centers),len(true_e_centers), len(r_angle_centers),len(true_ang_centers)))
+        total_flux[key] = np.zeros(shape=(len(r_energy_centers), len(r_angle_centers)))
         for i_e_reco in range(len(r_energy_centers)):
             for i_e_depo in range(len(cascade_centers)):
                 depo_odds = dataobj.get_energy_reco_odds(i_e_depo, i_e_reco) #per 
@@ -158,16 +169,17 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges):
                     continue
                 for i_a_true in range(len(true_ang_centers)):
                     for i_a_reco in range(len(r_angle_centers)):
-                        ang_odds = dataobj.get_czenith_reco_odds(i_a_true, i_a_reco,0) #per sr
-                        if ang_odds<=0.:
+                        ang_odds = dataobj.get_czenith_reco_odds(i_a_true, i_a_reco,i_e_depo) #per sr
+                        if ang_odds<0.:
                             continue
                         for i_e_true in range(len(true_e_centers)):
-                            amt = nuflux[key][i_e_depo][i_e_true][i_a_true]# *depo_odds*ang_odds #per angle per gev depo
+                            amt = nuflux[key][i_e_depo][i_e_true][i_a_true]*depo_odds*ang_odds #per angle per gev depo
                             if amt>=0:
                                 recoflux[key][i_e_reco][i_e_true][i_a_reco][i_a_true] += amt
+                                total_flux[key][i_e_reco][i_a_reco] += amt
 
     _save_data(r_energy.edges, event_edges, r_angle.edges, angle_edges, recoflux)
-    
+    _save_flux(r_energy.edges, r_angle.edges, total_flux)
 
 
 if (do_all and not load_stored) or mode==0:

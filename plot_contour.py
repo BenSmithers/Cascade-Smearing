@@ -75,7 +75,8 @@ def build_contours(obs_e, obs_angle):
     focus_prob = bilinear_interp(p0,p1,p2,q11,q12,q21,q22)
     del probs # clear this out of memory. It's really big... 
 
-    # pcolormesh 
+    # pcolormesh
+    focus_prob = np.ma.masked_where(focus_prob<=0, focus_prob)
     
     plt.pcolormesh( np.array(e_true_centers)/(1e9), a_true_centers, np.transpose(focus_prob))
     plt.xlabel("True Energy [GeV]",size=14)
