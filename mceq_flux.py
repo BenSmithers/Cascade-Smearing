@@ -1,7 +1,6 @@
 from MCEq.core import config, MCEqRun
 import crflux.models as crf
 
-from bflux import HawkBPL
 
 import time
 import numpy as np

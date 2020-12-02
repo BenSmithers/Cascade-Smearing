@@ -217,7 +217,7 @@ int main(){
     nus_atm.Set_MixingAngle(1,2,0.785398);
     
 
-    nus_atm.Set_MixingAngle(3,0,0.07);
+    nus_atm.Set_MixingAngle(0,3,0.07);
     nus_atm.Set_MixingAngle(2,3,0.0);
     nus_atm.Set_SquareMassDifference(3,1.3);
 

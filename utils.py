@@ -61,7 +61,11 @@ def get_index( key ):
 
     flav_index = flavors.index(flavor) # 0, 1, or 2
     variety_index = neuts.index(variety) # 0 or 1
-    return( 2 + int( flav_index + len(flavors)*variety_index) )
+
+    sterile_on = True
+    sterile_mod = 1 if sterile_on else 0
+
+    return( 2 + int( flav_index + (len(flavors)+sterile_mod)*variety_index) )
 
 def bad_get_loc(value, edges):
     # fuck the error checking 
