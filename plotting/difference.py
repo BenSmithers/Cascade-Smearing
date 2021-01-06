@@ -4,7 +4,7 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-from utils import bhist
+from cascade.utils import bhist
 
 import pickle
 
@@ -20,15 +20,22 @@ def _load_flux(name):
     return( e_reco, a_reco, flux )
 
 
-e_reco, a_reco, flux_null = _load_flux(".flux_data_null.dat")
-e_reco, a_reco, flux_sterile = _load_flux(".flux_data.dat")
+e_reco, a_reco, flux_null = _load_flux("../.flux_data_null.dat")
+e_reco, a_reco, flux_sterile = _load_flux("../.flux_data.dat")
 
 ex = list(flux_null.keys())[0]
 
 null_total = np.zeros(shape = np.shape(flux_null[ex]))
 sterile_total = np.zeros(shape = np.shape(flux_null[ex]))
 
+just_nubar = True
+
+keep_key = "Tau"
 for key in flux_null.keys():
+    if just_nubar and (keep_key not in key):
+        print("Skip {}".format(key))
+        continue
+
     null_total += flux_null[key]
     sterile_total+=flux_sterile[key]
 
@@ -37,13 +44,14 @@ ratio = sterile_total / null_total
 energies = np.array(bhist([e_reco]).centers)
 czeniths = np.array(bhist([a_reco]).centers)
 
-cf = plt.pcolormesh(czeniths, energies/(1e9), ratio, cmap=cm.coolwarm)
+cf = plt.pcolormesh(czeniths, energies/(1e9), ratio, cmap=cm.coolwarm, vmin=0.95, vmax=1.05)
 plt.yscale('log')
 plt.ylabel("Reco Energy [GeV]", size=14)
 plt.xlabel(r"Reco $\cos\theta$",size=14)
-plt.title("",size=14)
+if just_nubar:
+    plt.title("Only Looking at: {}".format(keep_key),size=14)
 cbar = plt.colorbar() #cf,ticks=ticker.LogLocator())
 cbar.set_label(r"Sterile Flux / Null Flux")
-plt.savefig("flux_ratio.png",dpi=400)
+plt.savefig("flux_ratio"+ ("_nubar" if just_nubar else "") +("_{}".format(keep_key) if just_nubar else "")+".png",dpi=400)
 plt.show()
 
