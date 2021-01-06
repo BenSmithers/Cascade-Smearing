@@ -49,7 +49,7 @@ def sci(number, precision=4):
     power = int(log10(abs(number)))
     return("{0:.{1}f}".format(number/(10**power), precision)+"e{}".format( power))
 
-def get_index( key ):
+def get_index( key, n_flavor=3 ):
     '''
     Returns the column in the atmosphere data file for a given key
     '''
@@ -62,9 +62,7 @@ def get_index( key ):
     flav_index = flavors.index(flavor) # 0, 1, or 2
     variety_index = neuts.index(variety) # 0 or 1
 
-    sterile_on = True
-    sterile_mod = 1 if sterile_on else 0
-
+    sterile_mod = n_flavor-3 
     return( 2 + int( flav_index + (len(flavors)+sterile_mod)*variety_index) )
 
 def bad_get_loc(value, edges):
@@ -220,7 +218,7 @@ class Data:
     
     It loads it up into a convenient format for access, and provides a function for interpolating what is loaded. 
     """
-    def __init__(self, filename='atmosphere.dat'):
+    def __init__(self, filename='atmosphere.dat' ,n_flavor = 4):
         """
         Loads in the specified nuSQuIDS datafile. 
 
@@ -243,9 +241,11 @@ class Data:
         self._energies = [10**data[i][0] for i in range(n_energies)]
         self.growing = self._energies[1]>self._energies[0]  
         en_width = get_width(self._energies)/GeV
+
         self._angles = [data[n_energies*i][1] for i in range(n_angles)]
         self._ang_width = get_width(np.arccos(self._angles))
         self.ang_grow = self._angles[1]>self._angles[0]
+
         print(min(self._energies))
         print(type(min(self._energies)))
         print("Data spans {} GeV -> {} GeV".format(min(self._energies)/GeV, max(self._energies)/GeV))
@@ -268,7 +268,7 @@ class Data:
             # indexed like [energy_bin][angle_bin]
             # you may notice that NC and CC are treated as having separate fluxes, when really it'sthe same flux 
             #       this is for the most part okay since the interactions are rare enough that the fluxes are unchanged 
-            self._fluxes[ key ] = [[ data[energy+angle*n_energies][get_index(key)]*2*np.pi for angle in range(n_angles)] for energy in range(n_energies)]
+            self._fluxes[ key ] = [[ data[energy+angle*n_energies][get_index(key, n_flavor)]*2*np.pi for angle in range(n_angles)] for energy in range(n_energies)]
     
     # define a few access functions to protect the important stuff 
     # the "@property" tag makes it so these are accessed like attributes, not functions! 
@@ -304,7 +304,7 @@ class Data:
         '''
         interpolates between entries in the flux dictionary to return the flux at arbitrary energy and angle
         Energy should be in units of eV
-        Angle should be in units of radians 
+        Angle should be in units of cos(zenith) 
         
         If an angle is provided, 
             Flux is in units of /cm2/GeV/s/sr  (incoming energy, bin width!) 
