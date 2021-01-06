@@ -27,6 +27,7 @@ def get_angle_flux( angle , mag=0):
         primary_model = (crf.HillasGaisser2012, 'H3a'),
         theta_deg = angle
         )
+    print("MCEQ Solve for {}".format(angle))
     mceq.solve()
 
     flux['e_grid'] = mceq.e_grid
@@ -40,7 +41,7 @@ def get_angle_flux( angle , mag=0):
     
 
 
-    obj = open("temp_mceq_flux.dat".format(angle),'w')
+    obj = open("temp_mceq_flux.dat",'w')
 #     obj.write("# E[Gev] Phi_nue[Gev/cm2/s/sr] Phi_numu[Gev/cm2/s/sr] Phi_nutau[Gev/cm2/s/sr] Phi_nue_bar Phi_numu_bar Phi_nutau_bar\n")
     for i in range(len(flux['e_grid'])):
         obj.write( str(flux['e_grid'][i]) )
