@@ -190,7 +190,7 @@ int main(){
 
 
 int main(){
-    inter FluxMachine; 
+
 
     // define some properties for our atmosphere 
     long unsigned int n_nu = 4;
@@ -216,10 +216,12 @@ int main(){
     nus_atm.Set_MixingAngle(0,2,0.154085);
     nus_atm.Set_MixingAngle(1,2,0.785398);
     
-
-    nus_atm.Set_MixingAngle(0,3,0.07);
+    // sterile parameters 
+    
+    nus_atm.Set_MixingAngle(1,3,0.13388166);
     nus_atm.Set_MixingAngle(2,3,0.0);
     nus_atm.Set_SquareMassDifference(3,1.3);
+    
 
     nus_atm.Set_SquareMassDifference(1,7.65e-05);
     nus_atm.Set_SquareMassDifference(2,0.00247);
@@ -234,6 +236,7 @@ int main(){
     marray<double, 4> inistate{angular_bins, energy_bins, 2, n_nu};
     std::fill( inistate.begin(), inistate.end(), 0);
     for ( int angle_bin=0; angle_bin < angular_bins; angle_bin++){
+        inter FluxMachine; 
         // load next angle file  
         // we turn this around since the nusquids zenith angle is different from the MCEQ one 
         double angle_deg = 180.-(acos(zeniths[angle_bin])*180./pi);
@@ -242,10 +245,9 @@ int main(){
         }
         std::string command("python3 mceq_flux.py ");
         command += std::to_string(angle_deg); // append the zenith angle to the end of this as an argument to the python script 
-        std::cout << " ===> Generating new flux file at "<<angle_deg<<std::endl;
+        std::cout << " ===> Generating new flux file at "<<angle_deg<< "deg" <<std::endl;
         system(command.c_str()); // call the python script to generate the flux
         FluxMachine.load_data("temp_mceq_flux.dat"); // load the flux in 
-        std::cout << " ===> Assigning initial state " <<std::endl;
         std::cout << std::endl;
         for (int energy_bin=0; energy_bin < energy_bins; energy_bin++){
             for (uint8_t neut_type =0; neut_type<2; neut_type++){
