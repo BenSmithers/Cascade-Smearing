@@ -4,6 +4,7 @@ import os
 import numpy as np
 from functools import reduce
 import sys
+import json # config file 
 
 """
 This defines a few utility functions for my plotting script.
@@ -14,6 +15,38 @@ I moved this over here so the main plotter wasn't too busy
 flavors = ['E', 'Mu', 'Tau']
 neuts = ['nu', 'nuBar']
 currents = ['NC', 'CC']
+
+# load in the configuration file
+f = open(os.path.join(os.path.dirname(__file__), "config.json"), 'r')
+config = json.load(f)
+f.close()
+
+def backup(filename):
+    """
+    This function checks if a file exists by the given name
+    If the file exists, it renames the file by appending "Copy of [...]" to the file's name (considering full path too. This works recursively too! The newest is always the one with the least "Copy of"s
+
+    [File] [Copy of File] 
+        becomes
+    [File] [Copy of File] [Copy of Copy of File]
+
+    Returns nothing.
+    """
+
+    if not os.path.exists(filename):
+        return
+    else:
+        # such a file already exists 
+        dirname, file_obj = os.path.split(filename)
+    
+        # get the new destination for the file
+        # then, we call this function to check if something of the same name already exists
+        file_obj = "Copy of "+file_obj
+        backup(os.path.join(dirname, file_obj)) 
+
+        # Now rename the existing file to the new name 
+        os.rename(filename, os.path.join(dirname, file_obj))
+
 
 def sep_by_flavor(nuflux):
     """
@@ -218,14 +251,15 @@ class Data:
     
     It loads it up into a convenient format for access, and provides a function for interpolating what is loaded. 
     """
-    def __init__(self, filename='atmosphere.dat' ,n_flavor = 4):
+    def __init__(self, filename=config["nu_flux"], n_flavor = 4):
         """
         Loads in the specified nuSQuIDS datafile. 
 
         Creates a "flux" dictionary for each type of neutrino and interaction. This is in units of N/s/GeV/cm2/sr
         """
-        print("Extracting Data")
-        data = np.loadtxt(os.path.join( os.path.dirname(__file__), filename), dtype=float, comments='#',delimiter=' ')
+        location = os.path.join(config["datapath"], filename)
+        print("Extracting Data from {}".format(location))
+        data = np.loadtxt(location, dtype=float, comments='#',delimiter=' ')
         n_energies = 701
         n_angles = 100
         GeV=1e9
