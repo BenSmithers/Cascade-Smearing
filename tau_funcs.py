@@ -6,11 +6,13 @@ import pickle
 import numpy as np
 from scipy import integrate 
 
+from utils import config
+
 # tau file verison should be updated with changes to this code! 
 tau_file_version = "3.3.1"
-tau_file_name = ".tau_branch.dat"
+tau_file_name = config["tau_data"]
 
-full_path = os.path.join(os.path.dirname(__file__), tau_file_name)
+full_path = os.path.join(config["datapath"], tau_file_name)
 
 class TauData:
     """

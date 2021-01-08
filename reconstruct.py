@@ -18,16 +18,6 @@ Debug - Raw fluxes for the three flavors. No cross sections\n \
 
 parser = OptionParser()
 #mode_str = "0 - plot muon vs not muon\n1 - plot all the keys\n 2 - plot 2D hist of parent vs cascade"
-parser.add_option("-m", "--mode",
-                dest="mode",
-                default="0",
-                type=str,
-                help=mode_str)
-parser.add_option("-l", "--load_stored",
-                dest="load_stored",
-                default=False,
-                action="store_true",
-                help="Should I try to load stored data rather than regenerate it?")
 parser.add_option("-d", "--debug", 
                 dest="debug",
                 default=False,
@@ -38,37 +28,11 @@ parser.add_option("-n", "--nbins",
                 default=200,
                 type=int,
                 help="Number of bins to use for each axis")
-parser.add_option("-a", "--angle",
-                dest="angle",
-                default=None,
-                type=float,
-                help="At which angle should the plots be made?")
-
 options, args = parser.parse_args()
-mode = options.mode
-load_stored = options.load_stored
 debug = options.debug
-glob_angle = options.angle
-
 n_bins = options.n_bins
-do_norm=False # deprecated 
-
-if mode.lower()=='a' or mode.lower()=='all':
-    mode = 8
-    do_all = True
-    load_stored = True
-else:
-    do_all = False
-    mode = int(mode)
-    recognized_modes = [0,1,2,3,4,5,6,7,-1,8,9]
-    if mode not in recognized_modes: 
-        raise ValueError("Unrecognized Mode: {}".format(mode))
-    if mode in [-1,1,2,3,7]:
-        raise DeprecationWarning("Mode {} is deprecated".format(mode))
 
 print("Configuration...")
-print("    In Mode {}".format(mode))
-print("    Will Load Data" if load_stored else "    Will Generate Data")
 print("    Using {} bins".format(n_bins))
 
 # data analysis
@@ -85,14 +49,16 @@ from cross_section_test import get_diff_xs
 from nus_utils import get_flavor, get_neut, get_curr
 from utils import bhist, get_exp_std, get_width, get_nearest_entry_to
 from utils import Data, get_index, get_loc, sci
+from utils import config 
 
 from deposit import generate_singly_diff_fluxes
 
 # reconstruction data
 from deporeco import DataReco
+suffix= "_null"
 
-savefile = ".analysis_level.dat"
-fluxfile = ".flux_data.dat"
+savefile = os.path.join(config["datapath"], config["all_fluxes"]+suffix+".dat")
+fluxfile = os.path.join(config["datapath"], config["recon_flux"]+suffix+".dat")
 
 def _save_data(e_reco, e_true, a_reco, a_true, flux):
     """
@@ -106,7 +72,7 @@ def _save_data(e_reco, e_true, a_reco, a_true, flux):
     f = open(savefile,'wb')
     pickle.dump( all_data, f, -1)
     f.close()   
-    print("Data Saved!")
+    print("Saved {}".format(savefile))
 
 def _save_flux(e_reco, a_reco, flux):
     all_data = {"e_reco": e_reco,
@@ -115,7 +81,7 @@ def _save_flux(e_reco, a_reco, flux):
     f = open(fluxfile, 'wb')
     pickle.dump( all_data, f, -1)
     f.close()
-    print("Flux File Saved")
+    print("Saved {}".format(fluxfile))
 
 def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges):
     """
@@ -187,7 +153,7 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges):
     _save_flux(r_energy.edges, r_angle.edges, total_flux)
 
 
-if (do_all and not load_stored) or mode==0:
+if __name__=="__main__":
     a,b,c,d = generate_singly_diff_fluxes(n_bins)
     incorporate_recon(a,b,c,d)
 

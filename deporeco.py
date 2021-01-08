@@ -58,12 +58,14 @@ if False:
     matplotlib.use('TkAgg')
     import matplotlib.pyplot as plt
     plt.plot( angdata[0], angdata[1],'d', label="Data")
-    xs = np.logspace(2,7.5,100)
+    xs = np.logspace(3.5,7.5,100)
     #ys = func(np.log10(xs), popt[0], popt[1])
     ys = [get_ang_error(en) for en in xs]
     plt.plot(xs, ys, label='Fit')
     plt.legend()
     plt.xscale('log')
+    plt.xlabel("Energy Depo [GeV]",size=14)
+    plt.ylabel("Angular Error [deg]",size=14)
     plt.show()
     sys.exit()
 

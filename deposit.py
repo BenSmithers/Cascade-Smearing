@@ -42,6 +42,7 @@ import nuSQUIDSpy as nsq
 from nus_utils import get_flavor, get_neut, get_curr
 from utils import bhist, get_exp_std, get_width, get_nearest_entry_to
 from utils import Data, get_index, get_loc, sci
+from utils import config
 
 # tau stuff
 from tau_funcs import TauData
@@ -57,7 +58,8 @@ def get_color(which, how_many=n_colors):
     return( cmap( float(which)/how_many ) )
 
 # load the data using the default filename, 'atmosphere.dat'
-data = Data()
+#data = Data("atmosphere_sterile.dat")
+data = Data("atmosphere_null.dat", 3)
 tauData = TauData()
 
 scale_e = np.array(data.energies)
@@ -101,8 +103,8 @@ if debug:
     plt.close()
 
 
-
-savefile = ".analysis_level.dat"
+suffix=""
+savefile = os.path.join( config["datapath"], config["all_fluxes"]+suffix+".dat")
 def _load_data(glob_angle = None):
     """
     Loads the datafile. Returns tuple
