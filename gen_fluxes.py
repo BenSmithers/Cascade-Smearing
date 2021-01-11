@@ -159,16 +159,16 @@ def main(theta13=0.13388166, theta23=0.0, msq3 = 1.3):
     prefix = split[0]
     suffix = split[1] 
     filename_partial = "_".join((prefix,sci(theta13), sci(theta23),sci(msq3)))
-    filename = os.path.join(config["datapath"], filename_partial)
+    filename = os.path.join(config["datapath"], filename_partial+".dat")
     print("Saving File to {}".format(filename))
     
     if not config["overwrite"]:
         backup(filename)
 
-    f = open(filename, 'wt')
+    obj = open(filename, 'wt')
     angle = cos_zenith_min
     energy = int_min_e
-    while angle<cos_enith_max:
+    while angle<cos_zenith_max:
         while energy<int_max_e:
             #obj.write( ~string~ )
             obj.write("{} {}".format(energy, angle))
@@ -181,5 +181,5 @@ def main(theta13=0.13388166, theta23=0.0, msq3 = 1.3):
 
             energy += (int_max_e-int_min_e)/int_en
         angle += (cos_zenith_max-cos_zenith_min)/int_cos
-
+    obj.close()
 main()
