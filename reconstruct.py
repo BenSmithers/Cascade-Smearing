@@ -43,7 +43,7 @@ import os
 import pickle
 from warnings import warn
 
-from cross_section_test import get_diff_xs
+from cascade.cross_section_test import get_diff_xs
 
 # specialty-made utility functions
 from nus_utils import get_flavor, get_neut, get_curr
@@ -83,7 +83,7 @@ def _save_flux(e_reco, a_reco, flux):
     f.close()
     print("Saved {}".format(fluxfile))
 
-def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges):
+def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges, just_flux=True):
     """
     This takes in the results from `generate_singly_diff_fluxes` and incorporates reconstruction uncertainties
 
@@ -130,7 +130,8 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges):
     for key in nuflux.keys():
         print("Reconstructing {} Flux".format(key))
         # energy x, angle y
-        recoflux[key] = np.zeros(shape=(len(r_energy_centers),len(true_e_centers), len(r_angle_centers),len(true_ang_centers)))
+        if not just_flux:
+            recoflux[key] = np.zeros(shape=(len(r_energy_centers),len(true_e_centers), len(r_angle_centers),len(true_ang_centers)))
         total_flux[key] = np.zeros(shape=(len(r_energy_centers), len(r_angle_centers)))
         for i_e_reco in range(len(r_energy_centers)):
             for i_e_depo in range(len(cascade_centers)):
@@ -146,14 +147,16 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges):
                             amt = nuflux[key][i_e_depo][i_e_true][i_a_true]*depo_odds*ang_odds 
                             amt *= true_ang_widths[i_a_true]*true_e_widths[i_e_true]*depo_widths[i_e_depo]
                             if amt>=0:
-                                recoflux[key][i_e_reco][i_e_true][i_a_reco][i_a_true] += amt 
+                                if not just_flux:
+                                    recoflux[key][i_e_reco][i_e_true][i_a_reco][i_a_true] += amt 
                                 total_flux[key][i_e_reco][i_a_reco] += amt
-
-    _save_data(r_energy.edges, event_edges, r_angle.edges, angle_edges, recoflux)
+    if not just_flux:
+        _save_data(r_energy.edges, event_edges, r_angle.edges, angle_edges, recoflux)
     _save_flux(r_energy.edges, r_angle.edges, total_flux)
 
 
 if __name__=="__main__":
-    a,b,c,d = generate_singly_diff_fluxes(n_bins)
+    print("Running...")
+    a,b,c,d = generate_singly_diff_fluxes(n_bins, debug=False, datafile="")
     incorporate_recon(a,b,c,d)
 
