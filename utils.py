@@ -70,6 +70,16 @@ def sep_by_flavor(nuflux):
             from_not+=nuflux[key]
     return(from_muons, from_not)
 
+def parse_filename(path):
+    dirname, filename = os.path.split(path)
+    
+    name = filename.split(".")[0]
+    entries = name.split("_")
+
+    theta13 = float(entries[1])
+    theta23 = float(entries[2])
+    msq3 = float(entries[3])
+
 def sci(number, precision=4):
     """
     Returns a string representing the number in scientific notation
@@ -78,8 +88,11 @@ def sci(number, precision=4):
         raise TypeError("Expected {}, not {}".format(float, type(number)))
     if not isinstance(precision,int):
         raise TypeError("Precision must be {}, not {}".format(int, type(precision)))
+    try:
+        power = int(log10(abs(number)))
+    except ValueError:
+        return("0.0")
 
-    power = int(log10(abs(number)))
     return("{0:.{1}f}".format(number/(10**power), precision)+"e{}".format( power))
 
 def get_index( key, n_flavor=3 ):
@@ -173,7 +186,7 @@ def get_closest(x, domain, mapped):
         raise TypeError("'x' should be number-like, not {}".format(type(x)))
 
     if len(domain)!=len(mapped):
-        raise ValueError("'len' and 'mapped' should have same length, got len(domain)={}, len(mapped)={}".format(len(domain), len(mapped)))
+        raise ValueError("'domain' and 'mapped' should have same length, got len(domain)={}, len(mapped)={}".format(len(domain), len(mapped)))
     
     lower_bin, upper_bin = get_loc(x, domain)
     
