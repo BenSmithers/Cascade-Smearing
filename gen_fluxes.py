@@ -23,29 +23,33 @@ from cascade.utils import config
 from cascade.utils import backup
 
 # simulates the cosmic ray showers 
-from MCEq.core import config, MCEqRun
+from MCEq.core import MCEqRun
 import crflux.models as crf
 
-def mc_flux(angle_deg):
-    mag = 1.
-    flux = {}
-    mceq = MCEqRun(
-            interaction_model = 'SIBYLL23C',
-            primary_model = (crf.HillasGaisser2012, 'H3a'),
-            theta_deg = angle_deg
-            )
-    mceq.solve()
-    
-    flux['e_grid'] = mceq.e_grid
+def get_key(flavor, neutrino):
+    # flavor 0, 1, 2
+    # neutrino 0, 1
 
-    flux['nue_flux'] = mceq.get_solution('nue',mag)+mceq.get_solution('pr_nue',mag)
-    flux['nue_bar_flux'] = mceq.get_solution('antinue',mag)+mceq.get_solution('pr_antinue',mag)
-    flux['numu_flux'] = mceq.get_solution('numu',mag)+mceq.get_solution('pr_numu',mag)
-    flux['numu_bar_flux'] = mceq.get_solution('antinumu',mag)+mceq.get_solution('pr_antinumu',mag)
-    flux['nutau_flux'] = mceq.get_solution('nutau',mag)+mceq.get_solution('pr_nutau',mag)
-    flux['nutau_bar_flux'] = mceq.get_solution('antinutau',mag)+mceq.get_solution('pr_antinutau',mag)
-  
-    return(flux)
+    key = ""
+    if flavor==0:
+        key+="nue_"
+    elif flavor==1:
+        key+="numu_"
+    elif flavor==2:
+        key+="nutau_"
+    elif flavor==3:
+        return(key)
+    else:
+        raise ValueError("Invalid flavor {}".format(flavor))
+
+    if neutrino==0:
+        key+="flux"
+    elif neutrino==1:
+        key+="bar_flux"
+    else:
+        raise ValueError("Invalid Neutrino Type {}".format(neutrino))
+
+    return(key)
 
 def main(theta13=0.13388166, theta23=0.0, msq3 = 1.3):
     """
@@ -70,7 +74,7 @@ def main(theta13=0.13388166, theta23=0.0, msq3 = 1.3):
     use_earth_interactions = True
 
     zeniths = nsq.linspace(cos_zenith_min, cos_zenith_max, angular_bins)
-    energies = nsq.logspace(Emin, Emax, energy_bins)
+    energies = nsq.logspace(Emin, Emax, energy_bins) # DIFFERENT FROM NUMPY LOGSPACE
 
     nus_atm = nsq.nuSQUIDSAtm(zeniths, energies, n_nu, nsq.NeutrinoType.both, use_earth_interactions)
 
@@ -95,6 +99,12 @@ def main(theta13=0.13388166, theta23=0.0, msq3 = 1.3):
     nus_atm.Set_GSL_step(nsq.GSL_STEP_FUNCTIONS.GSL_STEP_RK4)
 
     inistate = np.zeros(shape=(angular_bins, energy_bins, 2, n_nu))
+    mceq = MCEqRun(
+            interaction_model = 'SIBYLL23C',
+            primary_model = (crf.HillasGaisser2012, 'H3a'),
+            theta_deg = 0.
+            )
+    mag = 0.
     for angle_bin in range(angular_bins):
         # now we do the thingy for the 
         angle_deg = 180. - (acos(zeniths[angle_bin])*180./pi)
@@ -102,28 +112,27 @@ def main(theta13=0.13388166, theta23=0.0, msq3 = 1.3):
             angle_deg = 180.
 
         print("Evaluating {} deg Flux".format(angle_deg))
-        flux = mc_flux(angle_deg)
+        mceq.set_theta_deg(angle_deg)
+        mceq.solve()
 
+        flux = {}
+        flux['e_grid'] = mceq.e_grid
+
+        flux['nue_flux'] = mceq.get_solution('nue',mag)+mceq.get_solution('pr_nue',mag)
+        flux['nue_bar_flux'] = mceq.get_solution('antinue',mag)+mceq.get_solution('pr_antinue',mag)
+        flux['numu_flux'] = mceq.get_solution('numu',mag)+mceq.get_solution('pr_numu',mag)
+        flux['numu_bar_flux'] = mceq.get_solution('antinumu',mag)+mceq.get_solution('pr_antinumu',mag)
+        flux['nutau_flux'] = mceq.get_solution('nutau',mag)+mceq.get_solution('pr_nutau',mag)
+        flux['nutau_bar_flux'] = mceq.get_solution('antinutau',mag)+mceq.get_solution('pr_antinutau',mag) 
+        
         for neut_type in range(2):
             for flavor in range(n_nu):
-                flav_key = ""
-                if flavor==0:
-                    flav_key = "nue"
-                elif flavor==1:
-                    flav_key = "numu"
-                elif flavor==2:
-                    flav_key = "nutau"
-                else: # sterile
+                flav_key = get_key(flavor, neut_type)
+                if flav_key=="":
                     continue
-                if neut_type==1: # bar
-                    flav_key += "_bar"
-                
-                flav_key += "_flux"
-
-                flav_key = "nue_bar_flux"
-                # now we get the flux at this zenith/energy combo
 
                 for energy_bin in range(energy_bins):                    
+                    continue
                     # (account for the difference in units between mceq and nusquids! )
                     inistate[angle_bin][energy_bin][neut_type][flavor] = get_closest(energies[energy_bin]/un.GeV, flux['e_grid'], flux[flav_key])
         print()
