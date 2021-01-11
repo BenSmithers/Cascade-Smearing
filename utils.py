@@ -79,6 +79,7 @@ def parse_filename(path):
     theta13 = float(entries[1])
     theta23 = float(entries[2])
     msq3 = float(entries[3])
+    return(theta13, theta23, msq3)
 
 def sci(number, precision=4):
     """
