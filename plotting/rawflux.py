@@ -9,8 +9,12 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-null_dat = Data("atmosphere_null.dat", 3)
-sterile_dat = Data("atmosphere_sterile.dat", 4)
+from cascade.utils import config, gen_filename
+
+null_pt = gen_filename(config["datapath"], config["nu_flux"], 0.,0.,0.)
+sterile_pt = gen_filename(config["datapath"], config["nu_flux"],0.13388166, 0.0, 1.3)
+null_dat = Data(null_pt, 3)
+sterile_dat = Data(sterile_pt, 4)
 
 n_bin = 100
 
