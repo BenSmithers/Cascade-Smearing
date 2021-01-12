@@ -1,8 +1,11 @@
 {
   "datapath": "/home/benito/software/data/cascade/",
-  "nu_flux": "atmosphere.dat",
+  "use_pregen_mceq_flux":true,
+  "mceq_flux":"mceq_flux.dat",
+  "nu_flux": "raw_det_flux.dat",
   "tau_data": "tau_branch.dat",
   "recon_flux":"flux_data",
   "all_fluxes":"analysis_level",
+  "n_bins": 80,
   "overwrite": true
 }
