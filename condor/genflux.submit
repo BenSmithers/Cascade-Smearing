@@ -1,0 +1,15 @@
+executable = /home/bsmithers/software_dev/cascade/condor/bash_gen_flux.sh
+arguments = $(arg)
+
+should_transfer_files = true
+when_to_transfer_output = ON_EXIT
+getenv = False
+output = /scratch/bsmithers/genflux.$(cluster).out
+error  = /scratch/bsmithers/genflux.$(cluster).err
+log    = /scratch/bsmithers/genflux.$(cluster).log
+
+request_memory = 2000
+request_gpus   = 0
+request_cpus   = 1
+queue 1
+

@@ -1,0 +1,54 @@
+JOB  genflux000000  genflux.submit
+JOB  genflux000001  genflux.submit
+JOB  genflux000002  genflux.submit
+JOB  genflux000003  genflux.submit
+JOB  genflux000004  genflux.submit
+JOB  genflux000005  genflux.submit
+JOB  genflux000006  genflux.submit
+JOB  genflux000007  genflux.submit
+JOB  genflux000008  genflux.submit
+JOB  genflux000009  genflux.submit
+JOB  genflux000010  genflux.submit
+JOB  genflux000011  genflux.submit
+JOB  genflux000012  genflux.submit
+JOB  genflux000013  genflux.submit
+JOB  genflux000014  genflux.submit
+JOB  genflux000015  genflux.submit
+JOB  genflux000016  genflux.submit
+JOB  genflux000017  genflux.submit
+JOB  genflux000018  genflux.submit
+JOB  genflux000019  genflux.submit
+JOB  genflux000020  genflux.submit
+JOB  genflux000021  genflux.submit
+JOB  genflux000022  genflux.submit
+JOB  genflux000023  genflux.submit
+JOB  genflux000024  genflux.submit
+JOB  genflux000025  genflux.submit
+JOB  genflux000026  genflux.submit
+VARS  genflux000000  arg=" 0.0 0.0 0.0"
+VARS  genflux000001  arg=" 0.0 0.0 1.2"
+VARS  genflux000002  arg=" 0.0 0.0 2.4"
+VARS  genflux000003  arg=" 0.0 1.0 0.0"
+VARS  genflux000004  arg=" 0.0 1.0 1.2"
+VARS  genflux000005  arg=" 0.0 1.0 2.4"
+VARS  genflux000006  arg=" 0.0 2.0 0.0"
+VARS  genflux000007  arg=" 0.0 2.0 1.2"
+VARS  genflux000008  arg=" 0.0 2.0 2.4"
+VARS  genflux000009  arg=" 1.0 0.0 0.0"
+VARS  genflux000010  arg=" 1.0 0.0 1.2"
+VARS  genflux000011  arg=" 1.0 0.0 2.4"
+VARS  genflux000012  arg=" 1.0 1.0 0.0"
+VARS  genflux000013  arg=" 1.0 1.0 1.2"
+VARS  genflux000014  arg=" 1.0 1.0 2.4"
+VARS  genflux000015  arg=" 1.0 2.0 0.0"
+VARS  genflux000016  arg=" 1.0 2.0 1.2"
+VARS  genflux000017  arg=" 1.0 2.0 2.4"
+VARS  genflux000018  arg=" 2.0 0.0 0.0"
+VARS  genflux000019  arg=" 2.0 0.0 1.2"
+VARS  genflux000020  arg=" 2.0 0.0 2.4"
+VARS  genflux000021  arg=" 2.0 1.0 0.0"
+VARS  genflux000022  arg=" 2.0 1.0 1.2"
+VARS  genflux000023  arg=" 2.0 1.0 2.4"
+VARS  genflux000024  arg=" 2.0 2.0 0.0"
+VARS  genflux000025  arg=" 2.0 2.0 1.2"
+VARS  genflux000026  arg=" 2.0 2.0 2.4"
