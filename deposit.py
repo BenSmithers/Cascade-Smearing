@@ -58,17 +58,19 @@ def get_color(which, how_many=n_colors):
     return( cmap( float(which)/how_many ) )
 
 # load the data using the default filename, 'atmosphere.dat'
-#data = Data("atmosphere_sterile.dat")
-data = Data("atmosphere_null.dat", 3)
 tauData = TauData()
 
-scale_e = np.array(data.energies)
+
 
 debug = False
 glob_angle = None
 
 # this block here is supposed to just plot all the raw fluxes 
 if debug:
+    #data = Data("atmosphere_sterile.dat")
+    data = Data("atmosphere_null.dat", 3)
+    scale_e = np.array(data.energies)
+
     print("Making Debug plot")
     binny = len(scale_e)
     taus = np.zeros(binny)
@@ -155,7 +157,7 @@ def _save_data(e_true, e_depo, flux, czenith):
 
 
 
-def do_for_key(event_edges,cascade_edges, key, angles=None):
+def do_for_key(event_edges,cascade_edges, key,data, angles=None):
     """
     This function takes the desired bin edges for the event energies and deposited energies along with the dictionary key corresponding to a specific combination of falvor, current, and neutrino type.
 
@@ -243,7 +245,7 @@ def do_for_key(event_edges,cascade_edges, key, angles=None):
 
     return(flux.fill)
 
-def generate_singly_diff_fluxes(n_bins,debug=False):
+def generate_singly_diff_fluxes(n_bins,debug=False, datafile=config["nu_flux"]):
     """
     This is the newest, most streamlined function for generating the singly-differential flux arrays. 
     It has the same functionality as the old ones, but now it skips the step of filling in the regular flux array before swapping to the deposited energy flux array. 
@@ -251,6 +253,8 @@ def generate_singly_diff_fluxes(n_bins,debug=False):
     It goes over the different kind of fluxes and builds up a 2D or 3D array, convolving the entries with the relevant differential cross section
         the dimensionality depends on whether or we are integrating over the zenith angles
     """
+    data = Data(datafile)
+
     e_min = 10*const.GeV
     e_max = 1*const.PeV
     extra = 2
@@ -272,7 +276,7 @@ def generate_singly_diff_fluxes(n_bins,debug=False):
     nuflux = {}
 
     for key in data.get_keys(): #flavor, current, interaction 
-        nuflux[key] = do_for_key(event_edges,cascade_edges,key, (angle_edges if sep_angles else None))
+        nuflux[key] = do_for_key(event_edges,cascade_edges,key,data=data, angles=(angle_edges if sep_angles else None))
 
     # if global variable "angle" isn't none, then we can separate out just a single angle
 

@@ -49,30 +49,14 @@ from cascade.cross_section_test import get_diff_xs
 from nus_utils import get_flavor, get_neut, get_curr
 from utils import bhist, get_exp_std, get_width, get_nearest_entry_to
 from utils import Data, get_index, get_loc, sci
-from utils import config 
+from utils import config, savefile 
+from utils import gen_filename
 
 from deposit import generate_singly_diff_fluxes
 
 # reconstruction data
 from deporeco import DataReco
 suffix= "_null"
-
-savefile = os.path.join(config["datapath"], config["all_fluxes"]+suffix+".dat")
-fluxfile = os.path.join(config["datapath"], config["recon_flux"]+suffix+".dat")
-
-def _save_data(e_reco, e_true, a_reco, a_true, flux):
-    """
-    Saves the generated data for use later. 
-    """
-    all_data = {"e_reco": e_reco,
-                "e_true": e_true,
-                "a_reco": a_reco,
-                "a_true": a_true,
-                "flux": flux}
-    f = open(savefile,'wb')
-    pickle.dump( all_data, f, -1)
-    f.close()   
-    print("Saved {}".format(savefile))
 
 def _save_flux(e_reco, a_reco, flux):
     all_data = {"e_reco": e_reco,
@@ -83,7 +67,7 @@ def _save_flux(e_reco, a_reco, flux):
     f.close()
     print("Saved {}".format(fluxfile))
 
-def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges, just_flux=True):
+def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges, just_flux=True,theta13=0.,theta23=0.,msq3=0.):
     """
     This takes in the results from `generate_singly_diff_fluxes` and incorporates reconstruction uncertainties
 
@@ -150,10 +134,14 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges, just_flux
                                 if not just_flux:
                                     recoflux[key][i_e_reco][i_e_true][i_a_reco][i_a_true] += amt 
                                 total_flux[key][i_e_reco][i_a_reco] += amt
-    if not just_flux:
-        _save_data(r_energy.edges, event_edges, r_angle.edges, angle_edges, recoflux)
-    _save_flux(r_energy.edges, r_angle.edges, total_flux)
+    
 
+    if not just_flux:
+        reco_flux_name = gen_filename( config["datapath"], config["all_fluxes"]+".dat",theta13, theta23, msq3)
+        savefile(reco_flux_name, e_reco=r_energy.edges, e_true=event_edges, a_reco=r_angle.edges,a_true=angle_edges,flux=recoflux)
+
+    flux_file = gen_filename(config["datapath"], config["recon_flux"]+".dat", theta13, theta23, msq3)
+    savefile(flux_file, e_reco=r_energy.edges, a_reco=r_angle.edges, flux=total_flux)
 
 if __name__=="__main__":
     print("Running...")

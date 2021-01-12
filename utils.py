@@ -5,6 +5,7 @@ import numpy as np
 from functools import reduce
 import sys
 import json # config file 
+import pickle 
 
 """
 This defines a few utility functions for my plotting script.
@@ -46,6 +47,23 @@ def backup(filename):
 
         # Now rename the existing file to the new name 
         os.rename(filename, os.path.join(dirname, file_obj))
+
+def savefile(name, **kwargs):
+    """
+    This allows me to quickly files. You specify the filename and use keywords to provide the rest of the elements you want to save 
+
+    Then it quickly pickles it
+    returns nothing
+
+    Respects the configured "overwrite" settings 
+    """
+    if not config["overwrite"]:
+        backup(name)
+
+    f = open(name, 'wb')
+    pickle.dump( kwargs, f, -1)
+    f.close()
+    print("Saved {}".format(name))
 
 
 def sep_by_flavor(nuflux):
@@ -95,6 +113,21 @@ def sci(number, precision=4):
         return("0.0")
 
     return("{0:.{1}f}".format(number/(10**power), precision)+"e{}".format( power))
+
+def gen_filename(dirname, filename, theta13, theta23, msq3):
+    """
+    Takes a directory, a generic filename (like "datafile.dat"), and some physics parameters
+
+    returns a full path that is unique to that set of physics parameters
+    """
+
+    names = filename.split(".")
+    assert(len(names)==2) # name, ext
+    prefix = names[0]
+    suffix = names[1]
+    filename_partial = "_".join((prefix,sci(theta13), sci(theta23),sci(msq3)))
+    filename = os.path.join( dirname, ".".join((filename_partial,suffix)))
+    return(filename)
 
 def get_index( key, n_flavor=3 ):
     '''
