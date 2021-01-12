@@ -46,16 +46,16 @@ from warnings import warn
 from cascade.cross_section_test import get_diff_xs
 
 # specialty-made utility functions
-from nus_utils import get_flavor, get_neut, get_curr
-from utils import bhist, get_exp_std, get_width, get_nearest_entry_to
-from utils import Data, get_index, get_loc, sci
-from utils import config, savefile 
-from utils import gen_filename
+from cascade.nus_utils import get_flavor, get_neut, get_curr
+from cascade.utils import bhist, get_exp_std, get_width, get_nearest_entry_to
+from cascade.utils import Data, get_index, get_loc, sci
+from cascade.utils import config, savefile 
+from cascade.utils import gen_filename
 
-from deposit import generate_singly_diff_fluxes
+from cascade.deposit import generate_singly_diff_fluxes
 
 # reconstruction data
-from deporeco import DataReco
+from cascade.deporeco import DataReco
 suffix= "_null"
 
 def _save_flux(e_reco, a_reco, flux):
