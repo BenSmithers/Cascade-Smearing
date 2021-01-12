@@ -1,7 +1,7 @@
 from math import exp, sqrt, pi, log, acos, log10, sinh
 import numpy as np
 import os
-from utils import bhist, get_loc, get_closest
+from cascade.utils import bhist, get_loc, get_closest
 import sys 
 """
 This script is here to approximate the uncertainties in going from "energy deposited" to "energy reconstructed"
@@ -21,12 +21,12 @@ else:
     # data[0] is energy
     # data[1] is sigma
 
-from utils import get_closest
+
 
 rtwolog = sqrt(2*log(2))
 
 # Load in the datafile that has the angular error as a function of particle energy 
-angdata = np.transpose(np.loadtxt("angerror.txt", delimiter=","))
+angdata = np.transpose(np.loadtxt(os.path.join(os.path.dirname(__file__),"angerror.txt"), delimiter=","))
 
 # the fit is best when done in log-space of energy 
 # so we do a little fitty-fit

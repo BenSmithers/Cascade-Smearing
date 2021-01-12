@@ -27,46 +27,47 @@ import os
 import pickle
 from warnings import warn
 
-#plotting imports
-import matplotlib
-# Need to use agg since Tk isn't on the cobalts??? 
-matplotlib.use('TkAgg', force=True)
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-from matplotlib import ticker #used for log-scale contourplots 
 
-from cross_section_test import get_diff_xs
+
 import nuSQUIDSpy as nsq
 
 # specialty-made utility functions
-from nus_utils import get_flavor, get_neut, get_curr
-from utils import bhist, get_exp_std, get_width, get_nearest_entry_to
-from utils import Data, get_index, get_loc, sci
-from utils import config
+from cascade.nus_utils import get_flavor, get_neut, get_curr
+from cascade.utils import bhist, get_exp_std, get_width, get_nearest_entry_to
+from cascade.utils import Data, get_index, get_loc, sci
+from cascade.utils import config
+
+from cascade.cross_section_test import get_diff_xs
 
 # tau stuff
-from tau_funcs import TauData
+from cascade.tau_funcs import TauData
 
 # reconstruction data
-from deporeco import DataReco
+from cascade.deporeco import DataReco
 
 const = nsq.Const()
-# colormap thing
-cmap = plt.get_cmap('coolwarm')
-n_colors = 6
-def get_color(which, how_many=n_colors):
-    return( cmap( float(which)/how_many ) )
-
 # load the data using the default filename, 'atmosphere.dat'
 tauData = TauData()
-
-
 
 debug = False
 glob_angle = None
 
 # this block here is supposed to just plot all the raw fluxes 
 if debug:
+    #plotting imports
+    import matplotlib
+    # Need to use agg since Tk isn't on the cobalts??? 
+    matplotlib.use('TkAgg', force=True)
+    import matplotlib.pyplot as plt
+    import matplotlib.cm as cm
+    from matplotlib import ticker #used for log-scale contourplots 
+
+    # colormap thing
+    cmap = plt.get_cmap('coolwarm')
+    n_colors = 6
+    def get_color(which, how_many=n_colors):
+        return( cmap( float(which)/how_many ) )
+
     #data = Data("atmosphere_sterile.dat")
     data = Data("atmosphere_null.dat", 3)
     scale_e = np.array(data.energies)

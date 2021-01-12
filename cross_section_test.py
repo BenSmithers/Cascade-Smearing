@@ -4,10 +4,6 @@ This script will calcualte the DIS cross sections for neutrinos and convolve tha
 import sys
 import nuSQUIDSpy as nsq
 import numpy as np # useful for energy ranges
-import matplotlib
-matplotlib.use('agg')
-import matplotlib.pyplot as plt
-
 constants = nsq.Const()
 
 nBins = 100
@@ -64,6 +60,10 @@ def get_total_flux( energy, flavor, neutrino, current):
 # so I'm just commenting this all out for now. 
 skip_plots = True
 if not skip_plots:
+    import matplotlib
+    matplotlib.use('agg')
+    import matplotlib.pyplot as plt
+
     total_xss = {}
     for current in currents:
         for nt in neut_types:

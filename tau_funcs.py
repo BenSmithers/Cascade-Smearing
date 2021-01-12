@@ -6,7 +6,7 @@ import pickle
 import numpy as np
 from scipy import integrate 
 
-from utils import config
+from cascade.utils import config
 
 # tau file verison should be updated with changes to this code! 
 tau_file_version = "3.3.1"
