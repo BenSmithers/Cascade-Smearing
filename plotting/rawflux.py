@@ -11,9 +11,11 @@ import matplotlib.cm as cm
 
 from cascade.utils import config, gen_filename
 
+livetime = 10*3600*24*365.
+
 null_pt = gen_filename(config["datapath"], config["nu_flux"], 0.,0.,0.)
 sterile_pt = gen_filename(config["datapath"], config["nu_flux"],0.13388166, 0.0, 1.3)
-null_dat = Data(null_pt, 3)
+null_dat = Data(null_pt, 4)
 sterile_dat = Data(sterile_pt, 4)
 
 n_bin = 100
@@ -48,7 +50,7 @@ for key in key_list:
             null_flux[i][j]     += null_dat.get_flux( energy, key, angle=angle)
             sterile_flux[i][j]  += sterile_dat.get_flux( energy, key, angle=angle)
 
-cf = plt.pcolormesh(angles, energies/(1e9), np.log10(null_flux), cmap=cm.viridis)
+cf = plt.pcolormesh(angles, energies/(1e9), np.log10(null_flux*livetime), cmap=cm.viridis)
 plt.yscale('log')
 plt.ylabel("True Energy [GeV]", size=14)
 plt.xlabel(r"True $\cos\theta$",size=14)
@@ -58,7 +60,7 @@ plt.savefig("null_flux_plot.png", dpi=400)
 plt.show()
 plt.clf()
 
-cf = plt.pcolormesh(angles, energies/(1e9), np.log10(sterile_flux), cmap=cm.viridis)
+cf = plt.pcolormesh(angles, energies/(1e9), np.log10(sterile_flux*livetime), cmap=cm.viridis)
 plt.yscale('log')
 plt.ylabel("True Energy [GeV]", size=14)
 plt.xlabel(r"True $\cos\theta$",size=14)

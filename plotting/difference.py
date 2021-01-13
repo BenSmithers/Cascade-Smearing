@@ -8,6 +8,8 @@ from cascade.utils import bhist
 
 import pickle
 
+livetime = 10*3600*24*365.
+
 def _load_flux(name):
     f = open(name,'rb')
     all_data = pickle.load(f)
@@ -20,8 +22,10 @@ def _load_flux(name):
     return( e_reco, a_reco, flux )
 
 
-e_reco, a_reco, flux_null = _load_flux("../.flux_data_null.dat")
-e_reco, a_reco, flux_sterile = _load_flux("../.flux_data.dat")
+#null_pt = gen_filename(config["datapath"], config["nu_flux"], 0.,0.,0.)
+
+e_reco, a_reco, flux_null = _load_flux(gen_filename(config["datapath"], config["recon_flux"], 0.,0.,0.))
+e_reco, a_reco, flux_sterile = _load_flux(gen_filename(config["datapath"], config["recon_flux"], 0.1339, 0.0, 1.3))
 
 ex = list(flux_null.keys())[0]
 
@@ -30,7 +34,7 @@ sterile_total = np.zeros(shape = np.shape(flux_null[ex]))
 
 just_nubar = True
 
-keep_key = "Tau"
+keep_key = "E"
 for key in flux_null.keys():
     if just_nubar and (keep_key not in key):
         print("Skip {}".format(key))
