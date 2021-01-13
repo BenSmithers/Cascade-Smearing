@@ -18,9 +18,9 @@ def gen_flux(theta13, theta23, msq3):
     else:
         raw_flux_name = raw_flux(theta13, theta23, msq3)
  
-    a,b,c,d = generate_singly_diff_fluxes( config["n_bins"], debug=False, datafile=raw_flux_name)
-    incorporate_recon(a,b,c,d, just_flux=True, theta13=theta13, theta23=theta23, msq3=msq3)
-
+    a,b,c,d,err = generate_singly_diff_fluxes( config["n_bins"], debug=False, datafile=raw_flux_name)
+    incorporate_recon(a,b,c,d,errors=err, just_flux=True, theta13=theta13, theta23=theta23, msq3=msq3)
+    
 
 if __name__=="__main__":
     

@@ -309,6 +309,7 @@ class Data:
         data = np.loadtxt(location, dtype=float, comments='#',delimiter=' ')
         n_energies = 701
         n_angles = 100
+        self.livetime = 10*3600*24*365.
         GeV=1e9
         if not (len(data)==n_energies*n_angles):
             raise ValueError("Datafile length error? {}!={}".format(len(data), n_energies*n_angles))
@@ -349,7 +350,7 @@ class Data:
             # indexed like [energy_bin][angle_bin]
             # you may notice that NC and CC are treated as having separate fluxes, when really it'sthe same flux 
             #       this is for the most part okay since the interactions are rare enough that the fluxes are unchanged 
-            self._fluxes[ key ] = [[ data[energy+angle*n_energies][get_index(key, n_flavor)]*2*np.pi for angle in range(n_angles)] for energy in range(n_energies)]
+            self._fluxes[ key ] = [[ data[energy+angle*n_energies][get_index(key, n_flavor)]*2*np.pi*self.livetime for angle in range(n_angles)] for energy in range(n_energies)]
     
     # define a few access functions to protect the important stuff 
     # the "@property" tag makes it so these are accessed like attributes, not functions! 
@@ -464,6 +465,11 @@ class Data:
             q22 = self._fluxes[key][upper_boundary][ang_upper]
             return(bilinear_interp(p0,p1,p2,q11,q12,q21,q22))
 
+    def get_err(self, energy, key, angle):
+        """
+        This assumes a Poisson distribution defines distributino for the number of observed events in each bin. So, the uncertainty is just the square root of the quantity 
+        """
+        return(sqrt(self.get_flux(energy=energy, key=key, angle=angle)))
 
 class IllegalArguments(ValueError):
     """

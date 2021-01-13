@@ -67,7 +67,7 @@ def _save_flux(e_reco, a_reco, flux):
     f.close()
     print("Saved {}".format(fluxfile))
 
-def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges, just_flux=True,theta13=0.,theta23=0.,msq3=0.):
+def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges,errors, just_flux=True,theta13=0.,theta23=0.,msq3=0.):
     """
     This takes in the results from `generate_singly_diff_fluxes` and incorporates reconstruction uncertainties
 
@@ -111,12 +111,14 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges, just_flux
     # may god have mercy on our souls 
     recoflux = {}
     total_flux = {}
+    flux_error = {}
     for key in nuflux.keys():
         print("Reconstructing {} Flux".format(key))
         # energy x, angle y
         if not just_flux:
             recoflux[key] = np.zeros(shape=(len(r_energy_centers),len(true_e_centers), len(r_angle_centers),len(true_ang_centers)))
         total_flux[key] = np.zeros(shape=(len(r_energy_centers), len(r_angle_centers)))
+        flux_error[key] = np.zeros(shape=(len(r_energy_centers), len(r_angle_centers)))
         for i_e_reco in range(len(r_energy_centers)):
             for i_e_depo in range(len(cascade_centers)):
                 depo_odds = dataobj.get_energy_reco_odds(i_e_depo, i_e_reco) # unitless
@@ -128,13 +130,16 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges, just_flux
                         if ang_odds<0.:
                             continue
                         for i_e_true in range(len(true_e_centers)):
-                            amt = nuflux[key][i_e_depo][i_e_true][i_a_true]*depo_odds*ang_odds 
-                            amt *= true_ang_widths[i_a_true]*true_e_widths[i_e_true]*depo_widths[i_e_depo]
+                            scale = true_ang_widths[i_a_true]*true_e_widths[i_e_true]*depo_widths[i_e_depo]
+
+                            amt = nuflux[key][i_e_depo][i_e_true][i_a_true]*depo_odds*ang_odds*scale
+                            amt_err = errors[key][i_e_depo][i_e_true][i_a_true]*depo_odds*ang_odds*scale
+
                             if amt>=0:
                                 if not just_flux:
                                     recoflux[key][i_e_reco][i_e_true][i_a_reco][i_a_true] += amt 
                                 total_flux[key][i_e_reco][i_a_reco] += amt
-    
+                                flux_error[key][i_e_reco][i_a_reco] += amt 
 
     if not just_flux:
         reco_flux_name = gen_filename( config["datapath"], config["all_fluxes"]+".dat",theta13, theta23, msq3)
@@ -142,9 +147,11 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges, just_flux
 
     flux_file = gen_filename(config["datapath"], config["recon_flux"]+".dat", theta13, theta23, msq3)
     savefile(flux_file, e_reco=r_energy.edges, a_reco=r_angle.edges, flux=total_flux)
+    err_file = gen_filename(config["datapath"],config["flux_error"]+".dat", theta13, theta23, msq3)
+    savefile(err_file, e_reco=r_energy.edges, a_reco=r_angle.edges, error=flux_error)
 
 if __name__=="__main__":
     print("Running...")
-    a,b,c,d = generate_singly_diff_fluxes(n_bins, debug=False, datafile="")
-    incorporate_recon(a,b,c,d)
+    a,b,c,d,err = generate_singly_diff_fluxes(n_bins, debug=False, datafile="")
+    incorporate_recon(a,b,c,d, err)
 

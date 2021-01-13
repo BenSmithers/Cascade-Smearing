@@ -186,8 +186,10 @@ def do_for_key(event_edges,cascade_edges, key,data, angles=None):
 
     if angles is None:
         flux = bhist((cascade_edges, event_edges))
+        err = bhist((cascade_edges, event_edges))
     else:
         flux = bhist((cascade_edges, event_edges, angles))
+        err = bhist((cascade_edges, event_edges, angles))
 
     for angle in ang_list:
         # need special Tau treatment 
@@ -198,10 +200,12 @@ def do_for_key(event_edges,cascade_edges, key,data, angles=None):
             # Therefore we just get the total cross section * flux there... the units end up as [s GeV in sr]^-1 
             for cas_bin in range(len(cascade_energies)): 
                 deposited_energy = cascade_energies[cas_bin] # energy going to the leptonic component! 
-                 
-                amount =data.get_flux(deposited_energy,key, angle=angle)
-                amount *= get_diff_xs(deposited_energy, get_flavor(key), get_neut(key), get_curr(key))
-                
+                xs = get_diff_xs(deposited_energy, get_flavor(key), get_neut(key), get_curr(key))
+
+                amount =data.get_flux(deposited_energy,key, angle=angle)*xs                
+                amount_err = data.get_err(energy=deposited_energy, key=key, angle=angle)*xs
+
+
                 if flav.lower()=='tau':
                     # Etau is cascade_energies[cas_bin]
                     # How much energy is visible in the various tau decays though? 
@@ -214,8 +218,10 @@ def do_for_key(event_edges,cascade_edges, key,data, angles=None):
                 try:
                     if angle is None:
                         flux.register( amount, cascade_energies[cas_bin], deposited_energy) # add it in! 
+                        err.register( amount_err, cascade_energies[cas_bin], deposited_energy)
                     else: 
                         flux.register( amount, cascade_energies[cas_bin], deposited_energy, angle)
+                        err.register( amount_err, cascade_energies[cas_bin], deposited_energy, angle)
                 except ValueError:
                     if flav.lower()!='tau':
                         raise Exception("It wasn't tau. Something's wrong")
@@ -232,19 +238,25 @@ def do_for_key(event_edges,cascade_edges, key,data, angles=None):
                         continue
                     if lepton_energy > max(cascade_energies):
                         continue
+            
+                    xs = get_diff_xs(event_energies[evt_bin], get_flavor(key), get_neut(key), get_curr(key), lepton_energy,0.0)*cascade_widths[cas_bin]
 
-                    amount =data.get_flux(event_energies[evt_bin],key, angle=angle)
-                    amount *= get_diff_xs(event_energies[evt_bin], get_flavor(key), get_neut(key), get_curr(key), lepton_energy,0.0)*cascade_widths[cas_bin]
+                    amount =data.get_flux(event_energies[evt_bin],key, angle=angle)*xs
+                    amount_err = data.get_err(event_energies[evt_bin],key, angle=angle)*xs
                     if angle is None:
                         flux.register(amount, cascade_energies[cas_bin], event_energies[evt_bin])
+                        err.register(amount_err, cascade_energies[cas_bin], event_energies[evt_bin])
+
                     else:
                         flux.register(amount, cascade_energies[cas_bin], event_energies[evt_bin], angle)
+                        err.register(amount_err, cascade_energies[cas_bin], event_energies[evt_bin], angle)
+
     
     # build a new bhist in reconstruction space (Still with event energy too)
     # then scan through deposited-true angle space
     # and use the PDFS to smear the true values into reconstructed values, depositing them into the reconstruction bhist  
 
-    return(flux.fill)
+    return(flux.fill, err.fill)
 
 def generate_singly_diff_fluxes(n_bins,debug=False, datafile=config["nu_flux"]):
     """
@@ -265,21 +277,17 @@ def generate_singly_diff_fluxes(n_bins,debug=False, datafile=config["nu_flux"]):
     event_edges = np.logspace(np.log10(e_min), np.log10(e_max)+extra,n_bins+1)
     cascade_edges = np.logspace(np.log10(e_min), np.log10(e_max),n_bins+1)
     angle_edges = np.linspace(min(all_angles), max(all_angles), n_bins+1) # angle is in cos(zenith), so like -1->0
-
-    sep_angles = True
-    if sep_angles:
-        from_muon = np.zeros((n_bins,n_bins,n_bins))
-        from_not = np.zeros((n_bins,n_bins,n_bins))
-    else:
-        from_muon = np.zeros((n_bins,n_bins))
-        from_not = np.zeros((n_bins,n_bins))
-
+    
     nuflux = {}
+    errs = {}
 
     for key in data.get_keys(): #flavor, current, interaction 
-        nuflux[key] = do_for_key(event_edges,cascade_edges,key,data=data, angles=(angle_edges if sep_angles else None))
+        fluxy, erry = do_for_key(event_edges,cascade_edges,key,data=data, angles=angle_edges)
+        nuflux[key] = fluxy
+        errs[key] = erry
+
 
     # if global variable "angle" isn't none, then we can separate out just a single angle
 
-    return(event_edges,cascade_edges, nuflux, angle_edges)
+    return(event_edges,cascade_edges, nuflux, angle_edges, errs)
 

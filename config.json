@@ -5,6 +5,7 @@
   "nu_flux": "raw_det_flux.dat",
   "tau_data": "tau_branch.dat",
   "recon_flux":"flux_data",
+  "flux_error":"flux_error",
   "all_fluxes":"analysis_level",
   "n_bins": 80,
   "overwrite": true
