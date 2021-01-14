@@ -1,4 +1,9 @@
 *.png
 *.o
 *.dat
+*.log
+*.err
+*.out
+*.lock
+*.sub
 __pycache__/*
