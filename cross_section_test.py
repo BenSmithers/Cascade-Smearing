@@ -4,6 +4,9 @@ This script will calcualte the DIS cross sections for neutrinos and convolve tha
 import sys
 import nuSQUIDSpy as nsq
 import numpy as np # useful for energy ranges
+import time # so we can wait
+import os 
+
 constants = nsq.Const()
 
 nBins = 100
@@ -26,8 +29,29 @@ neut_types = {'neutrino': nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
               'antineutrino': nsq.NeutrinoCrossSections_NeutrinoType.antineutrino
               }
 
-xs_obj = nsq.NeutrinoDISCrossSectionsFromTables()
 
+# This uses some files that are stored on /data/user (or wherever)
+# if we run a lot of jobs, the hdf5 files may be locked when we try accessing these 
+# so we just wait a little bit and try again and again until it works or we run out of tries
+tries_left = 100
+sleep_time = 0.1 # seconds 
+last_err = ""
+cobalt = os.environ.get("_CONDOR_SCRATCH_DIR")
+while tries_left > 0:
+    try:
+        if cobalt==None or cobalt=="" or cobalt==".":
+            xs_obj = nsq.NeutrinoDISCrossSectionsFromTables()
+        else:
+            xs_obj = nsq.NeutrinoDISCrossSectionsFromTables(os.path.join(cobalt, "data/csms_square.h5"))
+        break
+    except RuntimeError as err:
+        last_err = str(err)
+        time.sleep(sleep_time + np.random.rand()*sleep_time)
+
+    tries_left -= 1
+
+if tries_left<=0:
+    raise RuntimeError("Ran out of tries while opening the DIS Cross Sections: {}".format(last_err))
 
 
 def get_diff_xs( energy, flavor, neutrino, current, e_out=None, x=None):

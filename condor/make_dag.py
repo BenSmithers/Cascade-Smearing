@@ -1,8 +1,9 @@
 import numpy as np
 
-theta13s = np.linspace(0, 2, 3)
-theta23s = np.linspace(0, 2, 3)
-msq3s = np.linspace(0,2.4,3)
+n_grid = 3
+theta13s = np.linspace(0, 2, n_grid)
+theta23s = np.linspace(0, 2, n_grid)
+msq3s = np.linspace(0,2.4,n_grid)
 
 filename = "genflux.dag"
 obj = open(filename, "wt")

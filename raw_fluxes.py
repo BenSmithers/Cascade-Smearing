@@ -22,6 +22,7 @@ from cascade.utils import sci # used to generate save names
 from cascade.utils import get_closest # interpolation
 from cascade.utils import config 
 from cascade.utils import backup
+from cascade.cross_section_test import xs_obj as xs
 
 # simulates the cosmic ray showers 
 from MCEq.core import MCEqRun
@@ -150,6 +151,7 @@ def raw_flux(theta13=0.13388166, theta23=0.0, msq3 = 1.3):
     nus_atm.Set_SquareMassDifference(1,7.65e-05)
     nus_atm.Set_SquareMassDifference(2,0.00247)
 
+    nus_atm.SetNeutrinoCrossSections(xs)
 
     #settting some zenith angle stuff 
     nus_atm.Set_rel_error(1.0e-6)
