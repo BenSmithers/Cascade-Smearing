@@ -53,6 +53,9 @@ summed_error = np.array([ sum(error[i_energy]*angle_widths) for i_energy in rang
 
 
 plt.errorbar( x=energy_centers/(1e9), y=summed_flux, yerr=summed_error, capsize=5)
+plt.xlabel("Energy [GeV]",size=14)
+plt.ylabel("Flux", size=14)
 plt.xscale('log')
-#plt.yscale('log')
+plt.yscale('log')
+plt.savefig("flattened.png",dpi=400)
 plt.show()
