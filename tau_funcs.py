@@ -1,3 +1,11 @@
+"""
+Another class is introduced here to handle the weird way that taus decay.
+
+So normally the energy deposited is (hadronic only) for NC events, and (all) for CC events. 
+That's not the case with taus since they decay very quickly 
+So instead, for taus, it's (hadronic only) or NC events and (hadronic with some leptonic) for CC events. This figures out how much "some" is 
+"""
+
 # system tools
 import os
 import pickle 

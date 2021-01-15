@@ -5,21 +5,18 @@ from cascade.utils import bhist, get_loc, get_closest
 import sys 
 """
 This script is here to approximate the uncertainties in going from "energy deposited" to "energy reconstructed"
+Essentially this code here incorporates the detector reconstruction step
 """
 
+# square roots are expensive. Let's only do this once 
 rtwo = 1./sqrt(2*pi)
 
-use_scan = False
-if use_scan:
-    from imagescan import get_data
-    _data_depo, _data_reco, _data_prob = get_data()
-else:
-    datafile = "reconstruction.txt"
-    data = np.loadtxt(os.path.join(os.path.dirname(__file__), datafile), dtype=float, delimiter=",")
-    data = data.transpose()
-    #data[1] = data[1]*data[0] 
-    # data[0] is energy
-    # data[1] is sigma
+datafile = "reconstruction.txt"
+data = np.loadtxt(os.path.join(os.path.dirname(__file__), datafile), dtype=float, delimiter=",")
+data = data.transpose()
+#data[1] = data[1]*data[0] 
+# data[0] is energy
+# data[1] is sigma
 
 
 
@@ -70,6 +67,12 @@ if False:
     sys.exit()
 
 class DataReco:
+    """
+    This is the object that actually facilitates the energy reconstruction smearing 
+    
+    You pass it the edges of bins you have for energy/angle deposited/reconstructed, and then it builds up the normalized probabilities
+    We keep this as a single object since building it is expensive, but accessing the probabilities is cheap! 
+    """
     def __init__(self, reco_energy_edges, reco_czenith_edges, depo_energy_edges, true_czenith_edges):
         """
         Expects the energies in eV, but works in GeV
@@ -103,13 +106,17 @@ class DataReco:
                 self._angle_odds_array[true][deposited] *= 1./sum(self._angle_odds_array[true][deposited]*self.reco_czenith_widths)
                 assert(abs(1-sum(self._angle_odds_array[true][deposited]*self.reco_czenith_widths)) <= max_diff)
 
-   
+    # these two are functions used to access those probabilities. 
+    # they both take bins numbers
+    # These use bin numbers _specifically_ to ensure that the user recognizes they need to use the exact same bins as they used to construct these 
+    # these bin numbers should be for the bin centers/widths, NOT the edges
     def get_energy_reco_odds(self, i_depo, i_reco ):
         return(self._energy_odds_array[i_depo][i_reco]*self.reco_energy_widths[i_reco])
 
     def get_czenith_reco_odds(self, i_true, i_reco, i_e_true):
         return(self._angle_odds_array[i_true][i_e_true][i_reco]*self.reco_czenith_widths[i_reco])
    
+    # here we have afew access functions to see what we used to build this (and what their associated bin centers/widths are)
     @property
     def reco_energy_centers(self):
         return(self._ereco.centers)
@@ -136,12 +143,16 @@ class DataReco:
     def true_czenith_widths(self):
         return(self._ztrue.widths)
 
+# do some math, keep this in the global scope 
 deg = np.pi/180.
 mu = deg*6.1983e-1
 fwhm = deg*(13.223 + 11.983)
 sigma =  fwhm/rtwolog
 
 def check_angle(value, cosmode=False):
+    """
+    A little functino to make sure that whatever is passed is both a number and in an acceptable range 
+    """
     if not isinstance(value, (int, float)):
         raise TypeError("Expected {}, got {}".format(float, type(value)))
     if cosmode:
@@ -205,23 +216,20 @@ def get_odds_energy(deposited, reconstructed):
         raise Exception()
     if not isinstance(reconstructed, (float,int)):
         raise Exception()
-    if use_scan:
-        x_id = get_loc(deposited, _data_depo, True)
-        y_id = get_loc(reconstructed, _data_reco, True)
 
-        return(_data_prob[x_id][y_id])
-    else:
-        sigma = get_closest( deposited, data[0], data[1])*deposited*0.01
-        
-        s2 = np.log(1+ (sigma/deposited)**2)
-        mu = np.log((deposited**2)/np.sqrt(deposited**2  + sigma**2))
-        # now, we assume that the uncertainty follows a log normal distribution, and calculate the PDF here
 
-        #prob = rtwo*(1./sigma)*exp(-0.5*((reconstructed - deposited)/sigma)**2)
-        prob = rtwo*(1./np.sqrt(s2))*exp(-0.5*((np.log(reconstructed) - mu)**2)/s2)/reconstructed
+    sigma = get_closest( deposited, data[0], data[1])*deposited*0.01
     
+    s2 = np.log(1+ (sigma/deposited)**2)
+    mu = np.log((deposited**2)/np.sqrt(deposited**2  + sigma**2))
+    # now, we assume that the uncertainty follows a log normal distribution, and calculate the PDF here
+
+    #prob = rtwo*(1./sigma)*exp(-0.5*((reconstructed - deposited)/sigma)**2)
+    prob = rtwo*(1./np.sqrt(s2))*exp(-0.5*((np.log(reconstructed) - mu)**2)/s2)/reconstructed
+
     return(prob)
 
+# this was here just for debugging purposes. Don't usually need it
 doplot = False
 if doplot:
     import matplotlib

@@ -1,6 +1,9 @@
 """
-This script will calcualte the DIS cross sections for neutrinos and convolve that with an expected flux in the ice 
+Ben Smithers 
+
+Simple script to facilitate nuSQuIDS DIS cross section sampling
 """
+
 import sys
 import nuSQUIDSpy as nsq
 import numpy as np # useful for energy ranges

@@ -1,6 +1,6 @@
 #!/usr/bin/python3.6
 '''
-This script plots the fluxes output by the convolve cpp script. It also does some analysis and saves some arrays to disk 
+This script plots the fluxes output by the raw_fluxes script. It also does some analysis and saves some arrays to disk 
 
 But how does it work?
  1. Raw flux data from the included mceq+nuSQuIDS flux is loaded in by the Data Object. This object has functionality for sampling from the flux at arbitrary parent neutrino energy by interpolating between nsq points.
@@ -162,7 +162,7 @@ def do_for_key(event_edges,cascade_edges, key,data, angles=None):
     """
     This function takes the desired bin edges for the event energies and deposited energies along with the dictionary key corresponding to a specific combination of falvor, current, and neutrino type.
 
-    It builds up the 2D flux array (singly differential), which it then returns 
+    It builds up the 2D flux array (singly differential), which it then returns along with a similar array but for flux uncertainties 
     """
     evt = bhist([event_edges])
     cas = bhist([cascade_edges])

@@ -8,9 +8,9 @@ import json # config file
 import pickle 
 
 """
-This defines a few utility functions for my plotting script.
+Ben Smithers
 
-I moved this over here so the main plotter wasn't too busy
+This defines several utility functions and objects that are frequently used throughout this code base 
 """
 
 flavors = ['E', 'Mu', 'Tau']
@@ -18,6 +18,7 @@ neuts = ['nu', 'nuBar']
 currents = ['NC', 'CC']
 
 # load in the configuration file
+# this defines a lot of... configuration... parameters 
 f = open(os.path.join(os.path.dirname(__file__), "config.json"), 'r')
 config = json.load(f)
 f.close()
@@ -56,6 +57,7 @@ def savefile(name, **kwargs):
     returns nothing
 
     Respects the configured "overwrite" settings 
+    I really like this script tbh
     """
     if not config["overwrite"]:
         backup(name)
@@ -89,6 +91,11 @@ def sep_by_flavor(nuflux):
     return(from_muons, from_not)
 
 def parse_filename(path):
+    """
+    Takes a filename made by 'gen_filename' and returns the oscillation parameters used to make the filename 
+
+    returns: three floats in a tuple 
+    """
     dirname, filename = os.path.split(path)
     
     name = filename.split(".")[0]
@@ -146,7 +153,9 @@ def get_index( key, n_flavor=3 ):
     return( 2 + int( flav_index + (len(flavors)+sterile_mod)*variety_index) )
 
 def bad_get_loc(value, edges):
-    # fuck the error checking 
+    """
+    Deprecated, don't use. Just use 'get_loc' 
+    """
     if value<edges[0] or value>edges[-1]:
         return None
     else:
@@ -211,6 +220,8 @@ def get_closest(x, domain, mapped):
         mapped - list-like of floats. Entries in domain, evaluated by the function
 
     The user provides a value "x," and then we interpolate the mapped value on either side of 'x' to approximate the mapped value of 'x' 
+    
+    This is really just a linear interpolator 
     """
     if not isinstance(domain, (tuple,list,np.ndarray)):
         raise TypeError("'domain' has unrecognized type {}, try {}".format(type(domain), list))

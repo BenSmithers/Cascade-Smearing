@@ -3,7 +3,9 @@ Ben Smithers
 
 This is a reimplementation of the c++ version of this same thing
 Uses MCEQ to generate neutrino fluxes at-atmosphere, 
-then nuSQuIDS to propagate the fluxes to the detector 
+then nuSQuIDS to propagate the fluxes to the detector. 
+
+Super cool though, it only uses MCEQ to make the fluxes at-atmosphere if this hasn't already been done. So that saves a lot of time when you make a lot of fluxes 
 """
 
 # nusquids...
@@ -33,6 +35,10 @@ import pickle # saving the 4D MCEq Datafile
 un = nsq.Const()
 
 def get_key(flavor, neutrino):
+    """
+    Little function to get the key to access the mceq dictionary
+    You just give it the flavor/neutrino index (starts at 0, duh)
+    """
     # flavor 0, 1, 2, 3
     # neutrino 0, 1
 
@@ -44,7 +50,7 @@ def get_key(flavor, neutrino):
     elif flavor==2:
         key+="nutau_"
     elif flavor==3:
-        return("")
+        return("") # sterile 
     else:
         raise ValueError("Invalid flavor {}".format(flavor))
 
@@ -60,9 +66,14 @@ def get_key(flavor, neutrino):
 def get_initial_state(energies, zeniths, n_nu):
     """
     This either loads the initial state, or generates it.
+    Loading it is waaaay quicker.
+
+    Possible issue! If you run a bunch of jobs and don't already have this flux generated, bad stuff can happen. 
+    I'm imagining issues where a bunch of jobs waste time making this, and then all try to write to the same file
+    Very bad. Big crash. Very Fail 
     """
     path = os.path.join(config["datapath"], config["mceq_flux"])
-    if os.path.exists(path):
+    if os.path.exists(path): 
         print("Loading MCEq Flux")
         f = open(path, 'rb')
         inistate = pickle.load(f)
@@ -75,7 +86,7 @@ def get_initial_state(energies, zeniths, n_nu):
                 primary_model = (crf.HillasGaisser2012, 'H3a'),
                 theta_deg = 0.
                 )
-        mag = 0.
+        mag = 0. # power energy is raised to and then used to scale the flux
         for angle_bin in range(angular_bins):
             # now we do the thingy for the 
             angle_deg = 180. - (acos(zeniths[angle_bin])*180./pi)
@@ -83,6 +94,8 @@ def get_initial_state(energies, zeniths, n_nu):
                 angle_deg = 180.
 
             print("Evaluating {} deg Flux".format(angle_deg))
+            # for what it's worth, if you try just making a new MCEqRun for each angle, you get a memory leak. 
+            # so you need to manually set the angle 
             mceq.set_theta_deg(angle_deg)
             mceq.solve()
 
@@ -115,7 +128,7 @@ def get_initial_state(energies, zeniths, n_nu):
 
 def raw_flux(theta13=0.13388166, theta23=0.0, msq3 = 1.3):
     """
-    This is the main function. It saves a data file for the flux
+    This is the main function. It saves a data file for the flux with a unique name for the given physics 
     """
     if not isinstance(theta13, (int, float)):
         raise TypeError("Expected {}, not {}, for theta13".format(theta13))
@@ -159,14 +172,13 @@ def raw_flux(theta13=0.13388166, theta23=0.0, msq3 = 1.3):
     #nus_atm.Set_GSL_step(gsl_odeiv2_step_rk4)
     nus_atm.Set_GSL_step(nsq.GSL_STEP_FUNCTIONS.GSL_STEP_RK4)
 
-    # LOAD INISTATE
+    # we load in the initial state. Generating or Loading from a file 
     inistate = get_initial_state(energies, zeniths, n_nu)
-
-    # set the initial flavor
     nus_atm.Set_initial_state(inistate, nsq.Basis.flavor)
     print("Done setting initial state")
     
-    nus_atm.Set_ProgressBar(True)
+    # we turn off the progress bar for jobs run on the cobalts 
+    nus_atm.Set_ProgressBar(False)
     nus_atm.Set_IncludeOscillations(True)
     
     print("Evolving State")
@@ -179,7 +191,7 @@ def raw_flux(theta13=0.13388166, theta23=0.0, msq3 = 1.3):
     
     filename = gen_filename(config["datapath"], config["nu_flux"], theta13, theta23, msq3)
     print("Saving File to {}".format(filename))
-
+    
     if not config["overwrite"]:
         backup(filename)
 

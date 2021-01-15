@@ -6,6 +6,10 @@ import matplotlib.image as mpimg
 
 import numpy as np
 
+"""
+This isn't really used anymore, but previously was used to scan a picture of a very specific kind of plot and extract the data off of it 
+"""
+
 data = "/home/benito/software/data/depo_reco.png"
 
 # the image is effectively grayscale, so we only need one channel

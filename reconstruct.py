@@ -2,7 +2,7 @@
 '''
 This takes the energy deposited/true array and converts it into a reconstructed/true one
 
-This requires a lot of summing 
+This requires a lot of summing. This is honestly the most time-consuming part of this job...  
 '''
 
 from optparse import OptionParser

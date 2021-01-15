@@ -1,6 +1,10 @@
+"""
+Now deprecated 
+Formerly used with the convolve.cpp script to make MCEQ fluxes at each angle 
+"""
+
 from MCEq.core import config, MCEqRun
 import crflux.models as crf
-
 
 import time
 import numpy as np

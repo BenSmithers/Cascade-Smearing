@@ -1,3 +1,9 @@
+"""
+Ben Smithers
+
+So this is kinda the master file. 
+The gen_flux function handles generating the actual final state recon-recon flux files. 
+"""
 
 from cascade.utils import config
 from cascade.utils import gen_filename
@@ -11,7 +17,12 @@ import sys
 
 n_bins = config["n_bins"]
 
-def gen_flux(theta13, theta23, msq3):    
+def gen_flux(theta13, theta23, msq3):
+    """
+    First we make a neutrino flux file at the detector (true flux binning)
+    Then we get the fluxes, binned in energy deposited
+    Then we incorporate the detector response 
+    """
     raw_flux_name = gen_filename(config["datapath"], config["nu_flux"], theta13, theta23, msq3)
     if os.path.exists(raw_flux_name) and config["use_pregen_mceq_flux"]:
         pass
@@ -23,6 +34,7 @@ def gen_flux(theta13, theta23, msq3):
     
 
 if __name__=="__main__":
+    #This just lets us run this from CLI or as a module 
     
     if len(sys.argv)!=4:
         print("Received incorrect number of args: {}".format(len(sys.argv)-1))
