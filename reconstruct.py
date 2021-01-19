@@ -50,7 +50,7 @@ from cascade.nus_utils import get_flavor, get_neut, get_curr
 from cascade.utils import bhist, get_exp_std, get_width, get_nearest_entry_to
 from cascade.utils import Data, get_index, get_loc, sci
 from cascade.utils import config, savefile 
-from cascade.utils import gen_filename
+from cascade.utils import gen_filename, SterileParams
 
 from cascade.deposit import generate_singly_diff_fluxes
 
@@ -67,13 +67,16 @@ def _save_flux(e_reco, a_reco, flux):
     f.close()
     print("Saved {}".format(fluxfile))
 
-def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges,errors, just_flux=True,theta13=0.,theta23=0.,msq3=0.):
+def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges,errors, params, just_flux=True):
     """
     This takes in the results from `generate_singly_diff_fluxes` and incorporates reconstruction uncertainties
 
     Should take in a list or array of energies (true, deposited), in units of eV
     And also take in a list of true cos(zenith) edges 
     """
+    if not isinstance(params, SterileParams):
+        raise TypeError("Expected {} for params, not {}".format(SterileParams, type(params)))
+
     e_min = min(cascade_edges)
     e_max = max(cascade_edges)
 
@@ -142,16 +145,11 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges,errors, ju
                                 flux_error[key][i_e_reco][i_a_reco] += amt 
 
     if not just_flux:
-        reco_flux_name = gen_filename( config["datapath"], config["all_fluxes"]+".dat",theta13, theta23, msq3)
+        reco_flux_name = gen_filename( config["datapath"], config["all_fluxes"]+".dat",params)
         savefile(reco_flux_name, e_reco=r_energy.edges, e_true=event_edges, a_reco=r_angle.edges,a_true=angle_edges,flux=recoflux)
 
-    flux_file = gen_filename(config["datapath"], config["recon_flux"]+".dat", theta13, theta23, msq3)
+    flux_file = gen_filename(config["datapath"], config["recon_flux"]+".dat", params)
     savefile(flux_file, e_reco=r_energy.edges, a_reco=r_angle.edges, flux=total_flux)
-    err_file = gen_filename(config["datapath"],config["flux_error"]+".dat", theta13, theta23, msq3)
+    err_file = gen_filename(config["datapath"],config["flux_error"]+".dat", params)
     savefile(err_file, e_reco=r_energy.edges, a_reco=r_angle.edges, error=flux_error)
-
-if __name__=="__main__":
-    print("Running...")
-    a,b,c,d,err = generate_singly_diff_fluxes(n_bins, debug=False, datafile="")
-    incorporate_recon(a,b,c,d, err)
 

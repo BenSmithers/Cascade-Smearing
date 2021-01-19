@@ -19,7 +19,7 @@ import numpy as np # the zeros function
 from math import pi, acos, log10 # simple math things 
 import os # filename and datapath stuff 
 
-from cascade.utils import gen_filename
+from cascade.utils import gen_filename, SterileParams
 from cascade.utils import sci # used to generate save names
 from cascade.utils import get_closest # interpolation
 from cascade.utils import config 
@@ -126,17 +126,12 @@ def get_initial_state(energies, zeniths, n_nu):
 
     return(inistate)
 
-def raw_flux(theta13=0.13388166, theta23=0.0, msq3 = 1.3):
+def raw_flux(params):
     """
     This is the main function. It saves a data file for the flux with a unique name for the given physics 
     """
-    if not isinstance(theta13, (int, float)):
-        raise TypeError("Expected {}, not {}, for theta13".format(theta13))
-    if not isinstance(theta23, (int, float)):
-        raise TypeError("Expected {}, not {}, for theta23".format(theta13))
-    if not isinstance(msq3, (int, float)):
-        raise TypeError("Expected {}, not {}, for msq3".format(theta13))
-
+    if not isinstance(params,SterileParams):
+        raise TypeError("Expected {} for params, not {}".format(SterileParams, type(params)))
 
     n_nu = 4 
     Emin = 1.*un.GeV
@@ -156,9 +151,10 @@ def raw_flux(theta13=0.13388166, theta23=0.0, msq3 = 1.3):
     nus_atm.Set_MixingAngle(1,2,0.785398)
 
     #sterile parameters 
-    nus_atm.Set_MixingAngle(1,3,theta13)
-    nus_atm.Set_MixingAngle(2,3,theta23)
-    nus_atm.Set_SquareMassDifference(3,msq3)
+    nus_atm.Set_MixingAngle(0,3,params.theta03)
+    nus_atm.Set_MixingAngle(1,3,params.theta13)
+    nus_atm.Set_MixingAngle(2,3,params.theta23)
+    nus_atm.Set_SquareMassDifference(3,params.msq2)
 
 
     nus_atm.Set_SquareMassDifference(1,7.65e-05)
@@ -189,7 +185,7 @@ def raw_flux(theta13=0.13388166, theta23=0.0, msq3 = 1.3):
     int_min_e = log10(Emin)
     int_max_e = log10(Emax)
     
-    filename = gen_filename(config["datapath"], config["nu_flux"], theta13, theta23, msq3)
+    filename = gen_filename(config["datapath"], config["nu_flux"], params)
     print("Saving File to {}".format(filename))
     
     if not config["overwrite"]:

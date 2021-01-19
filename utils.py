@@ -90,21 +90,6 @@ def sep_by_flavor(nuflux):
             from_not+=nuflux[key]
     return(from_muons, from_not)
 
-def parse_filename(path):
-    """
-    Takes a filename made by 'gen_filename' and returns the oscillation parameters used to make the filename 
-
-    returns: three floats in a tuple 
-    """
-    dirname, filename = os.path.split(path)
-    
-    name = filename.split(".")[0]
-    entries = name.split("_")
-
-    theta13 = float(entries[1])
-    theta23 = float(entries[2])
-    msq3 = float(entries[3])
-    return(theta13, theta23, msq3)
 
 def sci(number, precision=4):
     """
@@ -121,18 +106,68 @@ def sci(number, precision=4):
 
     return("{0:.{1}f}".format(number/(10**power), precision)+"e{}".format( power))
 
-def gen_filename(dirname, filename, theta13, theta23, msq3):
+class SterileParams:
+    """
+    This object is used to pass around the new sterile physics parameters around
+    """
+    def __init__(self, theta03=0.0, theta13=0.0, theta23=0.0, msq2=0.0):
+        if not isinstance(theta03, (int, float)):
+            raise TypeError("theta03 should be {}, not {}".format(float, type(theta03)))
+        if not isinstance(theta13, (int, float)):
+            raise TypeError("theta13 should be {}, not {}".format(float, type(theta13)))
+        if not isinstance(theta23, (int, float)):
+            raise TypeError("theta23 should be {}, not {}".format(float, type(theta23)))
+        if not isinstance(msq2, (int, float)):
+            raise TypeError("msq2 should be {}, not {}".format(float, type(msq2)))
+
+        self.theta03 = theta03
+        self.theta13 = theta13
+        self.theta23 = theta23
+
+        self.msq2 = msq2
+
+    def __repr__(self):
+        return("Sterile-nu Params Object")
+
+    def __str__(self):
+        return("_".join((sci(self.theta03), sci(self.theta13), sci(self.theta23), sci(self.msq2))))
+
+def parse_filename(path):
+    """
+    Takes a filename made by 'gen_filename' and returns the oscillation parameters used to make the filename 
+
+    returns: three floats in a tuple 
+    """
+    dirname, filename = os.path.split(path)
+    
+    name = filename.split(".")[0]
+    entries = name.split("_")
+
+    theta03 = float(entries[1])
+    theta13 = float(entries[2])
+    theta23 = float(entries[3])
+    msq2 = float(entries[4])
+
+    params = SterileParams( theta03=theta03, theta13=theta13, theta23=theta23, msq2=msq2)
+
+    return(params)
+
+
+
+def gen_filename(dirname, filename, params):
     """
     Takes a directory, a generic filename (like "datafile.dat"), and some physics parameters
 
     returns a full path that is unique to that set of physics parameters
     """
+    if not isinstance(params, SterileParams):
+        raise TypeError("Expected {}, got {}".format(SterileParams, type(params)))
 
     names = filename.split(".")
     assert(len(names)==2) # name, ext
     prefix = names[0]
     suffix = names[1]
-    filename_partial = "_".join((prefix,sci(theta13), sci(theta23),sci(msq3)))
+    filename_partial = prefix+"_"+str(params)
     filename = os.path.join( dirname, ".".join((filename_partial,suffix)))
     return(filename)
 
