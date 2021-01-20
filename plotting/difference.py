@@ -4,7 +4,8 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-from cascade.utils import bhist
+from cascade.utils import bhist, SterileParams, gen_filename
+from cascade.utils import config
 
 import pickle
 
@@ -24,15 +25,19 @@ def _load_flux(name):
 
 #null_pt = gen_filename(config["datapath"], config["nu_flux"], 0.,0.,0.)
 
-e_reco, a_reco, flux_null = _load_flux(gen_filename(config["datapath"], config["recon_flux"], 0.,0.,0.))
-e_reco, a_reco, flux_sterile = _load_flux(gen_filename(config["datapath"], config["recon_flux"], 0.1339, 0.0, 1.3))
+null = SterileParams(0.,0.,0.,0.)
+mud = SterileParams(0., 0.13, 0.0, 1.3)
+eld = SterileParams(0.13, 0., 0.0, 1.3)
+
+e_reco, a_reco, flux_null = _load_flux(gen_filename(config["datapath"], config["recon_flux"]+".dat", null))
+e_reco, a_reco, flux_sterile = _load_flux(gen_filename(config["datapath"], config["recon_flux"]+".dat", eld))
 
 ex = list(flux_null.keys())[0]
 
 null_total = np.zeros(shape = np.shape(flux_null[ex]))
 sterile_total = np.zeros(shape = np.shape(flux_null[ex]))
 
-just_nubar = True
+just_nubar = False
 
 keep_key = "E"
 for key in flux_null.keys():
@@ -48,7 +53,7 @@ ratio = sterile_total / null_total
 energies = np.array(bhist([e_reco]).centers)
 czeniths = np.array(bhist([a_reco]).centers)
 
-cf = plt.pcolormesh(czeniths, energies/(1e9), ratio, cmap=cm.coolwarm, vmin=0.95, vmax=1.05)
+cf = plt.pcolormesh(czeniths, energies/(1e9), ratio, cmap=cm.coolwarm, vmin=0.99, vmax=1.01)
 plt.yscale('log')
 plt.ylabel("Reco Energy [GeV]", size=14)
 plt.xlabel(r"Reco $\cos\theta$",size=14)
