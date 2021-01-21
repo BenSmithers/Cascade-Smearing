@@ -2,20 +2,28 @@
 """
 Ben Smithers
 """
-
+# Gui stuff 
 from PyQt5.QtWidgets import QMainWindow, QWidget, QApplication
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-import sys
-from math import pi
-
 # embedding matplotlib stuff
-
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
+
+import sys # exit 
+from math import pi # everyone needs pi
 import numpy as np
+import pickle # used to load in the fluxes 
+
+from cascade.utils import config # base configuration file, we need this to get the location of hte data
+
+# these functions are used for the interpolating 
+from cascade.utils import get_loc, bilinear_interp
+from cascade.utils import SterileParams, gen_filename
+from cascade.utils import bhist 
 
 class base_gui(object):
     """
@@ -107,10 +115,30 @@ class main_window(QMainWindow):
         self.ui.tau_slider.valueChanged.connect(self.update_plot)
         self.ui.electron_slider.valueChanged.connect(self.update_plot)
 
-        self.tau_angle = 0
-        self.electron_angle = 0
+        self.tau_angle = 0.0
+        self.electron_angle = 0.0
+
+        # copied from the make_dag python script
+        # this just ensures that the names are all right 
+        n_grid = 20
+        self.theta03s = np.linspace(0, pi, n_grid) #el
+        self.thetamu = 0.160875
+        self.theta23s = np.linspace(0, pi, n_grid) #tau
+        self.msq = 4.47
+
+        # load the null flux! 
+        sp = SterileParams(0., 0., 0., 0.)
+        f = open(gen_filename(config["datapath"], config["recon_flux"]+".dat", sp), 'rb')
+        all_data  = pickle.load(f)
+        f.close()
+        self.e_reco = np.array(bhist([all_data["e_reco"]]).centers)
+        self.a_reco = np.array(bhist([all_data["a_reco"]]).centers)
+        self.flux_null = all_data["flux"]
+
+        self.width = 0.10
 
         self.update_angles()
+
         
     def update_plot(self):
         """
@@ -121,14 +149,54 @@ class main_window(QMainWindow):
         self.ui.figure.clear()
         ax = self.ui.figure.add_subplot(111)
         
-        xs = np.linspace(0,3,50)
-        ys = xs*self.tau_angle + self.electron_angle
+        flux = self.get_interp_flux()
+        
+        ax.pcolormesh(self.a_reco, self.e_reco/(1e9), flux/self.flux_null, cmap=cm.coolwarm, vmin=1.0-self.width, vmax=1.+self.width)
+        ax.set_yscale('log')
+        ax.set_ylabel("Reco Energy [GeV]", size=14)
+        ax.set_xlabel(r"Reco $\cos\theta$",size=14)
+        cbar = ax.colorbar()
+        cbar.set_label("Sterile Flux / Null Flux")
 
-        ax.set_xlim([0,3])
-        ax.set_ylim([0,4])
 
-        ax.plot(xs,ys)
         self.ui.canvas.draw()
+
+    def _load_flux_file(self, filename):
+        """
+        simplified little thing. Just loads in the fluxes we want 
+        """
+        f = open(filename, 'rb')
+        all_data = pickle.load(f)
+        f.close()
+        return(np.array(all_data["flux"]))
+
+    def get_interp_flux(self):
+        """
+        This creates the interpolated flux by accessing the currently set angles, finding the four neighboring fluxes, and then performing a bilinear interpolation 
+        """
+    
+        # this gets the indices of the two mixing angle values neighboring the intermediate one we hav enow
+        i_x1, i_y1 = get_loc(self.electron_angle, self.theta03s)
+        i_x2, i_y2 = get_loc(self.tau_angle, self.theta23s)
+
+        # now let's build the parameter objects using those neighboring points we have 
+        param_11 = SterileParams(self.theta03s[i_x1], self.thetamu, self.theta23s[i_y1],self.msq)
+        param_12 = SterileParams(self.theta03s[i_x1], self.thetamu, self.theta23s[i_y2],self.msq)
+        param_21 = SterileParams(self.theta03s[i_x2], self.thetamu, self.theta23s[i_y1],self.msq)
+        param_22 = SterileParams(self.theta03s[i_x2], self.thetamu, self.theta23s[i_y2],self.msq)
+
+        # using those indices, we generate the names of the flux files and load
+        flux_11 = self._load_flux_file(gen_filename(config["datapath"], config["recon_flux"]+".dat", param_11))
+        flux_12 = self._load_flux_file(gen_filename(config["datapath"], config["recon_flux"]+".dat", param_12))
+        flux_21 = self._load_flux_file(gen_filename(config["datapath"], config["recon_flux"]+".dat", param_21))
+        flux_22 = self._load_flux_file(gen_filename(config["datapath"], config["recon_flux"]+".dat", param_22))
+
+        # these are useful intermediates used for my bilinear interpolation function 
+        p0 = (self.electron_angle, self.tau_angle)
+        p1 = (self.theta03s[i_x1], self.theta23s[i_y1])
+        p2 = (self.theta03s[i_x2], self.theta23s[i_y2])
+
+        return bilinear_interp(p0, p1, p2, flux_11, flux_12, flux_21, flux_22)
 
     def update_angles(self):
         """
