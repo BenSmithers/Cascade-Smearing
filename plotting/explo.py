@@ -93,7 +93,7 @@ class base_gui(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "FluxThePolice"))
         self.electron_lbl.setText(_translate("MainWindow", "Theta e-s:  0.00"))
         self.tau_lbl.setText(_translate("MainWindow", "Theta tau-s: 0.00"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
@@ -133,11 +133,11 @@ class main_window(QMainWindow):
         f.close()
         self.e_reco = np.array(bhist([all_data["e_reco"]]).centers)
         self.a_reco = np.array(bhist([all_data["a_reco"]]).centers)
-        self.flux_null = all_data["flux"]
+        self.flux_null = sum(all_data["flux"].values())
 
         self.width = 0.10
 
-        self.update_angles()
+        self.update_plot()
 
         
     def update_plot(self):
@@ -151,11 +151,11 @@ class main_window(QMainWindow):
         
         flux = self.get_interp_flux()
         
-        ax.pcolormesh(self.a_reco, self.e_reco/(1e9), flux/self.flux_null, cmap=cm.coolwarm, vmin=1.0-self.width, vmax=1.+self.width)
+        pmesh = ax.pcolormesh(self.a_reco, self.e_reco/(1e9), flux/self.flux_null, cmap=cm.coolwarm, vmin=1.0-self.width, vmax=1.+self.width)
         ax.set_yscale('log')
         ax.set_ylabel("Reco Energy [GeV]", size=14)
         ax.set_xlabel(r"Reco $\cos\theta$",size=14)
-        cbar = ax.colorbar()
+        cbar = self.ui.figure.colorbar(pmesh, ax=ax)
         cbar.set_label("Sterile Flux / Null Flux")
 
 
@@ -168,7 +168,7 @@ class main_window(QMainWindow):
         f = open(filename, 'rb')
         all_data = pickle.load(f)
         f.close()
-        return(np.array(all_data["flux"]))
+        return(np.array(sum(all_data["flux"].values())))
 
     def get_interp_flux(self):
         """
@@ -176,8 +176,8 @@ class main_window(QMainWindow):
         """
     
         # this gets the indices of the two mixing angle values neighboring the intermediate one we hav enow
-        i_x1, i_y1 = get_loc(self.electron_angle, self.theta03s)
-        i_x2, i_y2 = get_loc(self.tau_angle, self.theta23s)
+        i_x1, i_x2 = get_loc(self.electron_angle, self.theta03s)
+        i_y1, i_y2 = get_loc(self.tau_angle, self.theta23s)
 
         # now let's build the parameter objects using those neighboring points we have 
         param_11 = SterileParams(self.theta03s[i_x1], self.thetamu, self.theta23s[i_y1],self.msq)
