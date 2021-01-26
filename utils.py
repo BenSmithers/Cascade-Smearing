@@ -6,6 +6,7 @@ from functools import reduce
 import sys
 import json # config file 
 import pickle 
+from glob import glob # grabs all the files! 
 
 """
 Ben Smithers
@@ -132,27 +133,30 @@ class SterileParams:
     def __str__(self):
         return("_".join((sci(self.theta03), sci(self.theta13), sci(self.theta23), sci(self.msq2))))
 
-def parse_filename(path):
+def parse_filename(path, as_params=True):
     """
     Takes a filename made by 'gen_filename' and returns the oscillation parameters used to make the filename 
+    If as_params is true, the parameters are returned as a SterileParameters object, 
+    otherwise they are returned in a tuple 
 
     returns: three floats in a tuple 
     """
     dirname, filename = os.path.split(path)
     
-    name = filename.split(".")[0]
+    name = ".".join(filename.split(".")[:-1])
     entries = name.split("_")
-
-    theta03 = float(entries[1])
-    theta13 = float(entries[2])
-    theta23 = float(entries[3])
-    msq2 = float(entries[4])
+    
+    theta03 = float(entries[2])
+    theta13 = float(entries[3])
+    theta23 = float(entries[4])
+    msq2 = float(entries[5])
 
     params = SterileParams( theta03=theta03, theta13=theta13, theta23=theta23, msq2=msq2)
-
-    return(params)
-
-
+    
+    if as_params:
+        return(params)
+    else:
+        return(theta03, theta13, theta23, msq2)
 
 def gen_filename(dirname, filename, params):
     """
@@ -205,16 +209,18 @@ def bad_get_loc(value, edges):
 def get_loc(x, domain,closest=False):
     """
     Returns the indices of the entries in domain that border 'x' 
-
     Raises exception if x is outside the range of domain 
 
-    Assumes 'domain' is sorted!! 
+    Assumes 'domain' is sorted!! And this _only_ works if the domain is length 2 or above 
     """
     if not isinstance(domain, (tuple,list,np.ndarray)):
         raise TypeError("'domain' has unrecognized type {}, try {}".format(type(domain), list))
     if not isinstance(x, (float,int)):
         raise TypeError("'x' should be number-like, not {}".format(type(x)))
     
+    if len(domain)<=1:
+        raise ValueError("get_loc function only works on domains of length>1. This is length {}".format(len(domain)))
+
     if x<domain[0] or x>domain[-1]:
         raise ValueError("x={} and is outside the domain: ({}, {})".format(sci(x), sci(domain[0]), sci(domain[-1])))
 
@@ -228,6 +234,7 @@ def get_loc(x, domain,closest=False):
 
     while not (domain[lower_bin]<=x and domain[upper_bin]>=x):
         if abs(max_abs-min_abs)<=1:
+            print("{} in {}".format(x, domain))
             raise Exception("Uh Oh")
 
         if x<domain[lower_bin]:
@@ -244,6 +251,62 @@ def get_loc(x, domain,closest=False):
         return( lower_bin if abs(domain[lower_bin]-x)<abs(domain[upper_bin]-x) else upper_bin )
     else:
         return(lower_bin, upper_bin)
+
+
+def parse_folder(path):
+    """
+    Takes a folder, and creates lists of all the parameters used there 
+    """
+    if not os.path.exists(path):
+        raise ValueError("Path does not exist: {}".format(path))
+
+    # we want to scan over all these files and build ordered-lists of the paramters 
+    all_files = glob( os.path.join( path, config["recon_flux"] + "*.dat") )
+    def insert( value, list_like ):
+        """
+        This is a "smart insert" function I wrote
+
+        It adds in the value to the list so long as it's not already there, and it keeps the list ordered. So this really assumes that the list is ordered from the get-go 
+        """
+        if not isinstance(value, float):
+            raise TypeError("Value should be {}, not {}".format(float, type(value)))
+        if not isinstance(list_like, list):
+            raise TypeError("list_like should be {}, not {}".format(list, type(list_like)))
+        
+        # these two cases aren't covered by the get_loc function
+        if len(list_like)==0:
+            return([value])
+        
+        if value==list_like[0] or value==list_like[-1]:
+            return(list_like)
+
+        if value<list_like[0]:
+            list_like.insert(0, value)
+            return(list_like)
+        if value>list_like[-1]:
+            list_like.append(value)
+            return(list_like)
+
+        bot, top = get_loc(value, list_like) # O(log(N))
+        if value==list_like[bot] or value==list_like[top]: #O(1) ZOOM! 
+            return(list_like)
+        else:
+            list_like.insert(top, value) #O(n) complexity >:(
+            return(list_like)
+
+    theta03s = []
+    theta13s = []
+    theta23s = []
+    msqs     = []
+
+    for each in all_files:
+        theta03, theta13, theta23, msq = parse_filename(each, False)
+        theta03s = insert(theta03, theta03s)
+        theta13s = insert(theta13, theta13s)
+        theta23s = insert(theta23, theta23s)
+        msqs = insert(msq, msqs)
+
+    return(theta03s, theta13s, theta23s, msqs)
 
 
 def get_closest(x, domain, mapped):
