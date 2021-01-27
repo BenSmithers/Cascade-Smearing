@@ -71,20 +71,55 @@ class base_gui(object):
         self.formLayout.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.tau_slider)
         self.verticalLayout.addLayout(self.formLayout)
         MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QtWidgets.QMenuBar(MainWindow)
+      
+       	self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 22))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
+        self.menuFlavors = QtWidgets.QMenu(self.menubar)
+        self.menuFlavors.setObjectName("menuFlavors")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
         self.actionQuit = QtWidgets.QAction(MainWindow)
         self.actionQuit.setObjectName("actionQuit")
-        self.menuFile.addAction(self.actionQuit)
-        self.menubar.addAction(self.menuFile.menuAction())
 
+        self.actionElectron = QtWidgets.QAction(MainWindow)
+        self.actionElectron.setCheckable(True)
+        self.actionElectron.setChecked(True)
+        self.actionElectron.setObjectName("actionElectron")
+        self.actionNuEBar = QtWidgets.QAction(MainWindow)
+        self.actionNuEBar.setCheckable(True)
+        self.actionNuEBar.setChecked(True)
+        self.actionNuEBar.setObjectName("actionNuEBar")
+        self.actionNuMu = QtWidgets.QAction(MainWindow)
+        self.actionNuMu.setCheckable(True)
+        self.actionNuMu.setChecked(True)
+        self.actionNuMu.setObjectName("actionNuMu")
+        self.actionNuMuBar = QtWidgets.QAction(MainWindow)
+        self.actionNuMuBar.setCheckable(True)
+        self.actionNuMuBar.setChecked(True)
+        self.actionNuMuBar.setObjectName("actionNuMuBar")
+        self.actionNuTau = QtWidgets.QAction(MainWindow)
+        self.actionNuTau.setCheckable(True)
+        self.actionNuTau.setChecked(True)
+        self.actionNuTau.setObjectName("actionNuTau")
+        self.actionNuTauBar = QtWidgets.QAction(MainWindow)
+        self.actionNuTauBar.setCheckable(True)
+        self.actionNuTauBar.setChecked(True)
+        self.actionNuTauBar.setObjectName("actionNuTauBar")
+        self.menuFile.addAction(self.actionQuit)
+        self.menuFlavors.addAction(self.actionElectron)
+        self.menuFlavors.addAction(self.actionNuEBar)
+        self.menuFlavors.addAction(self.actionNuMu)
+        self.menuFlavors.addAction(self.actionNuMuBar)
+        self.menuFlavors.addAction(self.actionNuTau)
+        self.menuFlavors.addAction(self.actionNuTauBar)
+        self.menubar.addAction(self.menuFile.menuAction())
+        self.menubar.addAction(self.menuFlavors.menuAction())
+ 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
@@ -98,6 +133,15 @@ class base_gui(object):
         self.tau_lbl.setText(_translate("MainWindow", "Theta tau-s: 0.00"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
+
+        self.menuFlavors.setTitle(_translate("MainWindow", "Neutrinos"))
+        self.actionQuit.setText(_translate("MainWindow", "Quit"))
+        self.actionElectron.setText(_translate("MainWindow", "NuE"))
+        self.actionNuEBar.setText(_translate("MainWindow", "NuEBar"))
+        self.actionNuMu.setText(_translate("MainWindow", "NuMu"))
+        self.actionNuMuBar.setText(_translate("MainWindow", "NuMuBar"))
+        self.actionNuTau.setText(_translate("MainWindow", "NuTau"))
+        self.actionNuTauBar.setText(_translate("MainWindow", "NuTauBar"))
 
 
 class main_window(QMainWindow):
@@ -115,6 +159,15 @@ class main_window(QMainWindow):
         self.ui.tau_slider.valueChanged.connect(self.update_plot)
         self.ui.electron_slider.valueChanged.connect(self.update_plot)
 
+        #whenever the checkactions change, call this other function
+        self.ui.actionElectron.triggered.connect(self.checked_changed)
+        self.ui.actionNuEBar.triggered.connect(self.checked_changed)
+        self.ui.actionNuMu.triggered.connect(self.checked_changed)
+        self.ui.actionNuMuBar.triggered.connect(self.checked_changed)
+        self.ui.actionNuTau.triggered.connect(self.checked_changed)
+        self.ui.actionNuTauBar.triggered.connect(self.checked_changed)
+
+    
         self.tau_angle = 0.0
         self.electron_angle = 0.0
 
@@ -126,18 +179,55 @@ class main_window(QMainWindow):
         self.theta23s = np.linspace(0, pi, n_grid) #tau
         self.msq = 4.47
 
-        # load the null flux! 
+        
+        # load the null flux!
+        self.reload_null()
+
+        self.width = 0.10
+
+        self.update_plot()
+
+    def checked_changed(self):
+        self.reload_null()
+        self.update_plot()
+
+    def check_key(self, key):
+        """
+        Passed a key, checks whether the relevant action box is checked 
+        """
+        if "E_nu_" in key:
+            return self.ui.actionElectron.isChecked()
+        elif "E_nuBar_" in key:
+            return self.ui.actionNuEBar.isChecked()
+        elif "Mu_nu_" in key:
+            return self.ui.actionNuMu.isChecked()
+        elif "Mu_nuBar_" in key:
+            return self.ui.actionNuMuBar.isChecked()
+        elif "Tau_nu_" in key:
+            return self.ui.actionNuTau.isChecked()
+        elif "Tau_nuBar_" in key:
+            return self.ui.actionNuTauBar.isChecked()
+        else:
+            raise ValueError("Not sure what to do with key {}".format(key))
+
+
+    def reload_null(self):
+        """
+        This function reloads the null flux 
+        """
         sp = SterileParams(0., 0., 0., 0.)
         f = open(gen_filename(config["datapath"], config["recon_flux"]+".dat", sp), 'rb')
         all_data  = pickle.load(f)
         f.close()
         self.e_reco = np.array(bhist([all_data["e_reco"]]).centers)
         self.a_reco = np.array(bhist([all_data["a_reco"]]).centers)
-        self.flux_null = sum(all_data["flux"].values())
-
-        self.width = 0.10
-
-        self.update_plot()
+        
+        self.flux_null = np.zeros(shape = (len(self.e_reco), len(self.a_reco)))
+        for key in all_data["flux"].keys():
+            if not self.check_key(key):
+                continue
+            else:
+                self.flux_null += all_data["flux"][key]
 
         
     def update_plot(self):
@@ -158,7 +248,6 @@ class main_window(QMainWindow):
         cbar = self.ui.figure.colorbar(pmesh, ax=ax)
         cbar.set_label("Sterile Flux / Null Flux")
 
-
         self.ui.canvas.draw()
 
     def _load_flux_file(self, filename):
@@ -168,7 +257,13 @@ class main_window(QMainWindow):
         f = open(filename, 'rb')
         all_data = pickle.load(f)
         f.close()
-        return(np.array(sum(all_data["flux"].values())))
+        flux = np.zeros(shape=(len(self.e_reco), len(self.a_reco)))
+        for key in all_data["flux"].keys():
+            if self.check_key(key):
+                flux += np.array(all_data["flux"][key])
+
+        return(flux)
+    
 
     def get_interp_flux(self):
         """
