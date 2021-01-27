@@ -45,7 +45,46 @@ It also keeps the cross sections in an object
 
     - utils: a bunch of cool utility functions! 
 
+## Running the GUI
 
+1. Choose a directory you want to put the code `/path/to/root/`
+
+2. Choose a directory where you want to keep data `/path/to/data/`
+
+3. Go to the code directory using  cd `/path/to/root/`
+
+4. Clone the git repo
+```
+git clone git@github.com:BenSmithers/Cascade-Smearing.git
+```
+5. Go into the newly cloned repository, Cascade-Smearing, and edit the datapath line in `config.json` to read
+  ```
+  "datapath": "/path/to/data",
+  ```
+replacing `/path/to/data` with your actual path. This tells my code where to look for the data.
+
+6. Edit your .bashrc, adding in the line
+```
+export PYTHONPATH=$PYTHONPATH:/home/benito/software/cascade/
+```
+This tells python how to find my code.
+
+7. Now you need to download the data:
+
+    a. If you have access to the cobalts, go to /path/to/data and run
+```
+scp username@cobalt.icecube.wisc.edu:/data/user/bsmithers/data/cascades/flux_data_* .
+```
+Note: this might take a while!
+
+    b. Otherwise download the data from this google drive link, unzip, and put the contents in  `/path/to/data/`
+
+https://drive.google.com/file/d/1qKhchUlm958dqi4IXemWqqJTookriN5g/view?usp=sharing
+
+8. You should now be able to run the gui, after restarting whatever terminal you're using, by going to `/path/to/root/Cascade-Smearing/plotting` and running 
+```
+python3 explo.py
+```
 
 ## Links
 
