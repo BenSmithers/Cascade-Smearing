@@ -86,6 +86,22 @@ https://drive.google.com/file/d/1qKhchUlm958dqi4IXemWqqJTookriN5g/view?usp=shari
 python3 explo.py
 ```
 
+### Updates
+
+ - There is new a drop-down menu to turn different neutrino fluxes on and off in the displayed ratios. 
+ 
+ - There is a new slider to adjust the colorbar scale. It will always be centered on 1.0, but can have a width anywhere from (0.99-1.01) up to (0.00-2.00)
+ 
+ - You can switch between reconstructed and raw fluxes using the checkbox at the bottom of the screen. Switching to raw fluxes takes a long time right now, and so the sliders are disabled when in raw flux mode. 
+ 
+ - Using the raw fluxes requires extra data, you can either get it using 
+ ```
+ scp username@cobalt.icecube.wisc.edu:/data/user/bsmithers/data/cascades/raw_det_flux_* .
+ ```
+ into your data folder, or extract the contents of this google drive folder into your data folder
+ 
+ https://drive.google.com/file/d/1XWxhcumqWIo0uTFIwm7p91f1ZNkxFN4t/view?usp=sharing
+
 ## Links
 
 https://github.com/IceCubeOpenSource/HESE_data_release
