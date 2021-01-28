@@ -17,6 +17,7 @@ import sys # exit
 from math import pi # everyone needs pi
 import numpy as np
 import pickle # used to load in the fluxes 
+import os
 
 from cascade.utils import config # base configuration file, we need this to get the location of hte data
 
@@ -24,6 +25,7 @@ from cascade.utils import config # base configuration file, we need this to get 
 from cascade.utils import get_loc, bilinear_interp
 from cascade.utils import SterileParams, gen_filename
 from cascade.utils import bhist 
+from cascade.utils import Data
 
 class base_gui(object):
     """
@@ -69,7 +71,11 @@ class base_gui(object):
         self.tau_slider.setObjectName("tau_slider")
         self.tau_slider.setMaximum(100)
         self.formLayout.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.tau_slider)
+        self.recoBox = QtWidgets.QCheckBox(self.centralwidget)
+        self.recoBox.setObjectName("recoBox")
+        self.recoBox.setChecked(True)
         self.verticalLayout.addLayout(self.formLayout)
+        self.verticalLayout.addWidget(self.recoBox)
         MainWindow.setCentralWidget(self.centralwidget)
       
        	self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -131,6 +137,7 @@ class base_gui(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "FluxThePolice"))
         self.electron_lbl.setText(_translate("MainWindow", "Theta e-s:  0.00"))
         self.tau_lbl.setText(_translate("MainWindow", "Theta tau-s: 0.00"))
+        self.recoBox.setText(_translate("MainWnidow", "Reconstructed Fluxes"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
 
@@ -166,7 +173,7 @@ class main_window(QMainWindow):
         self.ui.actionNuMuBar.triggered.connect(self.checked_changed)
         self.ui.actionNuTau.triggered.connect(self.checked_changed)
         self.ui.actionNuTauBar.triggered.connect(self.checked_changed)
-
+        self.ui.recoBox.clicked.connect(self.checked_changed)
     
         self.tau_angle = 0.0
         self.electron_angle = 0.0
@@ -188,6 +195,9 @@ class main_window(QMainWindow):
         self.update_plot()
 
     def checked_changed(self):
+        self.ui.tau_slider.setEnabled(self.ui.recoBox.isChecked())
+        self.ui.electron_slider.setEnabled(self.ui.recoBox.isChecked())
+
         self.reload_null()
         self.update_plot()
 
@@ -215,20 +225,30 @@ class main_window(QMainWindow):
         """
         This function reloads the null flux 
         """
-        sp = SterileParams(0., 0., 0., 0.)
-        f = open(gen_filename(config["datapath"], config["recon_flux"]+".dat", sp), 'rb')
-        all_data  = pickle.load(f)
-        f.close()
-        self.e_reco = np.array(bhist([all_data["e_reco"]]).centers)
-        self.a_reco = np.array(bhist([all_data["a_reco"]]).centers)
-        
-        self.flux_null = np.zeros(shape = (len(self.e_reco), len(self.a_reco)))
-        for key in all_data["flux"].keys():
-            if not self.check_key(key):
-                continue
-            else:
-                self.flux_null += all_data["flux"][key]
 
+        sp = SterileParams(0., 0., 0., 0.)
+        if self.ui.recoBox.isChecked():
+            which = config["recon_flux"]+".dat"
+
+            f = open(gen_filename(config["datapath"], which, sp), 'rb')
+            all_data  = pickle.load(f)
+            f.close()
+            
+            self.e_reco = np.array(bhist([all_data["e_reco"]]).centers)
+            self.a_reco = np.array(bhist([all_data["a_reco"]]).centers)
+            all_data = all_data["flux"]
+            
+        else:
+            which = gen_filename("", config["nu_flux"]+".dat", sp)
+            temp = Data(which)
+            self.e_reco = np.array(temp.energies)
+            self.a_reco = temp.angles
+            all_data =  temp.fluxes
+            
+        self.flux_null = np.zeros(shape = (len(self.e_reco), len(self.a_reco)))
+        for key in all_data.keys():
+            if self.check_key(key):
+                self.flux_null += np.array(all_data[key])
         
     def update_plot(self):
         """
@@ -254,16 +274,22 @@ class main_window(QMainWindow):
         """
         simplified little thing. Just loads in the fluxes we want 
         """
-        f = open(filename, 'rb')
-        all_data = pickle.load(f)
-        f.close()
+        if self.ui.recoBox.isChecked():
+            f = open(filename, 'rb')
+            all_data = pickle.load(f)["flux"]
+            f.close()
+        else:
+            dirname, filename = os.path.split(filename)
+            temp = Data(filename)
+            all_data = temp.fluxes
+
         flux = np.zeros(shape=(len(self.e_reco), len(self.a_reco)))
-        for key in all_data["flux"].keys():
+        for key in all_data.keys():
             if self.check_key(key):
-                flux += np.array(all_data["flux"][key])
+                flux += np.array(all_data[key])
 
         return(flux)
-    
+ 
 
     def get_interp_flux(self):
         """
@@ -280,11 +306,13 @@ class main_window(QMainWindow):
         param_21 = SterileParams(self.theta03s[i_x2], self.thetamu, self.theta23s[i_y1],self.msq)
         param_22 = SterileParams(self.theta03s[i_x2], self.thetamu, self.theta23s[i_y2],self.msq)
 
+        which = (config["recon_flux"] if self.ui.recoBox.isChecked() else config["nu_flux"]) + ".dat"
+
         # using those indices, we generate the names of the flux files and load
-        flux_11 = self._load_flux_file(gen_filename(config["datapath"], config["recon_flux"]+".dat", param_11))
-        flux_12 = self._load_flux_file(gen_filename(config["datapath"], config["recon_flux"]+".dat", param_12))
-        flux_21 = self._load_flux_file(gen_filename(config["datapath"], config["recon_flux"]+".dat", param_21))
-        flux_22 = self._load_flux_file(gen_filename(config["datapath"], config["recon_flux"]+".dat", param_22))
+        flux_11 = self._load_flux_file(gen_filename(config["datapath"], which, param_11))
+        flux_12 = self._load_flux_file(gen_filename(config["datapath"], which, param_12))
+        flux_21 = self._load_flux_file(gen_filename(config["datapath"], which, param_21))
+        flux_22 = self._load_flux_file(gen_filename(config["datapath"], which, param_22))
 
         # these are useful intermediates used for my bilinear interpolation function 
         p0 = (self.electron_angle, self.tau_angle)
