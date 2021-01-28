@@ -71,6 +71,19 @@ class base_gui(object):
         self.tau_slider.setObjectName("tau_slider")
         self.tau_slider.setMaximum(100)
         self.formLayout.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.tau_slider)
+
+        self.width_lbl = QtWidgets.QLabel(self.centralwidget)
+        self.width_lbl.setLayoutDirection(QtCore.Qt.LeftToRight)
+        self.width_lbl.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.width_lbl.setObjectName("width_lbl")
+        self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.width_lbl)
+        self.width_slider = QtWidgets.QSlider(self.centralwidget)
+        self.width_slider.setOrientation(QtCore.Qt.Horizontal)
+        self.width_slider.setObjectName("width_slider")
+        self.width_slider.setMinimum(1)
+        self.width_slider.setMaximum(100)
+        self.formLayout.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.width_slider)
+
         self.recoBox = QtWidgets.QCheckBox(self.centralwidget)
         self.recoBox.setObjectName("recoBox")
         self.recoBox.setChecked(True)
@@ -131,12 +144,15 @@ class base_gui(object):
 
         self.electron_slider.setTickInterval(1)
         self.tau_slider.setTickInterval(1)
+        self.width_slider.setTickInterval(1)
+        self.width_slider.setValue(10)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "FluxThePolice"))
         self.electron_lbl.setText(_translate("MainWindow", "Theta e-s:  0.00"))
         self.tau_lbl.setText(_translate("MainWindow", "Theta tau-s: 0.00"))
+        self.width_lbl.setText(_translate("MainWindow", "Width: 0.10"))
         self.recoBox.setText(_translate("MainWnidow", "Reconstructed Fluxes"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
@@ -165,6 +181,7 @@ class main_window(QMainWindow):
         # may want to change this to (mouse released) if this takes a while 
         self.ui.tau_slider.valueChanged.connect(self.update_plot)
         self.ui.electron_slider.valueChanged.connect(self.update_plot)
+        self.ui.width_slider.valueChanged.connect(self.update_width)
 
         #whenever the checkactions change, call this other function
         self.ui.actionElectron.triggered.connect(self.checked_changed)
@@ -194,7 +211,16 @@ class main_window(QMainWindow):
 
         self.update_plot()
 
+    def update_width(self):
+        self.width = float(self.ui.width_slider.value())/100.
+        self.ui.width_lbl.setText("Width: {:.2f}".format(self.width))
+        self.cbar.mappable.set_clim(vmin=1-self.width, vmax=1+self.width)
+        self.ui.canvas.draw()
+
     def checked_changed(self):
+        """
+        This is called whenever one of the checkboxes are checked/unchecked 
+        """
         self.ui.tau_slider.setEnabled(self.ui.recoBox.isChecked())
         self.ui.electron_slider.setEnabled(self.ui.recoBox.isChecked())
 
@@ -265,8 +291,8 @@ class main_window(QMainWindow):
         ax.set_yscale('log')
         ax.set_ylabel("Reco Energy [GeV]", size=14)
         ax.set_xlabel(r"Reco $\cos\theta$",size=14)
-        cbar = self.ui.figure.colorbar(pmesh, ax=ax)
-        cbar.set_label("Sterile Flux / Null Flux")
+        self.cbar = self.ui.figure.colorbar(pmesh, ax=ax)
+        self.cbar.set_label("Sterile Flux / Null Flux")
 
         self.ui.canvas.draw()
 
