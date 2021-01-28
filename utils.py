@@ -423,10 +423,7 @@ class Data:
         if not (len(data)==n_energies*n_angles):
             raise ValueError("Datafile length error? {}!={}".format(len(data), n_energies*n_angles))
 
-        # this funny indexing is a result of the way I output the data from nuSQuIDS
-        # it loops through energies for each angle
-        print("Building Flux Arrays")
-
+ 
         # storing the energies and the angles...
         # this was originally supposed to be agnostic to growing/shrinking energies/angles, but the code really assumes increasing.
         self._energies = [10**data[i][0] for i in range(n_energies)]
@@ -437,12 +434,6 @@ class Data:
         self._ang_width = get_width(np.arccos(self._angles))
         self.ang_grow = self._angles[1]>self._angles[0]
 
-        print(min(self._energies))
-        print(type(min(self._energies)))
-        print("Data spans {} GeV -> {} GeV".format(min(self._energies)/GeV, max(self._energies)/GeV))
-        print("           {} rad -> {} rad in zenith".format(min(self._angles), max(self._angles)))
-
-        print("The Energies are {} and the angles are {}".format("increasing" if self.growing else "decreasing", "increasing" if self.ang_grow else "decreasing"))
         if not (self.growing and self.ang_grow):
             raise NotImplementedError("I didn't really account for the case that the angles or energies were dereasing")
 
