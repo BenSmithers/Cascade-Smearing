@@ -37,6 +37,7 @@ print("    Using {} bins".format(n_bins))
 
 # data analysis
 import numpy as np
+from math import pi
 
 # file system, control
 import os
@@ -92,7 +93,7 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges,errors, pa
     true_ang_centers = bhist([angle_edges]).centers
    
     true_e_widths = bhist([event_edges]).widths
-    true_ang_widths = bhist([angle_edges]).widths
+    true_ang_widths = 2*pi*np.arccos(bhist([angle_edges]).widths)
 
     # these are reconstruction objects 
     r_energy = bhist([ np.logspace(np.log10(e_min), np.log10(e_max), int(len(cascade_edges)/2)) ])
@@ -125,15 +126,19 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges,errors, pa
         for i_e_reco in range(len(r_energy_centers)):
             for i_e_depo in range(len(cascade_centers)):
                 depo_odds = dataobj.get_energy_reco_odds(i_e_depo, i_e_reco) # unitless
-                if depo_odds<=0.:
+                if depo_odds<0.:
+                    raise ValueError("Negative energy reco odds {}".format(depo_odds))
+                elif depo_odds==0:
                     continue
                 for i_a_true in range(len(true_ang_centers)):
                     for i_a_reco in range(len(r_angle_centers)):
                         ang_odds = dataobj.get_czenith_reco_odds(i_a_true, i_a_reco,i_e_depo) # unitless 
                         if ang_odds<0.:
+                            raise ValueError("Negative angular reconstrucion odds: {}".format(ang_odds))
+                        elif ang_odds==0:
                             continue
                         for i_e_true in range(len(true_e_centers)):
-                            scale = true_ang_widths[i_a_true]*true_e_widths[i_e_true]*depo_widths[i_e_depo]
+                            scale = true_ang_widths[i_a_true]*true_e_widths[i_e_true]
 
                             amt = nuflux[key][i_e_depo][i_e_true][i_a_true]*depo_odds*ang_odds*scale
                             amt_err = errors[key][i_e_depo][i_e_true][i_a_true]*depo_odds*ang_odds*scale
@@ -142,7 +147,7 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges,errors, pa
                                 if not just_flux:
                                     recoflux[key][i_e_reco][i_e_true][i_a_reco][i_a_true] += amt 
                                 total_flux[key][i_e_reco][i_a_reco] += amt
-                                flux_error[key][i_e_reco][i_a_reco] += amt 
+                                flux_error[key][i_e_reco][i_a_reco] += amt_err
 
     if not just_flux:
         reco_flux_name = gen_filename( config["datapath"], config["all_fluxes"]+".dat",params)

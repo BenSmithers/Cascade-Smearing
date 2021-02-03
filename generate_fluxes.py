@@ -27,7 +27,7 @@ def gen_flux(params):
         raise TypeError("Expected {} for params, not {}".format(SterileParams, type(params)))
     
 
-    raw_flux_name = gen_filename(config["datapath"], config["nu_flux"], params)
+    raw_flux_name = gen_filename(config["datapath"], config["nu_flux"]+".dat", params)
     if os.path.exists(raw_flux_name) and config["use_pregen_mceq_flux"]:
         pass
     else:
