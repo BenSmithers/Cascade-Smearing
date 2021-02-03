@@ -185,7 +185,7 @@ def raw_flux(params):
     int_min_e = log10(Emin)
     int_max_e = log10(Emax)
     
-    filename = gen_filename(config["datapath"], config["nu_flux"], params)
+    filename = gen_filename(config["datapath"], config["nu_flux"]+".dat", params)
     print("Saving File to {}".format(filename))
     
     if not config["overwrite"]:

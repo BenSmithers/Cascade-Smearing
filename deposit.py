@@ -172,8 +172,6 @@ def do_for_key(event_edges,cascade_edges, key,data, angles=None):
     event_widths = evt.widths
     cascade_energies = cas.centers
     cascade_widths = cas.widths
-    reco_energies = reco.centers
-    reco_widths = reco.widths 
 
     flav = key.split("_")[0]
     curr = key.split("_")[2]
@@ -200,7 +198,7 @@ def do_for_key(event_edges,cascade_edges, key,data, angles=None):
             # Therefore we just get the total cross section * flux there... the units end up as [s GeV in sr]^-1 
             for cas_bin in range(len(cascade_energies)): 
                 deposited_energy = cascade_energies[cas_bin] # energy going to the leptonic component! 
-                xs = get_diff_xs(deposited_energy, get_flavor(key), get_neut(key), get_curr(key))
+                xs = get_diff_xs(deposited_energy, get_flavor(key), get_neut(key), get_curr(key))*cascade_widths[cas_bin] # deposited (cascade) and event are the same here 
 
                 amount =data.get_flux(deposited_energy,key, angle=angle)*xs                
                 amount_err = data.get_err(energy=deposited_energy, key=key, angle=angle)*xs
@@ -239,7 +237,7 @@ def do_for_key(event_edges,cascade_edges, key,data, angles=None):
                     if lepton_energy > max(cascade_energies):
                         continue
             
-                    xs = get_diff_xs(event_energies[evt_bin], get_flavor(key), get_neut(key), get_curr(key), lepton_energy,0.0)*cascade_widths[cas_bin]
+                    xs = get_diff_xs(event_energies[evt_bin], get_flavor(key), get_neut(key), get_curr(key), lepton_energy,0.0)*cascade_widths[cas_bin]*event_widths[evt_bin]
 
                     amount =data.get_flux(event_energies[evt_bin],key, angle=angle)*xs
                     amount_err = data.get_err(event_energies[evt_bin],key, angle=angle)*xs
