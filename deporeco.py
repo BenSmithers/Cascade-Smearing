@@ -1,7 +1,10 @@
-from math import exp, sqrt, pi, log, acos, log10, sinh
+from math import exp, sqrt, pi, log, acos, log10, sinh, sin
 import numpy as np
 import os
-from cascade.utils import bhist, get_loc, get_closest
+from cascade.utils import bhist, get_loc, get_closest, config
+
+import pickle
+import scipy.optimize as opt
 import sys 
 """
 This script is here to approximate the uncertainties in going from "energy deposited" to "energy reconstructed"
@@ -98,7 +101,7 @@ class DataReco:
         for depo in range(len(self._energy_odds_array)):
             self._energy_odds_array[depo] *= 1./sum(self._energy_odds_array[depo]*self.reco_energy_widths)
             assert(abs(1-sum(self._energy_odds_array[depo]*self.reco_energy_widths)) <= max_diff)
-   
+    
         for true in range(len(self._angle_odds_array)):
             # for each of the possible true values
             for deposited in range(len(self._angle_odds_array[true])):
@@ -161,6 +164,85 @@ def check_angle(value, cosmode=False):
     else:
         pass # value can be any number of radians 
 
+class KappaGrabba:
+    """
+    This object calculates the smearing factor "kappa" for a bunch of possible angular errors, then saves them in a data file 
+    """
+    def __init__(self):
+        self.numb = 100
+
+        self.rad_range = np.linspace(5*pi/180., pi/2,self.numb)
+        self.czen_range = np.cos(self.rad_range)
+
+        self.datafile = os.path.join(config["datapath"], os.path.join(config["kappas"]))
+
+        if os.path.exists(self.datafile):
+            self.kappas = self._load()
+        else:
+            self.kappas = self.generate()
+            self._save()
+
+    def _load(self):
+        f = open(self.datafile, 'rb')
+        data = pickle.load(f)
+        f.close()
+        return(data)
+
+    def _save(self):
+        f = open(self.datafile, 'wb')
+        pickle.dump(self.kappas, f, -1)
+        f.close()
+        print("Kappa values saved")
+        
+    def generate(self):
+        """
+        Should only be called once ever. This calculates all the kappa values! 
+        """
+        print("Generating Kappas for Angular uncertainty")
+        kappas = np.zeros(shape=np.shape(self.rad_range))
+
+        for i_czenith in range(len(self.czen_range)):
+            czenith = self.czen_range[i_czenith]
+            def funct(kappa):
+                if kappa<=0:
+                    return(100000)
+                else:
+                    return (exp(kappa) - exp(kappa*czenith))/(2*sinh(kappa)) - 0.5
+            
+            soln = opt.root(funct, np.array([10.]))
+            kappas[i_czenith] = soln.x[0]
+
+        return(kappas)
+
+    def get_kappa(self, rad_error):
+        """
+        Accesses the stored calculated values for kappa
+        """
+        if not isinstance(rad_error, (int, float)):
+            raise TypeError("Receied invalid datatype for rad error: {}".format(type(rad_error)))
+        try:
+            value = get_closest(rad_error, self.rad_range, self.kappas)
+            return(value)
+        except ValueError: # angle too far a way 
+            if rad_error <= (5*pi/180.):
+                return(max(self.kappas))
+            elif rad_error>=(pi/2):
+                return(min(self.kappas))
+            else:
+                raise Exception("Not sure how to work with {}".format(rad_error))
+
+kappaCalc = KappaGrabba()
+
+def get_spread(ang_unc):
+    """
+    This calculates "kappa" in the Kent distribution
+
+    Value should be passed in RADIANS
+    Returns unitless quantity
+    """
+
+    cos_unc = cos(ang_unc)
+    inter = log(1./(exp(cos_unc)*sinh(1)/sinh(cos_unc) - 1))
 
 def get_odds_angle( reco, true, energy_depo ):
     """
@@ -177,10 +259,14 @@ def get_odds_angle( reco, true, energy_depo ):
     if not isinstance(energy_depo, (int, float)):
         raise TypeError("Energy of type {}, not {}".format(type(energy_depo), float))
     
-    error = get_ang_error( energy_depo )*deg
+    error = kappaCalc.get_kappa(get_ang_error( energy_depo )*deg)
+    dreco = acos(reco)/deg
+    dtrue = acos(true)/deg
+
+    #return (rtwo/error)*exp(-0.5*pow((dreco-dtrue)/error,2))
 
     #this is the bessel part of the kent_pdf
-    value = sqrt((1-reco*reco )*(1-true*true))
+    value = sqrt(1-reco*reco)*sqrt(1-true*true)
     mbsf = 1 + pow(value,2)/4 + pow(value,4)/64 # we use the polynomial verion since it should be faster
     
     try:
@@ -190,7 +276,7 @@ def get_odds_angle( reco, true, energy_depo ):
         sys.exit()
 
     # Based on Alex's Kent Distribution work 
-    return( prob*exp(error*true*reco)*mbsf )
+    return(prob*exp(error*reco*true)*mbsf)
 
 def get_odds_angle_deprecated(true, reconstructed, energy_depo):
     """
@@ -250,51 +336,79 @@ if doplot:
     odds = np.array([[dataobj.get_energy_reco_odds(depo, reco) for depo in range(len(depos_e)-1)] for reco in range(len(recos_e)-1)])
     odds = np.log10(np.ma.masked_where(odds<=1e-10, odds))
     levels = np.logspace(-3,0,10)
+    
+    if False:
+        print(np.min(odds))
+        print(np.max(odds))
 
-    print(np.min(odds))
-    print(np.max(odds))
+        figs, axes = plt.subplots(nrows=2, ncols=1, sharex=False, gridspec_kw={'height_ratios':[1,1]})
 
-    figs, axes = plt.subplots(nrows=2, ncols=1, sharex=False, gridspec_kw={'height_ratios':[1,1]})
+        ctf = axes[0].pcolormesh(depos,recos,odds, cmap='gist_yarg')
+        #plt.pcolormesh(depos,recos,odds, cmap='gist_gray', locator=ticker.LogLocator())
+        axes[0].set_xscale('log')
+        axes[0].set_yscale('log')
+        axes[0].set_xlim([10**0,10**7])
+        axes[0].set_ylim([10**0,10**7])
+        axes[0].set_xlabel("Deposited [GeV]")
+        axes[0].set_ylabel("Reconstructed [GeV]")
+        cbar = plt.colorbar(ctf) #, ticks=ticker.LogLocator())
+        cbar.set_label("Probability Density")
 
-    ctf = axes[0].pcolormesh(depos,recos,odds, cmap='gist_yarg')
-    #plt.pcolormesh(depos,recos,odds, cmap='gist_gray', locator=ticker.LogLocator())
-    axes[0].set_xscale('log')
-    axes[0].set_yscale('log')
-    axes[0].set_xlim([10**0,10**7])
-    axes[0].set_ylim([10**0,10**7])
-    axes[0].set_xlabel("Deposited [GeV]")
-    axes[0].set_ylabel("Reconstructed [GeV]")
-    cbar = plt.colorbar(ctf) #, ticks=ticker.LogLocator())
-    cbar.set_label("Probability Density")
+        # slides !
+        slices = 10**np.array([1,2,3,4,5])
+        for cut in slices:
+            
 
-    # slides !
-    slices = 10**np.array([1,2,3,4,5])
-    for cut in slices:
+
+            left, right = get_loc(float(cut), depos)
+            loc = left if abs(cut-depos[left])<abs(cut-depos[right]) else right
+            width_factor = dataobj.depo_energy_widths[loc]
+            odds = [ dataobj.get_energy_reco_odds(loc, val) for val in range(len(recos))]
+            axes[1].plot(recos, odds, color=(.1,.1,.1))
         
+        axes[1].set_xscale('log')
+        axes[1].set_xlabel("Reconstructed [GeV]")       
+        axes[1].set_ylabel("Prob. Density")
+        
+        figs.savefig("fig_deporeco.png",dpi=400)
+        plt.show()
+        
+    choice_e, unused = get_loc( 1e4, depos)
 
+    print("Error: {}".format(get_ang_error(1e4)))
 
-        left, right = get_loc(float(cut), depos)
-        loc = left if abs(cut-depos[left])<abs(cut-depos[right]) else right
-        width_factor = dataobj.depo_energy_widths[loc]
-        odds = [ dataobj.get_energy_reco_odds(loc, val) for val in range(len(recos))]
-        axes[1].plot(recos, odds, color=(.1,.1,.1))
-    
-    axes[1].set_xscale('log')
-    axes[1].set_xlabel("Reconstructed [GeV]")       
-    axes[1].set_ylabel("Prob. Density")
-    
-    figs.savefig("fig_deporeco.png",dpi=400)
-    plt.show()
+    #ang_odds = np.array([[dataobj.get_czenith_reco_odds(true,reco, choice_e) for true in range(len(ang)-1)] for reco in range(len(ang)-1)])
+    #ang_odds = np.array([ ang_odds[it]/sum(ang_odds[it]) for it in range(len(ang_odds))])
 
-    ang_odds = np.array([[dataobj.get_czenith_reco_odds(true,reco) for true in range(len(ang)-1)] for reco in range(len(ang)-1)])
-    ang_odds=np.log10(np.ma.masked_where(ang_odds<=1e-10,ang_odds))
-    
+    #ang_odds=np.log10(np.ma.masked_where(ang_odds<=1e-10,ang_odds))
+   
+    choice_a, unused = get_loc(-0.99, ang)
+
     plt.figure(2)
-    me = plt.pcolormesh(ang,ang,ang_odds,cmap='gist_yarg')
-    plt.xlabel("True Zenith")
-    plt.ylabel("Recon Zenith")
-    cbar = plt.colorbar(me)
-    cbar.set_label("Prob Density")
+    ang_odds = np.array([dataobj.get_czenith_reco_odds( choice_a, reco, choice_e) for reco in range(len(ang)-1)])
+    print("Sum: {}".format(sum(ang_odds)))
+
+    plt.plot( bhist([ang]).centers, ang_odds)
+    #me = plt.pcolormesh(ang,ang,ang_odds,cmap='gist_yarg')
+    plt.xlabel("Reconstructed Angle")
+    plt.ylabel("Odds, normalized")
+    #cbar = plt.colorbar(me)
+    #cbar.set_label("Prob Density")
     plt.savefig("fig_angtruereco.png",dpi=400)
     plt.show()
+    
+    fluxes = np.array([(1.0 if true<-0.9 else 0.0) for true in bhist([ang]).centers])
+    fluxes /= sum(fluxes)
 
+    smeared = np.zeros(shape=np.shape(fluxes))
+    for truth in range(len(fluxes)):
+        for recon in range(len(fluxes)):
+            smeared[recon] += fluxes[truth]*dataobj.get_czenith_reco_odds( truth, recon, choice_e)
+
+    print("Smear sum: {}".format(sum(smeared)))
+    plt.figure(3)
+    plt.plot( bhist([ang]).centers, fluxes, label="True")
+    plt.plot( bhist([ang]).centers, smeared, label="Smeared")
+    plt.xlabel("Angle")
+    plt.ylabel("Flux Density")
+    plt.show()
