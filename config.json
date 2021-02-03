@@ -8,6 +8,7 @@
   "recon_flux":"flux_data",
   "flux_error":"flux_error",
   "all_fluxes":"analysis_level",
+  "kappas":"kappa_vals.dat",
   "n_bins": 80,
   "overwrite": true
 }
