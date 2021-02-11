@@ -149,7 +149,7 @@ class base_gui(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "FluxThePolice"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Slide 2"))
         self.electron_lbl.setText(_translate("MainWindow", "Theta e-s:  0.00"))
         self.tau_lbl.setText(_translate("MainWindow", "Theta tau-s: 0.00"))
         self.width_lbl.setText(_translate("MainWindow", "Width: 0.10"))
@@ -200,9 +200,8 @@ class main_window(QMainWindow):
         n_grid = 20
         self.theta03s = np.linspace(0, pi, n_grid) #el
         self.thetamu = 0.160875
-        self.theta23s = np.linspace(0, pi, n_grid) #tau
+        self.theta23s = np.linspace(0, 25*pi/180., n_grid) #tau
         self.msq = 4.47
-
         
         # load the null flux!
         self.reload_null()
@@ -221,8 +220,8 @@ class main_window(QMainWindow):
         """
         This is called whenever one of the checkboxes are checked/unchecked 
         """
-        self.ui.tau_slider.setEnabled(self.ui.recoBox.isChecked())
-        self.ui.electron_slider.setEnabled(self.ui.recoBox.isChecked())
+        #self.ui.tau_slider.setEnabled(self.ui.recoBox.isChecked())
+        #self.ui.electron_slider.setEnabled(self.ui.recoBox.isChecked())
 
         self.reload_null()
         self.update_plot()
@@ -253,18 +252,30 @@ class main_window(QMainWindow):
         """
 
         sp = SterileParams(0., 0., 0., 0.)
+
+
+
         if self.ui.recoBox.isChecked():
             which = config["recon_flux"]+".dat"
+        else:
+            which = config["nu_flux_downsize"]+".dat"
 
-            f = open(gen_filename(config["datapath"], which, sp), 'rb')
-            all_data  = pickle.load(f)
-            f.close()
-            
+        f = open(gen_filename(config["datapath"], which, sp), 'rb')
+        all_data  = pickle.load(f)
+        f.close()
+       
+        if self.ui.recoBox.isChecked():
             self.e_reco = np.array(bhist([all_data["e_reco"]]).centers)
             self.a_reco = np.array(bhist([all_data["a_reco"]]).centers)
-            all_data = all_data["flux"]
-            
         else:
+            self.e_reco = np.array(all_data["e_true"])
+            self.a_reco = np.array(all_data["a_true"])
+
+        all_data = all_data["flux"]
+            
+
+
+        if False: # old code 
             which = gen_filename("", config["nu_flux"]+".dat", sp)
             temp = Data(which)
             self.e_reco = np.array(temp.energies)
@@ -289,8 +300,10 @@ class main_window(QMainWindow):
         
         pmesh = ax.pcolormesh(self.a_reco, self.e_reco/(1e9), flux/self.flux_null, cmap=cm.coolwarm, vmin=1.0-self.width, vmax=1.+self.width)
         ax.set_yscale('log')
-        ax.set_ylabel("Reco Energy [GeV]", size=14)
-        ax.set_xlabel(r"Reco $\cos\theta$",size=14)
+        ax.set_ylim([10**2, 10**6])
+        plot_labels = "Reco" if self.ui.recoBox.isChecked() else "True"
+        ax.set_ylabel("{} Energy [GeV]".format(plot_labels), size=14)
+        ax.set_xlabel(r"{} $\cos\theta$".format(plot_labels),size=14)
         self.cbar = self.ui.figure.colorbar(pmesh, ax=ax)
         self.cbar.set_label("Sterile Flux / Null Flux")
 
@@ -300,11 +313,11 @@ class main_window(QMainWindow):
         """
         simplified little thing. Just loads in the fluxes we want 
         """
-        if self.ui.recoBox.isChecked():
-            f = open(filename, 'rb')
-            all_data = pickle.load(f)["flux"]
-            f.close()
-        else:
+        f = open(filename, 'rb')
+        all_data = pickle.load(f)["flux"]
+        f.close()
+
+        if False:
             dirname, filename = os.path.split(filename)
             temp = Data(filename)
             all_data = temp.fluxes
@@ -332,7 +345,7 @@ class main_window(QMainWindow):
         param_21 = SterileParams(self.theta03s[i_x2], self.thetamu, self.theta23s[i_y1],self.msq)
         param_22 = SterileParams(self.theta03s[i_x2], self.thetamu, self.theta23s[i_y2],self.msq)
 
-        which = (config["recon_flux"] if self.ui.recoBox.isChecked() else config["nu_flux"]) + ".dat"
+        which = (config["recon_flux"] if self.ui.recoBox.isChecked() else config["nu_flux_downsize"]) + ".dat"
 
         # using those indices, we generate the names of the flux files and load
         flux_11 = self._load_flux_file(gen_filename(config["datapath"], which, param_11))
@@ -351,11 +364,11 @@ class main_window(QMainWindow):
         """
         Grab the angles from the sliders, update the slider text
         """
-        self.tau_angle = float(self.ui.tau_slider.value())*pi/100.
-        self.electron_angle = float(self.ui.electron_slider.value())*pi/100.
+        self.tau_angle = float(self.ui.tau_slider.value())*(25./100)*pi/180
+        self.electron_angle = float(self.ui.electron_slider.value())*pi/100
 
-        self.ui.electron_lbl.setText("Theta e-s: {:.4f}".format(self.electron_angle))
-        self.ui.tau_lbl.setText("Theta tau-s: {:.4f}".format(self.tau_angle))
+        self.ui.electron_lbl.setText("Theta-14: {:.4f}".format(self.electron_angle))
+        self.ui.tau_lbl.setText("Theta-34: {:.4f}".format(self.tau_angle))
 
 
 app = QApplication(sys.argv)
