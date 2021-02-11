@@ -33,7 +33,7 @@ def gen_flux(params):
     else:
         raw_flux_name = raw_flux(params)
  
-    a,b,c,d,err = generate_singly_diff_fluxes( config["n_bins"], debug=False, datafile=raw_flux_name)
+    a,b,c,d,err = generate_singly_diff_fluxes( config["n_bins"], datafile=raw_flux_name)
     incorporate_recon(a,b,c,d,errors=err,params=params, just_flux=True)
     
 
