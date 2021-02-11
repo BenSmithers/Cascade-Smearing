@@ -2,6 +2,8 @@ from math import exp, sqrt, pi, log, acos, log10, sinh, sin
 import numpy as np
 import os
 from cascade.utils import bhist, get_loc, get_closest, config
+from cascade.utils import Calculable
+
 
 import pickle
 import scipy.optimize as opt
@@ -164,7 +166,7 @@ def check_angle(value, cosmode=False):
     else:
         pass # value can be any number of radians 
 
-class KappaGrabba:
+class KappaGrabba(Calculable):
     """
     This object calculates the smearing factor "kappa" for a bunch of possible angular errors, then saves them in a data file 
     """
@@ -174,26 +176,12 @@ class KappaGrabba:
         self.rad_range = np.linspace(5*pi/180., pi/2,self.numb)
         self.czen_range = np.cos(self.rad_range)
 
-        self.datafile = os.path.join(config["datapath"], os.path.join(config["kappas"]))
-
-        if os.path.exists(self.datafile):
-            self.kappas = self._load()
-        else:
-            self.kappas = self.generate()
-            self._save()
-
-    def _load(self):
-        f = open(self.datafile, 'rb')
-        data = pickle.load(f)
-        f.close()
-        return(data)
-
-    def _save(self):
-        f = open(self.datafile, 'wb')
-        pickle.dump(self.kappas, f, -1)
-        f.close()
-        print("Kappa values saved")
+        Calculable.__init__(self)
         
+    @property
+    def filename(self):
+        return os.path.join(config["datapath"], os.path.join(config["kappas"]))
+
     def generate(self):
         """
         Should only be called once ever. This calculates all the kappa values! 
@@ -214,35 +202,24 @@ class KappaGrabba:
 
         return(kappas)
 
-    def get_kappa(self, rad_error):
+    def eval(self, rad_error):
         """
         Accesses the stored calculated values for kappa
         """
         if not isinstance(rad_error, (int, float)):
             raise TypeError("Receied invalid datatype for rad error: {}".format(type(rad_error)))
         try:
-            value = get_closest(rad_error, self.rad_range, self.kappas)
+            value = get_closest(rad_error, self.rad_range, self.obj)
             return(value)
         except ValueError: # angle too far a way 
             if rad_error <= (5*pi/180.):
-                return(max(self.kappas))
+                return(max(self.obj))
             elif rad_error>=(pi/2):
-                return(min(self.kappas))
+                return(min(self.obj))
             else:
                 raise Exception("Not sure how to work with {}".format(rad_error))
 
 kappaCalc = KappaGrabba()
-
-def get_spread(ang_unc):
-    """
-    This calculates "kappa" in the Kent distribution
-
-    Value should be passed in RADIANS
-    Returns unitless quantity
-    """
-
-    cos_unc = cos(ang_unc)
-    inter = log(1./(exp(cos_unc)*sinh(1)/sinh(cos_unc) - 1))
 
 def get_odds_angle( reco, true, energy_depo ):
     """
@@ -259,7 +236,7 @@ def get_odds_angle( reco, true, energy_depo ):
     if not isinstance(energy_depo, (int, float)):
         raise TypeError("Energy of type {}, not {}".format(type(energy_depo), float))
     
-    error = kappaCalc.get_kappa(get_ang_error( energy_depo )*deg)
+    error = kappaCalc.eval(get_ang_error( energy_depo )*deg)
     dreco = acos(reco)/deg
     dtrue = acos(true)/deg
 
@@ -315,7 +292,7 @@ def get_odds_energy(deposited, reconstructed):
 
     return(prob)
 
-# this was here just for debugging purposes. Don't usually need it
+# this was hre just for debugging purposes. Don't usually need it
 doplot = False
 if doplot:
     import matplotlib
@@ -324,14 +301,22 @@ if doplot:
     from matplotlib import ticker
 
     depos_e = np.logspace(0.1, 6.9, 100)*(1e9)
-    recos_e = np.logspace(0.1, 6.9, 101)*(1e9)
+    recos_e = np.logspace(0.1, 6.9, 200)*(1e9)
 
     ang = np.linspace(-1,1,100)
 
+    
     dataobj = DataReco( recos_e, ang, depos_e, ang)
     
     depos = dataobj.depo_energy_centers
     recos = dataobj.reco_energy_centers
+    depos_width = dataobj.depo_energy_widths
+    recos_width = dataobj.reco_energy_widths
+
+    a_reco_widths = dataobj.reco_czenith_widths
+    a_reco_centers=dataobj.reco_czenith_centers
+    a_true_widths = dataobj.true_czenith_widths
+    a_true_centers=dataobj.true_czenith_centers
 
     odds = np.array([[dataobj.get_energy_reco_odds(depo, reco) for depo in range(len(depos_e)-1)] for reco in range(len(recos_e)-1)])
     odds = np.log10(np.ma.masked_where(odds<=1e-10, odds))
@@ -397,18 +382,43 @@ if doplot:
     plt.savefig("fig_angtruereco.png",dpi=400)
     plt.show()
     
-    fluxes = np.array([(1.0 if true<-0.9 else 0.0) for true in bhist([ang]).centers])
-    fluxes /= sum(fluxes)
+    fluxes = np.array([(1.0 if true<-0.9 else 0.0) for true in a_true_centers])
+    fluxes /= sum(fluxes*a_true_widths)
 
-    smeared = np.zeros(shape=np.shape(fluxes))
+    smeared = np.zeros(shape=np.shape(a_reco_centers))
     for truth in range(len(fluxes)):
         for recon in range(len(fluxes)):
-            smeared[recon] += fluxes[truth]*dataobj.get_czenith_reco_odds( truth, recon, choice_e)
+            smeared[recon] += fluxes[truth]*dataobj.get_czenith_reco_odds( truth, recon, choice_e)*a_reco_widths[recon]/a_true_widths[truth]
 
-    print("Smear sum: {}".format(sum(smeared)))
+    print("Smear sum: {}".format(sum(smeared*a_reco_widths)))
     plt.figure(3)
-    plt.plot( bhist([ang]).centers, fluxes, label="True")
-    plt.plot( bhist([ang]).centers, smeared, label="Smeared")
+    plt.plot( a_true_centers, fluxes, label="True")
+    plt.plot( a_reco_centers, smeared, label="Smeared")
+    plt.legend()
     plt.xlabel("Angle")
     plt.ylabel("Flux Density")
+    plt.show()
+
+    fluxes = np.array([(1.0 if bino==20 else 0.0) for bino in range(len(depos))])
+    print("Len fluxes: {}".format(len(fluxes)))
+    print("Len widths: {}".format(len(depos_width)))
+    fluxes /= sum(fluxes*depos_width)
+
+    print("Flux Sum Initial: {}".format(sum(fluxes*depos_width)))
+
+    smeared = np.zeros(shape=np.shape(recos))
+    for depo in range(len(fluxes)):
+        for recon in range(len(smeared)):
+            odds = dataobj.get_energy_reco_odds(depo,recon)
+            smeared[recon] += fluxes[depo]*odds*depos_width[depo]/recos_width[recon]
+
+    print("Flux Sum Recon: {}".format(sum(smeared*recos_width)))
+
+    plt.figure(4)
+    plt.plot(depos, fluxes, label="True")
+    plt.plot(recos, smeared, label="Smeared")
+    plt.xscale('log')
+    plt.xlabel("Energy [GeV]")
+    plt.ylabel("Flux Density")
+    plt.legend()
     plt.show()
