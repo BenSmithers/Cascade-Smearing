@@ -324,6 +324,7 @@ def get_closest(x, domain, mapped):
     if not isinstance(domain, (tuple,list,np.ndarray)):
         raise TypeError("'domain' has unrecognized type {}, try {}".format(type(domain), list))
     if not isinstance(mapped, (tuple,list,np.ndarray)):
+        print(mapped)
         raise TypeError("'mapped' has unrecognized type {}, try {}".format(type(mapped), list))
     if not isinstance(x, (float,int)):
         raise TypeError("'x' should be number-like, not {}".format(type(x)))
@@ -399,6 +400,39 @@ def bilinear_interp(p0, p1, p2, q11, q12, q21, q22):
 
     return( mat_mult_final/((x2-x1)*(y2-y1)) )
 
+class Calculable:
+    def __init__(self):
+        if not os.path.exists(self.filename):
+            self._obj = self.generate()
+            self._save(self.obj)
+        else:
+            self._obj = self._load()
+
+    @property
+    def obj(self):
+        return(self._obj)
+
+    @property
+    def filename(self):
+        raise NotImplemented("Override default function!")
+    
+    def _save(self, obj):
+        f=open(self.filename,'wb')
+        pickle.dump(obj, f, -1)
+        f.close()
+
+    def _load(self):
+        f = open(self.filename,'rb')
+        all_data = pickle.load(f)
+        f.close()
+        return(all_data)
+
+    def generate(self):
+        raise NotImplemented("Override default function!")
+
+    def eval(self, value):
+        raise NotImplemented("Override default function!")
+
 class Data:
     """
     This is used as a container for the data loaded in from nuSQuIDS. 
@@ -450,7 +484,7 @@ class Data:
             # indexed like [energy_bin][angle_bin]
             # you may notice that NC and CC are treated as having separate fluxes, when really it'sthe same flux 
             #       this is for the most part okay since the interactions are rare enough that the fluxes are unchanged 
-            self._fluxes[ key ] = [[ data[energy+angle*n_energies][get_index(key, n_flavor)]*2*np.pi*self.livetime for angle in range(n_angles)] for energy in range(n_energies)]
+            self._fluxes[ key ] = [[ data[energy+angle*n_energies][get_index(key, n_flavor)]*2*np.pi for angle in range(n_angles)] for energy in range(n_energies)]
     
     # define a few access functions to protect the important stuff 
     # the "@property" tag makes it so these are accessed like attributes, not functions! 
@@ -616,11 +650,14 @@ class bhist:
         # build the function needed to register additions to the histograms.
         dims = tuple([len(self._edges[i])-1 for i in range(len(self._edges))])
         self._fill = np.zeros( shape=dims, dtype=self._dtype )
-        def register( amt, *args):
+        def register( amt, *args, density=True):
             """
             Tries to bin some data passed to the bhist. Arbitrarily dimensioned cause I was moving from 2D-3D and this seemed like a good opportunity 
                 amt is the amount to add
                 *args specifies the coordinates in our binned space 
+                density specifies whether or not we want to divide out bin widths to make amt a density
+
+            As a note, the density thing is implemented as-is since when using this, you won't know how wide the target bin is when you call this register function. You also can't just divide it out afterwards. This needs to happen between getting the bin location and adding it to the bin! 
             """
             if not len(args)==len(self._edges): 
                 raise ValueError("Wrong number of args to register! Got {}, not {}".format(len(args), len(self._edges)))
@@ -637,6 +674,10 @@ class bhist:
             # Verifies that nothing in the list is None-type
             if all([x is not None for x in bin_loc]):
                 # itemset works like ( *bins, amount )
+                if density: 
+                    widths = self.widths 
+                    for dim in range(len(self._edges)):
+                        amount/=widths[dim][bin_loc[dim]]
                 try:
                     self._fill.itemset(bin_loc, self._fill.item(tuple(bin_loc))+amount)
                 except TypeError:

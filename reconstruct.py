@@ -53,8 +53,6 @@ from cascade.utils import Data, get_index, get_loc, sci
 from cascade.utils import config, savefile 
 from cascade.utils import gen_filename, SterileParams
 
-from cascade.deposit import generate_singly_diff_fluxes
-
 # reconstruction data
 from cascade.deporeco import DataReco
 suffix= "_null"
@@ -106,7 +104,7 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges,errors, pa
     r_energy_centers = r_energy.centers
     r_energy_widths = r_energy.widths
     r_angle_centers = r_angle.centers
-    r_angle_widths = r_angle.widths
+    r_angle_widths = 2*pi*np.arccos(r_angle.widths)
 
     #build the data object
     # this thing take in those edges and centers and correctly builds normalized probabilities for the given bins 
@@ -138,7 +136,8 @@ def incorporate_recon(event_edges, cascade_edges, nuflux, angle_edges,errors, pa
                         elif ang_odds==0:
                             continue
                         for i_e_true in range(len(true_e_centers)):
-                            scale = true_ang_widths[i_a_true]*true_e_widths[i_e_true]
+                            scale = true_ang_widths[i_a_true]*true_e_widths[i_e_true]*depo_widths[i_e_depo]/(r_angle_widths[i_a_reco]*r_energy_widths[i_e_reco])
+
 
                             amt = nuflux[key][i_e_depo][i_e_true][i_a_true]*depo_odds*ang_odds*scale
                             amt_err = errors[key][i_e_depo][i_e_true][i_a_true]*depo_odds*ang_odds*scale
