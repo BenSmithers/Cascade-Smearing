@@ -52,7 +52,7 @@ parser.add_option("-n", "--nbins",
                 help="Number of bins to use for each axis")
 parser.add_option("-a", "--angle",
                 dest="angle",
-                default=-0.5,
+                default=-0.9,
                 type=float,
                 help="At which angle should the plots be made?")
 
@@ -99,13 +99,14 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib import ticker #used for log-scale contourplots 
 
-from cross_section_test import get_diff_xs
+from cascade.cross_section_test import get_diff_xs
 import nuSQUIDSpy as nsq
 
 # specialty-made utility functions
-from nus_utils import get_flavor, get_neut, get_curr
-from utils import bhist, get_exp_std, get_width, get_nearest_entry_to
-from utils import Data, get_index, get_loc, sci
+from cascade.nus_utils import get_flavor, get_neut, get_curr
+from cascade.utils import bhist, get_exp_std, get_width, get_nearest_entry_to
+from cascade.utils import Data, get_index, get_loc, sci
+from cascade.utils import sep_by_flavor
 
 const = nsq.Const()
 # colormap thing
@@ -115,13 +116,13 @@ def get_color(which, how_many=n_colors):
     return( cmap( float(which)/how_many ) )
 
 print("Importing Generation Stuff")
-from deposit import _load_data,_save_data, generate_singly_diff_fluxes, sep_by_flavor, data
+from cascade.deposit import _load_data,_save_data, generate_singly_diff_fluxes, sep_by_flavor
 
 if do_all:
     print("Generating")
     e_true, e_depo, flux, czenith = generate_singly_diff_fluxes(n_bins)
     print(czenith)
-    _save_data( e_true, e_depo, flux, czenith)
+    _save_data( e_true=e_true, e_depo=e_depo, flux=flux, czenith=czenith)
 
 
 if mode==1:
