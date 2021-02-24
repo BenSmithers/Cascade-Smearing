@@ -14,10 +14,10 @@ import pickle
 import numpy as np
 from scipy import integrate 
 
-from cascade.utils import config
+from cascade.utils import config, savefile, bilinear_interp, get_loc
 
 # tau file verison should be updated with changes to this code! 
-tau_file_version = "3.3.1"
+tau_file_version = "4.1.6"
 tau_file_name = config["tau_data"]
 
 full_path = os.path.join(config["datapath"], tau_file_name)
@@ -47,8 +47,9 @@ class TauData:
 
             try:
                 if tau_file["version"]==tau_file_version:
-                    self._energy_nodes = tau_file["energy_nodes"]
-                    self._expected_michell = tau_file["expected_michell"]
+                    self._total_energies    = tau_file["total_energies"]
+                    self._depo_energies      = tau_file["depo_energies"]
+                    self._xs_scale          = tau_file["xs_scale"]
                 else:
                     self._gen_tau_data()
             except KeyError: # somehow a different dict got saved here? 
@@ -59,68 +60,94 @@ class TauData:
          
     def _gen_tau_data(self):
         print("Generating Tau Data")
-        self._nodes = 1500
-        self._energy_nodes = np.logspace(1, 10, self._nodes) #represents E_tau
+        self._nodes = 30
+        self._total_energies = np.logspace(1, 10, self._nodes) #represents E_tau
+        self._depo_energies = np.logspace(1,10,self._nodes)
 
-        self._expected_michell = [np.zeros(self._nodes), np.zeros(self._nodes)]
-        for e_i in range(self._nodes):
+        self._xs_scale = np.zeros( (2,self._nodes, self._nodes)) 
+
+        for e_tot_i in range(self._nodes):
+            for e_tau_i in range(self._nodes):
+                if self._depo_energies[e_tau_i]>=self._total_energies[e_tot_i]:
+                    continue
+
+                self._xs_scale[0][e_tot_i][e_tau_i] = self._get_mpv_xs(self._total_energies[e_tot_i],self._depo_energies[e_tau_i], 1)
+                self._xs_scale[1][e_tot_i][e_tau_i] = self._get_mpv_xs(self._total_energies[e_tot_i],self._depo_energies[e_tau_i], -1)
+                
+
             #boostedMichel( E_e, E_tau )
-            vals = integrate.quad( lambda z: TauDecayToAll(self._energy_nodes[e_i], z*self._energy_nodes[e_i],-1)*z*self._energy_nodes[e_i], 0.0, 0.999)
-            self._expected_michell[0][e_i] = vals[0]
-
-            vals = integrate.quad( lambda z: TauDecayToAll(self._energy_nodes[e_i], z*self._energy_nodes[e_i], 1)*z*self._energy_nodes[e_i], 0.0, 0.999)
-            self._expected_michell[1][e_i] = vals[0]
-
-        # build the dict, write it 
-        file_object = open(full_path, 'wb')
-        data_dict = {"version":tau_file_version, "energy_nodes":self._energy_nodes, "expected_michell":self._expected_michell}
-        pickle.dump(data_dict, file_object, -1) #use the newest pickling techniques
-        file_object.close()
-
-
-    def expected_Etau(self, E_tau, P):
-        """
-        Returns the expectation value for the BoostedMichel function given E_tau
-        Bascially tells you what the expected energy of the electron is of a decaying tau of energy E_tau
-        """
-        if not (isinstance(E_tau, float) or isinstance(E_tau,int)):
-            raise TypeError("Expected {}, got {}".format(float,type(E_tau)))
+            #vals = integrate.quad( lambda z: TauDecayToAll(self._energy_nodes[e_i], z*self._energy_nodes[e_i],-1)*z*self._energy_nodes[e_i], 0.0, 0.999)
+            #self._expected_michell[0][e_i] = vals[0]
         
-        if E_tau<min(self._energy_nodes) or E_tau>max(self._energy_nodes):
-            raise ValueError("E_tau of {:.2f} GeV outside of calculated bounds ({:.2f}GeV, {:.2f}GeV). Modify and update TauData, or maybe something else is bad?".format(E_tau, min(self._energy_nodes), max(self._energy_nodes)))
+        savefile(full_path, version=tau_file_version, total_energies=self._total_energies, depo_energies=self._depo_energies, xs_scale=self._xs_scale) 
 
-        if P not in [-1,1]:
-            raise ValueError("Unexpected Polarization {}".format(P))
+    def _get_mpv_xs(self, E_total, E_depo, P):
+        """
+        Here, we integrate over the possible E_tau values to find the median one, then evaluate the cross section scale factor there 
+        """
+        if (P!=-1) and (P!=1):
+            raise ValueError("Unepected P {}".format(P))
+       
+        # Consider the interaction chain that we care about
+        """
+                  init shower 
+                 /
+        nu_tau  <            sec_nu_tau
+                 \         /
+                  tau-----<
+                           \ 
+                            < secondary_shower 
+        """
+        # we have the primary tau's energy, but we need to integrate over all possible sec_nu_tau energies
+        minimum = 0.
+        maximum = E_total
+        BR_l = 0.18
+        def function(secondary_shower):
+            """
+            \int x*f(x) dx 
 
-        if P==-1:
-            pol = 0
-        else:
-            pol = 1
+            since we want the mean value 
+            """
+            E_charged_tau = E_total - (E_depo - secondary_shower)
+            e_sec_nu = E_charged_tau - secondary_shower 
+            val = TauDecayToAllHadrons(E_charged_tau, e_sec_nu, P)+BR_l*TauLeptonDecay(e_sec_nu, E_charged_tau, P)
+            return( val if val>0 else 0. )
+       
+        return( integrate.quad(function, minimum, maximum)[0]/maximum )
 
-        upper_boundary = 1
-        while E_tau>(self._energy_nodes[upper_boundary]):
-            upper_boundary += 1
-        lower_boundary = upper_boundary - 1
-
-        #linear interpolation
-        y2 = self._expected_michell[pol][upper_boundary]
-        y1 = self._expected_michell[pol][lower_boundary]
-        x2 = self._energy_nodes[upper_boundary]
-        x1 = self._energy_nodes[lower_boundary]
-        slope = (y2-y1)/(x2-x1)
-
-        return( E_tau*slope + y2-(x2*slope) )
 
     @property
     def version(self):
         return(self._version)
 
-    def __call__(self, E_tau, pol):
-        if not (isinstance(E_tau, float) or isinstance(E_tau, int)):
-            raise TypeError("Expected {} for E_tau, not {}".format(float, type(E_tau)))
+    def __call__(self, E_total, E_depo, P):
+        if not (isinstance(E_depo, float) or isinstance(E_depo, int)):
+            raise TypeError("Expected {} for E_depo, not {}".format(float, type(E_depo)))
 
-        return( E_tau - self.expected_Etau(E_tau, pol) )
+        if E_depo>E_total:
+            return 0.
 
+        p0 = (E_total, E_depo)
+        
+        total_e_lower, total_e_upper = get_loc(E_total, self._total_energies)
+        had_e_lower, had_e_upper = get_loc(E_depo, self._depo_energies)
+
+        p1 = (self._total_energies[total_e_lower], self._depo_energies[had_e_lower])
+        p2 = (self._total_energies[total_e_upper], self._depo_energies[had_e_upper])
+
+        if P==1:
+            p_i = 0
+        elif P==-1:
+            p_i = 1
+        else:
+            raise ValueError("P not recognized: {}, use 1 or -1".format(P))
+
+        q11 = self._xs_scale[p_i][total_e_lower][had_e_lower]
+        q12 = self._xs_scale[p_i][total_e_lower][had_e_upper]
+        q21 = self._xs_scale[p_i][total_e_upper][had_e_lower]
+        q22 = self._xs_scale[p_i][total_e_upper][had_e_upper]
+
+        return(bilinear_interp( p0, p1, p2, q11, q12, q21, q22))
 
 def args_are_floats(*args):
     """
@@ -151,31 +178,22 @@ BrRho = 0.26
 BrA1 = 0.13
 BrHad = 0.13
 
-# Enu - outgoing tau neutrino (NC?)
-# Etau - energy of tau lepton 
-def BoostedMichel(E_e, E_t):
-    """
-    This is the differential flux rate 
-    """
-    args_are_floats(E_e, E_t)
-    r = E_e / E_t    
-    if r > 1.:
-        return 0.
-    return 1. / E_t * (5./3. - 3. *r**2 +4./3. * r**3)
+def TauLeptonDecay( Etau, Enu, P):
+    if not Enu<= Etau:
+        raise ValueError("{} should be <= {}".format(Enu, Etau))
+    z = Enu/Etau
+    z2 = z*z
+    z3 = z*z*z
 
+    factor1 = (5./3) - (3.*z2)  + (4./3)*z3
+    factor2 = (-1./3) + (3.*z2) - (8./3)*z3
 
-def TauDecayToLepton(Etau, Enu, P):
-    """
-    """
-    args_are_floats(Etau, Enu, P)
-    # decays either to electron or muon
-    # muon decay will be classified as tracks, so I'm throwing those away
-    # therefore we suppress the spectra by the P_mu/(P_e+P_mu) ratio
-    sup = 0.1739/(0.1739+0.1782)
-    expected_el = (5./3. - (3./4.) + (4./(3.*5.)))
-
-
-    return( sup*BoostedMichel( expected_el, Etau) )
+    if P==1:
+        return ( factor1 + (P*factor2)) 
+    elif P==-1:
+        return ( factor1 - (P*factor2))
+    else:
+        raise TypeError("Invalid P {}".format(P))
 
 #    z = Enu/Etau
 #    g0 = (5./3.) - 3.*z**2 + (4./3.)*z**3
@@ -223,33 +241,13 @@ def TauDecayToHadrons(Etau, Enu, P):
         g0 = 1./0.3
     return(g0+P*g1)
 
-def TauDecayToAll(Etau, Enu, P):
-    """
-    This adds up the differential decay rates. 
-
-    returns a (dn/dz) quantity, where dz is the width of considered E_nu/E_tau
-    and n is the probability. Integrating all the (dn/dz)s is 1
-    """
-    args_are_floats(Etau, Enu, P)
-    decay_spectra = 0
-    decay_spectra+=2.0*BrLepton*TauDecayToLepton(Etau, Enu, P)
-    decay_spectra+=BrPion*TauDecayToPion(Etau, Enu, P)
-    decay_spectra+=BrRho*TauDecayToRho(Etau, Enu, P)
-    decay_spectra+=BrA1*TauDecayToA1(Etau, Enu, P)
-    decay_spectra+=BrHad*TauDecayToHadrons(Etau, Enu, P)
-    return decay_spectra
-
-Etau = 100.
-zz = np.linspace(0.0,1.0,500)[1:-1]
-dNTaudz = lambda z: TauDecayToAll(Etau, Etau*z, 0.)
-
 def TauDecayToAllHadrons(Etau, Enu, P):
     args_are_floats(Etau, Enu, P)
     """
     This adds up the differential decay rates 
 
     Enu is energy of outgoing tau neutrino
-    ETau is energy of outgoing tau lepton (charged?)
+    ETau is energy of the intermediate tau lepton
     P is a polarization quantity (-1 for TauMinus)
     """
     #Etau is the energy of the tau lepton, Enu is the energy of the nu_tau after the tau decays
@@ -258,6 +256,29 @@ def TauDecayToAllHadrons(Etau, Enu, P):
     decay_spectra+=BrRho*TauDecayToRho(Etau, Enu, P)
     decay_spectra+=BrA1*TauDecayToA1(Etau, Enu, P)
     decay_spectra+=BrHad*TauDecayToHadrons(Etau, Enu, P)
-    return decay_spectra/Etau
+    return decay_spectra
 
+def TauDecayToAll(Etau, Enu, P=1):
+    decay_spectra = 0
+    decay_spectra += TauDecayToAllHadrons(Etau, Enu, P)
+    decay_spectra += 2*BrLepton*TauLeptonDecay(Etau, Enu, P)
+    return decay_spectra
 
+# integrate.quad( function, min, max)
+
+if False:
+    # print( integrate.quad( lambda z:TauDecayToAll(1.0, z), 0, 1) )
+
+    from cascade.utils import bhist
+    zs = np.logspace(-8,0, 1000)
+    cens = bhist([zs]).centers
+
+    dz = np.array([TauDecayToAll(1.0, z) for z in cens])
+    wids = bhist([zs]).widths
+
+    import matplotlib 
+    matplotlib.use('TkAgg')
+    import matplotlib.pyplot as plt
+
+    plt.plot(cens,dz*wids)
+    plt.show()
