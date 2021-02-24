@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Ben Smithers
+
+This is the cool script! It opens up a GUI allowing the user to explore theta_14 and theta_34 space 
 """
 # Gui stuff 
 from PyQt5.QtWidgets import QMainWindow, QWidget, QApplication
@@ -367,8 +369,8 @@ class main_window(QMainWindow):
         self.tau_angle = float(self.ui.tau_slider.value())*(25./100)*pi/180
         self.electron_angle = float(self.ui.electron_slider.value())*pi/100
 
-        self.ui.electron_lbl.setText("Theta-14: {:.4f}".format(self.electron_angle))
-        self.ui.tau_lbl.setText("Theta-34: {:.4f}".format(self.tau_angle))
+        self.ui.electron_lbl.setText("Theta-14: {:.4f}, {:.0f} deg".format(self.electron_angle, self.electron_angle*180/pi))
+        self.ui.tau_lbl.setText("Theta-34: {:.4f}, {:.0f} deg".format(self.tau_angle, self.tau_angle*180/pi))
 
 
 app = QApplication(sys.argv)
