@@ -2,7 +2,7 @@ from math import exp, sqrt, pi, log, acos, log10, sinh, sin
 import numpy as np
 import os
 from cascade.utils import bhist, get_loc, get_closest, config
-from cascade.utils import Calculable
+from cascade.utils import Calculable, sci
 
 
 import pickle
@@ -34,8 +34,8 @@ angdata = np.transpose(np.loadtxt(os.path.join(os.path.dirname(__file__),"angerr
 # so we do a little fitty-fit
 logged = np.log10(angdata[0])
 from scipy.optimize import curve_fit as fit
-def func(x, a, gamma):
-    return( a*(x**(-gamma)) )
+def func(x, c1,c2,c3):
+    return( c1 + c2*x + c3*(x**2) )
 popt, pcov = fit(func, logged, angdata[1])
 
 
@@ -52,24 +52,24 @@ def get_ang_error(energy):
         # we really want to just use the data, so let's try interpolating first 
         error = get_closest( energy, angdata[0], angdata[1] )
     except ValueError: # failing that we use the fit (which isn't as good)
-        error = func( log10(energy), popt[0], popt[1])
+        error = func( log10(energy), popt[0], popt[1], popt[2] )
     return(min(max(error, 0), 180))
 
-if False:
+if False: # debug plot, shows angular error as a func of energy
     import matplotlib
     matplotlib.use('TkAgg')
     import matplotlib.pyplot as plt
     plt.plot( angdata[0], angdata[1],'d', label="Data")
-    xs = np.logspace(3.5,7.5,100)
+    xs = np.logspace(2,7.5,100)
     #ys = func(np.log10(xs), popt[0], popt[1])
     ys = [get_ang_error(en) for en in xs]
     plt.plot(xs, ys, label='Fit')
     plt.legend()
     plt.xscale('log')
-    plt.xlabel("Energy Depo [GeV]",size=14)
+    plt.xlabel("Energy Deposited [GeV]",size=14)
     plt.ylabel("Angular Error [deg]",size=14)
+    plt.tight_layout()
     plt.show()
-    sys.exit()
 
 class DataReco:
     """
@@ -293,12 +293,17 @@ def get_odds_energy(deposited, reconstructed):
     return(prob)
 
 # this was hre just for debugging purposes. Don't usually need it
-doplot = False
+doplot = True
 if doplot:
     import matplotlib
     matplotlib.use('TkAgg')
     import matplotlib.pyplot as plt
     from matplotlib import ticker
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+   
+    this_cmap = plt.get_cmap("viridis")
+    def get_color(n, colormax=3.0):
+        return this_cmap(n/colormax)
 
     depos_e = np.logspace(0.1, 6.9, 100)*(1e9)
     recos_e = np.logspace(0.1, 6.9, 200)*(1e9)
@@ -322,41 +327,40 @@ if doplot:
     odds = np.log10(np.ma.masked_where(odds<=1e-10, odds))
     levels = np.logspace(-3,0,10)
     
-    if False:
-        print(np.min(odds))
-        print(np.max(odds))
+    print(np.min(odds))
+    print(np.max(odds))
 
-        figs, axes = plt.subplots(nrows=2, ncols=1, sharex=False, gridspec_kw={'height_ratios':[1,1]})
+    figs, axes = plt.subplots(nrows=2, ncols=1, sharex=False, gridspec_kw={'height_ratios':[1,1]})
 
-        ctf = axes[0].pcolormesh(depos,recos,odds, cmap='gist_yarg')
-        #plt.pcolormesh(depos,recos,odds, cmap='gist_gray', locator=ticker.LogLocator())
-        axes[0].set_xscale('log')
-        axes[0].set_yscale('log')
-        axes[0].set_xlim([10**0,10**7])
-        axes[0].set_ylim([10**0,10**7])
-        axes[0].set_xlabel("Deposited [GeV]")
-        axes[0].set_ylabel("Reconstructed [GeV]")
-        cbar = plt.colorbar(ctf) #, ticks=ticker.LogLocator())
-        cbar.set_label("Probability Density")
+    ctf = axes[0].pcolormesh(depos,recos,odds, cmap='gist_yarg')
+    #plt.pcolormesh(depos,recos,odds, cmap='gist_gray', locator=ticker.LogLocator())
+    axes[0].set_xscale('log')
+    axes[0].set_yscale('log')
+    axes[0].set_xlim([10**0,10**7])
+    axes[0].set_ylim([10**0,10**7])
+    axes[0].set_xlabel("Deposited [GeV]", size=14)
+    axes[0].set_ylabel("Reconstructed [GeV]", size=14)
+    divider = make_axes_locatable(axes[0])
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    cbar = plt.colorbar(mappable=ctf, cax=cax) #, ticks=ticker.LogLocator())
+    cbar.set_label("Probability Density")
 
-        # slides !
-        slices = 10**np.array([1,2,3,4,5])
-        for cut in slices:
-            
+    # slides !
+    slices = 10**np.array([1,2,3,4,5])
+    for cut in slices:
 
-
-            left, right = get_loc(float(cut), depos)
-            loc = left if abs(cut-depos[left])<abs(cut-depos[right]) else right
-            width_factor = dataobj.depo_energy_widths[loc]
-            odds = [ dataobj.get_energy_reco_odds(loc, val) for val in range(len(recos))]
-            axes[1].plot(recos, odds, color=(.1,.1,.1))
-        
-        axes[1].set_xscale('log')
-        axes[1].set_xlabel("Reconstructed [GeV]")       
-        axes[1].set_ylabel("Prob. Density")
-        
-        figs.savefig("fig_deporeco.png",dpi=400)
-        plt.show()
+        left, right = get_loc(float(cut), depos)
+        loc = left if abs(cut-depos[left])<abs(cut-depos[right]) else right
+        width_factor = dataobj.depo_energy_widths[loc]
+        odds = [ dataobj.get_energy_reco_odds(loc, val) for val in range(len(recos))]
+        axes[1].plot(recos, odds, color=(.1,.1,.1))
+    
+    axes[1].set_xscale('log')
+    axes[1].set_xlabel("Reconstructed [GeV]", size=14)
+    axes[1].set_ylabel("Prob. Density", size=14)
+    
+    figs.savefig("fig_deporeco.png",dpi=400)
+    plt.show()
         
     choice_e, unused = get_loc( 1e4, depos)
 
@@ -375,28 +379,36 @@ if doplot:
 
     plt.plot( bhist([ang]).centers, ang_odds)
     #me = plt.pcolormesh(ang,ang,ang_odds,cmap='gist_yarg')
-    plt.xlabel("Reconstructed Angle")
-    plt.ylabel("Odds, normalized")
+    plt.xlabel("Reconstructed Angle", size=14)
+    plt.ylabel("Probability Density",size=14)
     #cbar = plt.colorbar(me)
     #cbar.set_label("Prob Density")
     plt.savefig("fig_angtruereco.png",dpi=400)
     plt.show()
     
+    #fluxes = np.array([(1.0 if (true<0.05 and true>-0.05) else 0.0) for true in a_true_centers])
     fluxes = np.array([(1.0 if true<-0.9 else 0.0) for true in a_true_centers])
     fluxes /= sum(fluxes*a_true_widths)
 
-    smeared = np.zeros(shape=np.shape(a_reco_centers))
-    for truth in range(len(fluxes)):
-        for recon in range(len(fluxes)):
-            smeared[recon] += fluxes[truth]*dataobj.get_czenith_reco_odds( truth, recon, choice_e)*a_reco_widths[recon]/a_true_widths[truth]
+    n_e = 4
+    chosen_energies = np.logspace(1, 5, n_e) 
+    i_choice_e = [ get_loc(energy, depos)[0] for energy in chosen_energies ]
 
-    print("Smear sum: {}".format(sum(smeared*a_reco_widths)))
+    smeared = [np.zeros(shape=np.shape(a_reco_centers)) for i in range(n_e)]
+    for i_e in range(len(chosen_energies)):
+        for truth in range(len(fluxes)):
+            for recon in range(len(fluxes)):
+                smeared[i_e][recon] += fluxes[truth]*dataobj.get_czenith_reco_odds( truth, recon, i_choice_e[i_e])*a_reco_widths[recon]/a_true_widths[truth]
+
     plt.figure(3)
     plt.plot( a_true_centers, fluxes, label="True")
-    plt.plot( a_reco_centers, smeared, label="Smeared")
+    for i_e in range(len(i_choice_e)):
+        plt.plot( a_reco_centers, smeared[i_e], label="Reco, E={} GeV".format(sci(chosen_energies[i_e], 2)), color=get_color(i_e, n_e-1))
     plt.legend()
-    plt.xlabel("Angle")
-    plt.ylabel("Flux Density")
+#    plt.title("Smearing at 10 TeV",size=14)
+    plt.xlabel(r"cos$\theta_{z}$",size=14)
+    plt.ylabel("Flux Density",size=14)
+    plt.savefig("~/varioussmear.png",dpi=400)
     plt.show()
 
     fluxes = np.array([(1.0 if bino==20 else 0.0) for bino in range(len(depos))])
