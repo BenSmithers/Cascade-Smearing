@@ -38,15 +38,11 @@ from cascade.utils import config
 
 from cascade.cross_section_test import get_diff_xs
 
-# tau stuff
-from cascade.tau_funcs import TauData
-
 # reconstruction data
 from cascade.deporeco import DataReco
 
 const = nsq.Const()
 # load the data using the default filename, 'atmosphere.dat'
-tauData = TauData()
 
 glob_angle = None
 
@@ -145,7 +141,7 @@ def do_for_key(event_edges,e_deposited_edges, key,data, angles):
                     if flav=="E":
                         scale = 1.0
                     elif flav=="Tau":
-                        scale = 0.51
+                        scale = 0.51 # this was manually calculated as the best value, regardless of the actual tau energy 
                     else:
                         continue
 
