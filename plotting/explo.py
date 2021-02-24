@@ -63,28 +63,39 @@ class base_gui(object):
         self.electron_lbl.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.electron_lbl.setObjectName("electron_lbl")
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.electron_lbl)
+
+        self.muon_lbl = QtWidgets.QLabel(self.centralwidget)
+        self.muon_lbl.setLayoutDirection(QtCore.Qt.LeftToRight)
+        self.muon_lbl.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.muon_lbl.setObjectName("muon_lbl")
+        self.formLayout.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.muon_lbl)
+        self.muon_combo = QtWidgets.QComboBox(self.centralwidget)
+        self.muon_combo.setObjectName("muon_combo")
+        self.formLayout.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.muon_combo)
+
+
         self.tau_lbl = QtWidgets.QLabel(self.centralwidget)
         self.tau_lbl.setLayoutDirection(QtCore.Qt.LeftToRight)
         self.tau_lbl.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.tau_lbl.setObjectName("tau_lbl")
-        self.formLayout.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.tau_lbl)
+        self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.tau_lbl)
         self.tau_slider = QtWidgets.QSlider(self.centralwidget)
         self.tau_slider.setOrientation(QtCore.Qt.Horizontal)
         self.tau_slider.setObjectName("tau_slider")
         self.tau_slider.setMaximum(100)
-        self.formLayout.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.tau_slider)
+        self.formLayout.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.tau_slider)
 
         self.width_lbl = QtWidgets.QLabel(self.centralwidget)
         self.width_lbl.setLayoutDirection(QtCore.Qt.LeftToRight)
         self.width_lbl.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.width_lbl.setObjectName("width_lbl")
-        self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.width_lbl)
+        self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.width_lbl)
         self.width_slider = QtWidgets.QSlider(self.centralwidget)
         self.width_slider.setOrientation(QtCore.Qt.Horizontal)
         self.width_slider.setObjectName("width_slider")
         self.width_slider.setMinimum(1)
         self.width_slider.setMaximum(100)
-        self.formLayout.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.width_slider)
+        self.formLayout.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.width_slider)
 
         self.recoBox = QtWidgets.QCheckBox(self.centralwidget)
         self.recoBox.setObjectName("recoBox")
@@ -152,8 +163,9 @@ class base_gui(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Slide 2"))
-        self.electron_lbl.setText(_translate("MainWindow", "Theta e-s:  0.00"))
-        self.tau_lbl.setText(_translate("MainWindow", "Theta tau-s: 0.00"))
+        self.electron_lbl.setText(_translate("MainWindow", "Theta 1-4:  0.00"))
+        self.muon_lbl.setText(_translate("MainWindow", "Theta 2-4: 0.00"))
+        self.tau_lbl.setText(_translate("MainWindow", "Theta 3-4: 0.00"))
         self.width_lbl.setText(_translate("MainWindow", "Width: 0.10"))
         self.recoBox.setText(_translate("MainWnidow", "Reconstructed Fluxes"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
@@ -185,15 +197,16 @@ class main_window(QMainWindow):
         self.ui.electron_slider.valueChanged.connect(self.update_plot)
         self.ui.width_slider.valueChanged.connect(self.update_width)
 
+
         #whenever the checkactions change, call this other function
         self.ui.actionElectron.triggered.connect(self.checked_changed)
         self.ui.actionNuEBar.triggered.connect(self.checked_changed)
         self.ui.actionNuMu.triggered.connect(self.checked_changed)
         self.ui.actionNuMuBar.triggered.connect(self.checked_changed)
         self.ui.actionNuTau.triggered.connect(self.checked_changed)
-        self.ui.actionNuTauBar.triggered.connect(self.checked_changed)
+        self.ui.actionNuTauBar.triggered.connect(self.checked_changed)    
         self.ui.recoBox.clicked.connect(self.checked_changed)
-    
+
         self.tau_angle = 0.0
         self.electron_angle = 0.0
 
@@ -201,10 +214,19 @@ class main_window(QMainWindow):
         # this just ensures that the names are all right 
         n_grid = 20
         self.theta03s = np.linspace(0, pi, n_grid) #el
-        self.thetamu = 0.160875
+
+#        self.theta13s = [0.0,0.05, 0.1, 0.160875, 0.2]
+        self.theta13s = [0.160875]
+        self.thetamu =self.theta13s[0]
         self.theta23s = np.linspace(0, 25*pi/180., n_grid) #tau
         self.msq = 4.47
         
+        for value in self.theta13s:
+            self.ui.muon_combo.addItem(str(value))
+        
+        self.ui.muon_combo.setCurrentIndex( self.theta13s.index(self.thetamu) )
+        self.ui.muon_combo.currentIndexChanged.connect(self.update_plot)
+
         # load the null flux!
         self.reload_null()
 
@@ -366,9 +388,11 @@ class main_window(QMainWindow):
         """
         Grab the angles from the sliders, update the slider text
         """
+        self.thetamu = float(self.ui.muon_combo.currentText())
         self.tau_angle = float(self.ui.tau_slider.value())*(25./100)*pi/180
         self.electron_angle = float(self.ui.electron_slider.value())*pi/100
-
+        
+        self.ui.muon_lbl.setText("Theta-24: {:.4f}, {:.0f} deg".format(self.thetamu, self.thetamu*180./pi))
         self.ui.electron_lbl.setText("Theta-14: {:.4f}, {:.0f} deg".format(self.electron_angle, self.electron_angle*180/pi))
         self.ui.tau_lbl.setText("Theta-34: {:.4f}, {:.0f} deg".format(self.tau_angle, self.tau_angle*180/pi))
 
