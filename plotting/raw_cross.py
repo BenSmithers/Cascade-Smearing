@@ -1,3 +1,9 @@
+"""
+This script was written to take the propagated nusquids fluxes and convolve them with nusquids' total cross sections 
+
+There was a little thing added in to handle some tau smearing - but that only really has an effect when we actually do this in a differential xs way
+"""
+
 import pickle
 import numpy as np
 import matplotlib 
@@ -10,9 +16,6 @@ from cascade.utils import bhist
 
 from cascade.cross_section_test import get_total_flux as get_xs 
 from cascade.nus_utils import get_flavor, get_neut, get_curr 
-
-from cascade.tau_funcs import TauData
-TD = TauData()
 
 width = 0.1
 
@@ -53,8 +56,9 @@ for key in keys:
             P = 1
 
         pcent = 1.0
-        if "tau" in key.lower():
-            pcent = (TD( centers[i_energy]/(1e9), P) - centers[i_energy])/centers[i_energy]
+
+        if False: #"tau" in key.lower():
+            pcent = 0.5
 
         flux_null[key][i_energy] *= xs*pcent
         flux_sterile[key][i_energy] *= xs*pcent

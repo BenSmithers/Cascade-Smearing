@@ -1,3 +1,7 @@
+"""
+This was used to make some plots comparing cascade and track flux rates
+"""
+
 from MCEq.core import MCEqRun
 import crflux.models as crf
 

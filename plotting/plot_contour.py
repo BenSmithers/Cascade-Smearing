@@ -1,3 +1,9 @@
+"""
+Pretty outdated
+
+This was a script that would tell you the likely true values for an event given the reconstruction values 
+"""
+
 import pickle 
 import os 
 import numpy as np

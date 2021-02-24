@@ -4,6 +4,8 @@ This script here generates two fluxes at just the energy-deposition stage
 Then we sum them over true energy to get fluxes at each deposited energy/angle 
 Then we plot each one individually
 Then we plot their ratio
+
+Then I added a few other debugging plots 
 """
 import numpy as np
 import matplotlib
@@ -40,7 +42,7 @@ base_shape = np.shape(null_flux[keys[0]])
 new_shape = (base_shape[0], base_shape[2])
 
 just_one = False
-keep_key = "Mu"
+keep_key = "Tau"
 
 null_new = np.zeros(shape=new_shape)
 ster_new = np.zeros(shape=new_shape)
@@ -70,69 +72,70 @@ for key in keys:
 
 # I still don't get why pcolormesh basically transposes things...
 
+if False:
+    cf = plt.pcolormesh(czeniths, energies/(1e9), np.log10(nulle_cur))
+    plt.yscale('log')
+    plt.ylabel("Depo Energy [GeV]", size=14)
+    plt.xlabel(r"$\cos\theta$",size=14)
+    if just_one:
+        plt.title("Only Looking at: {}".format(keep_key),size=14)
+    cbar = plt.colorbar() #cf,ticks=ticker.LogLocator())
+    cbar.set_label(r"log$\Phi$")
+    plt.title("Single Slice!", size=14)
+    plt.show()
+    plt.clf()
 
-cf = plt.pcolormesh(czeniths, energies/(1e9), np.log10(nulle_cur))
-plt.yscale('log')
-plt.ylabel("Depo Energy [GeV]", size=14)
-plt.xlabel(r"$\cos\theta$",size=14)
-if just_one:
-    plt.title("Only Looking at: {}".format(keep_key),size=14)
-cbar = plt.colorbar() #cf,ticks=ticker.LogLocator())
-cbar.set_label(r"log$\Phi$")
-plt.title("Single Slice!", size=14)
-plt.show()
-plt.clf()
+    cf = plt.pcolormesh(energies/(1e9), energies/(1e9), np.log10(nulle))
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.ylabel("Depo Energy [GeV]", size=14)
+    plt.xlabel(r"Nu Energy [GeV]",size=14)
+    if just_one:
+        plt.title("Only Looking at: {}".format(keep_key),size=14)
+    cbar = plt.colorbar() #cf,ticks=ticker.LogLocator())
+    cbar.set_label(r"log$\Phi$")
+    plt.show()
+    plt.clf()
 
-cf = plt.pcolormesh(energies/(1e9), energies/(1e9), np.log10(nulle))
-plt.yscale('log')
-plt.xscale('log')
-plt.ylabel("Depo Energy [GeV]", size=14)
-plt.xlabel(r"Nu Energy [GeV]",size=14)
-if just_one:
-    plt.title("Only Looking at: {}".format(keep_key),size=14)
-cbar = plt.colorbar() #cf,ticks=ticker.LogLocator())
-cbar.set_label(r"log$\Phi$")
-plt.show()
-plt.clf()
+    cf = plt.pcolormesh(energies/(1e9), energies/(1e9), np.log10(stere))
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.ylabel("Depo Energy [GeV]", size=14)
+    plt.xlabel(r"Nu Energy [GeV]",size=14)
+    if just_one:
+        plt.title("Only Looking at: {}".format(keep_key),size=14)
+    cbar = plt.colorbar() #cf,ticks=ticker.LogLocator())
+    cbar.set_label(r"log$\Phi$")
+    plt.show()
+    plt.clf()
 
-cf = plt.pcolormesh(energies/(1e9), energies/(1e9), np.log10(stere))
-plt.yscale('log')
-plt.xscale('log')
-plt.ylabel("Depo Energy [GeV]", size=14)
-plt.xlabel(r"Nu Energy [GeV]",size=14)
-if just_one:
-    plt.title("Only Looking at: {}".format(keep_key),size=14)
-cbar = plt.colorbar() #cf,ticks=ticker.LogLocator())
-cbar.set_label(r"log$\Phi$")
-plt.show()
-plt.clf()
+    cf = plt.pcolormesh(czeniths, energies/(1e9), np.log10(null_new))
+    plt.yscale('log')
+    plt.ylabel("Depo Energy [GeV]", size=14)
+    plt.xlabel(r"$\cos\theta$",size=14)
+    if just_one:
+        plt.title("Only Looking at: {}".format(keep_key),size=14)
+    cbar = plt.colorbar() #cf,ticks=ticker.LogLocator())
+    cbar.set_label(r"log$\Phi$")
+    plt.show()
+    plt.clf()
 
-cf = plt.pcolormesh(czeniths, energies/(1e9), np.log10(null_new))
-plt.yscale('log')
-plt.ylabel("Depo Energy [GeV]", size=14)
-plt.xlabel(r"$\cos\theta$",size=14)
-if just_one:
-    plt.title("Only Looking at: {}".format(keep_key),size=14)
-cbar = plt.colorbar() #cf,ticks=ticker.LogLocator())
-cbar.set_label(r"log$\Phi$")
-plt.show()
-plt.clf()
-
-cf = plt.pcolormesh(czeniths, energies/(1e9), np.log10(ster_new))
-plt.yscale('log')
-plt.ylabel("Depo Energy [GeV]", size=14)
-plt.xlabel(r"$\cos\theta$",size=14)
-if just_one:
-    plt.title("Only Looking at: {}".format(keep_key),size=14)
-cbar = plt.colorbar() #cf,ticks=ticker.LogLocator())
-cbar.set_label(r"log$\Phi$")
-plt.show()
-plt.clf()
+    cf = plt.pcolormesh(czeniths, energies/(1e9), np.log10(ster_new))
+    plt.yscale('log')
+    plt.ylabel("Depo Energy [GeV]", size=14)
+    plt.xlabel(r"$\cos\theta$",size=14)
+    if just_one:
+        plt.title("Only Looking at: {}".format(keep_key),size=14)
+    cbar = plt.colorbar() #cf,ticks=ticker.LogLocator())
+    cbar.set_label(r"log$\Phi$")
+    plt.show()
+    plt.clf()
 
 cf = plt.pcolormesh(czeniths, energies/(1e9), ster_new/null_new, cmap=cm.coolwarm, vmin=0.9, vmax=1.1)
 plt.yscale('log')
 plt.ylabel("Depo Energy [GeV]", size=14)
 plt.xlabel(r"$\cos\theta$",size=14)
+plt.ylim([10**2,10**6])
 if just_one:
     plt.title("Only Looking at: {}".format(keep_key),size=14)
 cbar = plt.colorbar() #cf,ticks=ticker.LogLocator())

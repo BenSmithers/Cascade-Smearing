@@ -1,20 +1,9 @@
 #!/usr/bin/python3.6
 '''
-This script plots the fluxes output by the convolve cpp script. It also does some analysis and saves some arrays to disk 
+Totally outdated probably 
 
-But how does it work?
- 1. Raw flux data from the included mceq+nuSQuIDS flux is loaded in by the Data Object. This object has functionality for sampling from the flux at arbitrary parent neutrino energy by interpolating between nsq points.
- 2. This flux data is convolved with some cross sections to make a singly-differential flux array of deposited energy vs event energy 
-
-The heavy lifting goes on in the generate_singly_diff_fluxes function 
-
-Different "modes" are used to make different plots. 
-
-Notes:
-    + energies are generally in eV for consistency with nuSQuIDs
-    + widths are in GeV for consistency with nuSQuIDS (why...)
-    + the fluxes output by the Data object are in units of [GeV cm2 s]^-1 (incoming neutrino energy)
-    + the cross sections are in units of cm2/GeV (outgoing neutrino energy)
+This thing made a few deposition level plots, I haven't updated this since I separated the deposition plotting scripts from the actual deposition code. 
+A couple of the plotters were outdated even then! 
 '''
 
 from optparse import OptionParser

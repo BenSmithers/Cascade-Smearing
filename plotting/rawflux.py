@@ -1,3 +1,7 @@
+"""
+This makes a few plots of the raw data after nuSQUIDS propagation
+"""
+
 from cascade.utils import Data
 
 import os
