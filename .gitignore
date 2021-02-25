@@ -6,4 +6,6 @@
 *.out
 *.lock
 *.sub
+*.pyc
 __pycache__/*
+
