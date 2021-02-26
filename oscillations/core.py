@@ -15,13 +15,14 @@ mixing_m[0][2] = mixing_m[2][0] = 0.149575
 mixing_m[1][2] = mixing_m[2][1] = 0.855211
 
 mixing_m[0][3] = mixing_m[3][0] = 0.
-mixing_m[1][3] = mixing_m[3][1] = 0.# 9.*pi/180
-mixing_m[2][3] = mixing_m[3][2] = 0.# 16.*pi/180
+mixing_m[1][3] = mixing_m[3][1] =  9.*pi/180
+mixing_m[2][3] = mixing_m[3][2] = 16.*pi/180
 
 deltas = np.zeros(shape=np.shape(u_matrix))
 
 msq = np.zeros(shape=np.shape(u_matrix))
 
+# assume normal ordering! 
 msq[0][1] = 7.59e-5
 msq[1][0] = -msq[0][1]
 msq[1][2] = 2.32e-3
@@ -42,39 +43,40 @@ def mcos(i,j):
 def msin(i,j):
     return( sin(mixing_m[i-1][j-1]))
 
-# calculate these matrix elements... 
-
-u_matrix[0][0] = mcos(1,2)*mcos(1,3)*mcos(1,4)
-u_matrix[0][1] = mcos(1,3)*mcos(1,4)*msin(1,2)
-u_matrix[0][2] = mcos(1,4)*msin(1,3)*exp(-1*deltas[0][2]*1j)
-u_matrix[0][3] =           msin(1,4)*exp(-1*deltas[0][3]*1j)
-
-u_matrix[1][0] = mcos(1,2)*(-1*mcos(2,4)*msin(1,3)*msin(2,3)*exp(-1*deltas[0][2]*1j) -mcos(1,3)*msin(1,4)*msin(2,4)*exp(-1*(deltas[1][3]-deltas[0][3])*1j))-mcos(2,3)*mcos(2,4)*msin(1,2)
-u_matrix[1][1] = mcos(1,2)*mcos(2,3)*mcos(2,4)+msin(1,2)*(-1*exp(deltas[0][2]*1j)*mcos(2,4)*msin(1,3)*msin(2,3) - exp(-1*(deltas[1][3]-deltas[0][3])*1j)*mcos(1,3)*msin(1,4)*msin(2,4))
-u_matrix[1][2] = mcos(1,3)*mcos(2,4)*msin(2,3) - msin(1,3)*msin(1,4)*msin(2,4)*exp(-1*(deltas[0][2]- deltas[0][3] + deltas[1][3])*1j)
-u_matrix[1][3] = mcos(1,4)*msin(2,4)*exp(-1*deltas[1][3]*1j)
-
-u_matrix[2][0] = -msin(1,2)*(-mcos(3,4)*msin(2,3)-exp(deltas[1][3]*1j)*mcos(2,3)*msin(2,4)*msin(3,4)) + mcos(1,2)*(-exp(deltas[0][3]*1j)*mcos(1,3)*mcos(2,4)*msin(1,4)*msin(3,4) - msin(1,3)*exp(deltas[0][2]*1j)*(mcos(2,3)*mcos(3,4) - exp(deltas[1][3]*1j)*msin(2,3)*msin(2,4)*msin(3,4)))
-u_matrix[2][1] = -mcos(1,2)*(-mcos(3,4)*msin(2,3)-exp(deltas[1][3]*1j)*mcos(2,3)*msin(2,4)*msin(3,4)) + msin(1,2)*(-exp(deltas[0][3]*1j)*mcos(1,3)*mcos(2,4)*msin(1,4)*msin(3,4) - msin(1,3)*exp(deltas[0][2]*1j)*(mcos(2,3)*mcos(3,4) - exp(deltas[1][3]*1j)*msin(2,3)*msin(2,4)*msin(3,4)))
-u_matrix[2][2] = exp((deltas[0][2]-deltas[0][3])*1j)*mcos(2,4)*msin(1,3)*msin(1,4)*msin(3,4) + mcos(1,3)*(mcos(2,3)*mcos(3,4) - exp(deltas[1][3]*1j)*msin(2,3)*msin(2,4)*msin(3,4))
-u_matrix[2][3] = mcos(1,4)*mcos(2,4)*msin(3,4)
-
-u_matrix[3][0] = -msin(1,2)*(-exp(deltas[1][3]*1j)*mcos(2,3)*mcos(3,4)*msin(2,4) + msin(2,3)*msin(3,4)) + mcos(1,2)*(-exp(deltas[1][3]*1j)*mcos(1,3)*mcos(2,4)*mcos(3,4)*msin(1,4) - exp(deltas[0][2]*1j)*msin(1,3)*(-exp(deltas[1][3]*1j)*mcos(3,4)*msin(2,3)*msin(2,4)-mcos(2,3)*msin(3,4)))
-u_matrix[3][1] =  mcos(1,2)*(-exp(deltas[1][3]*1j)*mcos(2,3)*mcos(3,4)*msin(2,4) + msin(2,3)*msin(3,4)) + msin(1,2)*(-exp(deltas[1][3]*1j)*mcos(1,3)*mcos(2,4)*mcos(3,4)*msin(1,4) - exp(deltas[0][2]*1j)*msin(1,3)*(-exp(deltas[1][3]*1j)*mcos(3,4)*msin(2,3)*msin(2,4)-mcos(2,3)*msin(3,4)))
-u_matrix[3][2] = -exp(-1*(deltas[0][2]-deltas[0][3])*1j)*mcos(2,4)*mcos(3,4)*msin(1,3)*msin(1,4) + mcos(1,3)*(-exp(deltas[1][3]*1j)*mcos(3,4)*msin(2,3)*msin(2,4)- mcos(2,3)*msin(3,4))
-u_matrix[3][3] = mcos(1,4)*mcos(2,4)*mcos(3,4)
-
-
-print(r"UU$^{\dag}$: "+"\n"+str(np.matmul(u_matrix, u_matrix.conjugate())))
-
-
-# numpy conjugate 
 conj = np.conjugate
+
+def r_mat(i,j):
+    matrix = np.identity(n_flavors)*1j
+    matrix[i-1][i-1] = mcos(i,j)
+    matrix[j-1][i-1] = msin(i,j)
+    matrix[i-1][j-1] = -msin(i,j)
+    matrix[j-1][j-1] = mcos(i,j)
+    return(matrix)
+
+def r_hat(i,j):
+    matrix = np.identity(n_flavors)*1j
+    matrix[i-1][i-1] = mcos(i,j)
+    matrix[j-1][i-1] = msin(i,j)*exp(-deltas[i-1][j-1]*1j)
+    matrix[i-1][j-1] = -conj(msin(i,j)*exp(-deltas[i-1][j-1]*1j))
+    matrix[j-1][j-1] = mcos(i,j)
+    return(matrix)
+
+def multimat(*args):
+    assert(len(args)>=2)
+    amt = args[0]
+    for arg in range(len(args)):
+        if arg==0:
+            continue
+        amt = np.matmul(amt, args[arg])
+    return(amt)
+
+# we calculate the unitary rotation matrix via multiple sub-rotations!! 
+u_matrix = multimat( r_hat(2,4), r_mat(3,4), r_hat(1,4), r_mat(2,3), r_hat(1,3), r_mat(1,2))
 
 a = 1
 value = 0
 for i in range(4):
-    value += u_matrix[a][i]*conj(u_matrix[2][i])
+    value += u_matrix[a][i]*conj(u_matrix[a][i])
 print("Dat Sum: {}".format(value))
 
 # hbar is 1
