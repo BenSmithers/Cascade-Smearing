@@ -77,10 +77,6 @@ scp username@cobalt.icecube.wisc.edu:/data/user/bsmithers/data/cascades/flux_dat
 ```
 Note: this might take a while!
 
-    b. Otherwise download the data from this google drive link, unzip, and put the contents in  `/path/to/data/`
-
-https://drive.google.com/file/d/1qKhchUlm958dqi4IXemWqqJTookriN5g/view?usp=sharing
-
 8. You should now be able to run the gui, after restarting whatever terminal you're using, by going to `/path/to/root/Cascade-Smearing/plotting` and running 
 ```
 python3 explo.py
@@ -98,9 +94,7 @@ python3 explo.py
  ```
  scp username@cobalt.icecube.wisc.edu:/data/user/bsmithers/data/cascades/raw_det_flux_* .
  ```
- into your data folder, or extract the contents of this google drive folder into your data folder
- 
- https://drive.google.com/file/d/1XWxhcumqWIo0uTFIwm7p91f1ZNkxFN4t/view?usp=sharing
+ into your data folder.
 
 ## Links
 
