@@ -1,4 +1,4 @@
-from math import sqrt, log10
+from math import sqrt, log10, pi
 
 import os
 import numpy as np
@@ -23,6 +23,11 @@ currents = ['NC', 'CC']
 f = open(os.path.join(os.path.dirname(__file__), "config.json"), 'r')
 config = json.load(f)
 f.close()
+
+import matplotlib.pyplot as plt
+this_cmap = plt.get_cmap("viridis")
+def get_color(n, colormax=3.0):
+    return this_cmap(n/colormax)
 
 def backup(filename):
     """
@@ -91,6 +96,17 @@ def sep_by_flavor(nuflux):
             from_not+=nuflux[key]
     return(from_muons, from_not)
 
+def multimat(*args):
+    """
+    Slick little function for multiplying an arbitrary number of matrices together! 
+    """
+    assert(len(args)>=2)
+    amt = args[0]
+    for arg in range(len(args)):
+        if arg==0:
+            continue
+        amt = np.matmul(amt, args[arg])
+    return(amt)
 
 def sci(number, precision=4):
     """
@@ -107,9 +123,36 @@ def sci(number, precision=4):
 
     return("{0:.{1}f}".format(number/(10**power), precision)+"e{}".format( power))
 
+def check_valid_angle(angle,is_zenith, radians=True):
+    """
+    Returns True if parameter "angle" is a valid angle.
+    "radians" flag used to specify if the value is radians. False means it's degrees
+    """
+    if not isinstance(angle, (float,int)):
+        return False
+    if not isinstance(is_zenith, bool):
+        raise TypeError("Expected {}, got {} for is_zenith flag".format(bool, type(is_zenith)))
+    if not isinstance(radians, bool):
+        raise TypeError("Expected {}, got {} for radians specifier".format(bool, type(radians)))
+
+    # convert to radians if necessary 
+    scaled = angle if radians else angle*pi/180
+
+    if is_zenith:
+        if angle<0 or angle>pi:
+            return False
+    else: # is azimuth angle
+        if angle<0 or angle>(2*pi):
+            return False
+
+    return True 
+
 class SterileParams:
     """
     This object is used to pass around the new sterile physics parameters around
+
+    TODO:
+        - figure out a way to cleanly bring in the phase parameters without making uglier filenames 
     """
     def __init__(self, theta03=0.0, theta13=0.0, theta23=0.0, msq2=0.0):
         if not isinstance(theta03, (int, float)):
@@ -120,6 +163,15 @@ class SterileParams:
             raise TypeError("theta23 should be {}, not {}".format(float, type(theta23)))
         if not isinstance(msq2, (int, float)):
             raise TypeError("msq2 should be {}, not {}".format(float, type(msq2)))
+
+        if not check_valid_angle(theta03, True):
+            raise ValueError("Invalid theta03: {}".format(theta03))
+        if not check_valid_angle(theta13, True):
+            raise ValueError("Invalid theta03: {}".format(theta13))       
+        if not check_valid_angle(theta23, True):
+            raise ValueError("Invalid theta03: {}".format(theta23))
+        if msq2<0:
+            raise ValueError("Mass-squared difference must be >=0, not {}".format(msq2))
 
         self.theta03 = theta03
         self.theta13 = theta13
