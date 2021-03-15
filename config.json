@@ -1,5 +1,6 @@
 {
-  "datapath": "/home/benito/software/data/cascade/gaisser_syb/",
+  "datapath": "/data/user/bsmithers/data/cascades/hg_qgsjet",
+  "interaction_model":"QGSJet-II-04",
   "use_pregen_mceq_flux":true,
   "mceq_flux":"mceq_flux.dat",
   "nu_flux": "raw_det_flux",

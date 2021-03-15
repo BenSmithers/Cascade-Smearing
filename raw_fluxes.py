@@ -82,8 +82,8 @@ def get_initial_state(energies, zeniths, n_nu):
         print("Generating MCEq Flux")
         inistate = np.zeros(shape=(angular_bins, energy_bins, 2, n_nu))
         mceq = MCEqRun(
-                interaction_model = 'SIBYLL23C',
-                primary_model = (crf.HillasGaisser2012, 'H3a'),
+                interaction_model = config["interaction_model"],
+                primary_model = (crf.PolyGonato, False),
                 theta_deg = 0.
                 )
         mag = 0. # power energy is raised to and then used to scale the flux
