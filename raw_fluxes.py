@@ -162,6 +162,8 @@ def raw_flux(params):
 
     nus_atm.SetNeutrinoCrossSections(xs)
 
+    #nus_atm.Set_TauRegeneration(True)
+
     #settting some zenith angle stuff 
     nus_atm.Set_rel_error(1.0e-6)
     nus_atm.Set_abs_error(1.0e-6)
