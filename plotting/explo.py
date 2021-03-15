@@ -207,6 +207,9 @@ class main_window(QMainWindow):
         self.ui.actionNuTauBar.triggered.connect(self.checked_changed)    
         self.ui.recoBox.clicked.connect(self.checked_changed)
 
+        self.core_b = -0.98
+        self.mantle_b = -0.83
+
         self.tau_angle = 0.0
         self.electron_angle = 0.0
 
@@ -215,10 +218,10 @@ class main_window(QMainWindow):
         n_grid = 20
         self.theta03s = np.linspace(0, pi, n_grid) #el
 
-#        self.theta13s = [0.0,0.05, 0.1, 0.160875, 0.2]
-        self.theta13s = [0.160875]
-        self.thetamu =self.theta13s[0]
-        self.theta23s = np.linspace(0, 25*pi/180., n_grid) #tau
+        self.theta13s = [0.0,0.05, 0.1, 0.160875, 0.2]
+        #self.theta13s = [0.160875]
+        self.thetamu =self.theta13s[3]
+        self.theta23s = np.linspace(0, 40*pi/180., n_grid) #tau
         self.msq = 4.47
         
         for value in self.theta13s:
@@ -322,7 +325,9 @@ class main_window(QMainWindow):
         
         flux = self.get_interp_flux()
         
-        pmesh = ax.pcolormesh(self.a_reco, self.e_reco/(1e9), flux/self.flux_null, cmap=cm.coolwarm, vmin=1.0-self.width, vmax=1.+self.width)
+        limiter = True
+
+        pmesh = ax.pcolormesh(self.a_reco, self.e_reco/(1e9), flux/self.flux_null, cmap=cm.coolwarm, vmin=None if limiter else 1.0-self.width, vmax=None if limiter else 1.+self.width)
         ax.set_yscale('log')
         ax.set_ylim([10**2, 10**6])
         plot_labels = "Reco" if self.ui.recoBox.isChecked() else "True"
@@ -330,6 +335,9 @@ class main_window(QMainWindow):
         ax.set_xlabel(r"{} $\cos\theta$".format(plot_labels),size=14)
         self.cbar = self.ui.figure.colorbar(pmesh, ax=ax)
         self.cbar.set_label("Sterile Flux / Null Flux")
+
+        plt.vlines(self.core_b,ymin=10**2, ymax=10**6, colors="white", ls="-")
+        plt.vlines(self.mantle_b,ymin=10**2, ymax=10**6, colors="white", ls="--")
 
         self.ui.canvas.draw()
 
