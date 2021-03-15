@@ -293,7 +293,7 @@ def get_odds_energy(deposited, reconstructed):
     return(prob)
 
 # this was hre just for debugging purposes. Don't usually need it
-doplot = True
+doplot = False
 if doplot:
     import matplotlib
     matplotlib.use('TkAgg')
