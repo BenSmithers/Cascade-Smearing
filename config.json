@@ -1,5 +1,5 @@
 {
-  "datapath": "/home/benito/software/data/cascade/",
+  "datapath": "/home/benito/software/data/cascade/gaisser_syb/",
   "use_pregen_mceq_flux":true,
   "mceq_flux":"mceq_flux.dat",
   "nu_flux": "raw_det_flux",
@@ -10,5 +10,6 @@
   "all_fluxes":"analysis_level",
   "kappas":"kappa_vals.dat",
   "n_bins": 80,
-  "overwrite": true
+  "overwrite": true,
+  "img_subdir": "images/"
 }
