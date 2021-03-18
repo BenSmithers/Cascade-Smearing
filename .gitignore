@@ -9,3 +9,7 @@
 *.pyc
 __pycache__/*
 
+*.submit
+*.dag
+*.swp
+
