@@ -192,7 +192,7 @@ def generate_singly_diff_fluxes(n_bins,datafile=config["nu_flux"]):
     data = Data(datafile)
 
     e_min = 10*const.GeV
-    e_max = 10*const.PeV
+    e_max = 5*const.PeV
     extra = 0
     
     all_angles = data.angles
