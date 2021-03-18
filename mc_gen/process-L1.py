@@ -1,5 +1,5 @@
 #!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v2/icetray-start
-#METAPROJECT /data/ana/SterileNeutrino/IC86/HighEnergy/MC/Metaprojects/icerec.trunk/build/
+#METAPROJECT /data/ana/SterileNeutrino/IC86/HighEnergy/SPE_Templates/Metaprojects/icerec.V05-02-00_optimized/build/
 
 ##METAPROJECT /data/ana/SterileNeutrino/IC86/HighEnergy/MC/Metaprojects/icerec.trunk.WaveDeformUpdate/build
 
@@ -42,7 +42,7 @@ def make_parser():
 		help="Do you want to run on the OSG??")
     
 	parser.add_option("-n", "--num", action="store",
-		type="int", default=0, dest="num",
+		type="int", default=-1, dest="num",
 		help="Number of frames to process")
     
 	parser.add_option("--qify", action="store_true",
@@ -54,7 +54,7 @@ def make_parser():
 		help="Set the Min Bias prescale to something other than default")
     
 	parser.add_option("--photonicsdir", action="store",
-		type="string", default="/cvmfs/icecube.opensciencegrid.org/data/photon-tables",
+		type="string", default="/cvmfs/icecube.opensciencegrid.org/data/photon-tables/",
 		dest="photonicsdir", help="Directory with photonics tables")
     
 	parser.add_option("--disable-gfu", action="store_false",
@@ -70,7 +70,7 @@ def main(options, stats={}):
     gcdfile = options['gcdfile']
     infile  = options['infile']
     outfile = options['outfile']
-    move    = str(options['move'])
+    move    =str(options['move'])
     print(move)
     osg     = options['osg']
     if osg == 'True':
@@ -114,14 +114,15 @@ def main(options, stats={}):
         online_kwargs.update({
             'SplineRecoAmplitudeTable': os.path.join(options['photonicsdir'],'splines','InfBareMu_mie_abs_z20a10.fits'),
             'SplineRecoTimingTable': os.path.join(options['photonicsdir'],'splines','InfBareMu_mie_prob_z20a10.fits'),
-            'hese_followup_base_GCD_filename': gcdfile,
-            #'base_GCD_filename': gcdfile,
+            #'hese_followup_base_GCD_filename': gcdfile,
+            'alert_followup_base_GCD_filename': gcdfile, #base_GCD_filename
         })
     if options['GFU'] is not None:
         online_kwargs['gfu_enabled'] = options['GFU']
     tray.AddSegment(OnlineFilter, "OnlineFilter",
                     decode=False, simulation=True,
                     vemcal_enabled=False,
+                    #base_GCD_filename = gcdfile,
                     #alert_followup_omit_GCD_diff = True,
                     **online_kwargs
                     )

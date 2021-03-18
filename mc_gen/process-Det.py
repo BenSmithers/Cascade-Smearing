@@ -1,5 +1,6 @@
 #!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v2/icetray-start
-#METAPROJECT /data/ana/SterileNeutrino/IC86/HighEnergy/MC/Metaprojects/simulation.trunk/build
+#METAPROJECT /data/ana/SterileNeutrino/IC86/HighEnergy/SPE_Templates/Metaprojects/simulation.V06-01-00/build
+##METAPROJECT /data/ana/SterileNeutrino/IC86/HighEnergy/MC/Metaprojects/simulation.trunk/build
 
 ##METAPROJECT /data/ana/SterileNeutrino/IC86/HighEnergy/MC/Metaprojects/simulation.trunk.Noise/build/
 
@@ -159,7 +160,7 @@ tray.AddSegment(clsim.I3CLSimMakeHitsFromPhotons, "makeHitsFromPhotons",
 	MCPESeriesName		="I3MCPESeriesMap",
 	RandomService		='I3RandomService',
 	DOMOversizeFactor	= 1.0,
-    #GCDFile             = gcdfile,
+    GCDFile             = gcdfile,
     #IceModelLocation    =  expandvars("$I3_BUILD/ice-models/resources/models/spice_3.2.2/"),
 	UnshadowedFraction	= generated_domeff,
 	HoleIceParameterization	= hole_ice_location, #	expandvars("$I3_BUILD/ice-models/resources/models/angsens_flasher/"+hole_ice),
@@ -285,9 +286,16 @@ def VuvuzelaParamScaler(frame, Qd = 0.25 ):
         calibration.dom_cal[oneOM].dom_noise_scintillation_hits  = newSH
         calibration.dom_cal[oneOM].dom_noise_scintillation_mean  = newSM
         calibration.dom_cal[oneOM].dom_noise_scintillation_sigma = newSS
+    if "I3Calibration" in frame:
+        del frame["I3Calibration"]
     frame['I3Calibration'] = calibration # saving new calibration
+    if "SPEScalingFactors" in frame:
+        del frame['SPEScalingFactors']
     frame['SPEScalingFactors'] = scalings # Putting parameters to the frame for book-keeping
-    frame['SPEAbove'] = areaAbove
+
+    if "SPEAbove" in frame:
+        del frame["SPEAbove"]
+    frame["SPEAbove"] = areaAbove
     return True
 
 tray.AddModule(VuvuzelaParamScaler, "scaler", 

@@ -1,5 +1,5 @@
-## #!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v3/icetray-start
-## #METAPROJECT /data/user/bsmithers/metaprojects/snobo/py2v3_test/
+#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py3-v4.1.1/icetray-start
+#METAPROJECT /data/user/bsmithers/metaprojects/combo/py3-v4.1.1/
 
 
 ##METAPROJECT /data/ana/SterileNeutrino/IC86/HighEnergy/MC/Metaprojects/icerec.XLevel/build/
@@ -68,7 +68,7 @@ parser.add_option("-t","--type", dest="type",
                   default = "Muon")
 parser.add_option("-c","--interaction", dest="interaction",
                   type="string",
-                  default="CC",
+                  default="NC",
                   help="What kind of interaction do you want to simulate?")
 parser.add_option("-r","--ranged", dest="is_ranged",
                   action="store_false",
@@ -139,7 +139,7 @@ def get_fs_particle_CC(nu_type):
         return([ dataclasses.I3Particle.ParticleType.TauMinus, dataclasses.I3Particle.ParticleType.TauPlus])
     elif nu_type=='Muon' or nu_type=='muon':
         return([ dataclasses.I3Particle.ParticleType.MuMinus , dataclasses.I3Particle.ParticleType.MuPlus])
-    elif nu_type=='electron' or nu_type=='Elecron':
+    elif nu_type=='electron' or nu_type=='Electron':
         return([ dataclasses.I3Particle.ParticleType.EMinus  , dataclasses.I3Particle.ParticleType.EPlus])
     elif nu_type=='all' or nu_type =='All':
         return([ dataclasses.I3Particle.ParticleType.TauMinus, dataclasses.I3Particle.ParticleType.TauPlus,
@@ -153,7 +153,7 @@ def get_fs_particle_NC(nu_type):
         return([ dataclasses.I3Particle.ParticleType.NuTau, dataclasses.I3Particle.ParticleType.NuTauBar])
     elif nu_type=='Muon' or nu_type=='muon':
         return([ dataclasses.I3Particle.ParticleType.NuMu , dataclasses.I3Particle.ParticleType.NuMuBar ])
-    elif nu_type=='electron' or nu_type=='Elecron':
+    elif nu_type=='electron' or nu_type=='Electron':
         return([ dataclasses.I3Particle.ParticleType.NuE  , dataclasses.I3Particle.ParticleType.NuEBar  ])
     elif nu_type=='all' or nu_type =='All':
         return([ dataclasses.I3Particle.ParticleType.NuTau   , dataclasses.I3Particle.ParticleType.NuTauBar,
@@ -166,9 +166,9 @@ def get_fs_particle_NC(nu_type):
 # need to prepare a list of inectors with which to instantiate the generator module
 #   the cross sections and final state particles will all depend on which interaction we're doing. 
 
-dis_xs_folder = '/home/benito/software/snobo/cross_sections/'
+#dis_xs_folder = '/home/benito/software/snobo/cross_sections/'
 #dis_xs_folder = '/data/user/bsmithers/cross_sections/'
-#dis_xs_folder = 'data/ana/SterileNeutrino/IC86/HighEnergy/MC/scripts/jobs/files/xs_iso/'
+dis_xs_folder = '/data/ana/SterileNeutrino/IC86/HighEnergy/MC/scripts/jobs/files/xs_iso/'
 injector_list = []
 if interaction=='GR' or interaction=='gr':
     

@@ -37,7 +37,7 @@ def make_condor_submit(execPath, name, gpus, memory):
     
     condor_file.write("should_transfer_files = true\n")
     condor_file.write("when_to_transfer_output = ON_EXIT\n")
-    condor_file.write("getenv = False")
+    condor_file.write("getenv = False\n")
     condor_file.write("output = /scratch/bsmithers/{}.$(cluster).out\n".format(name))
     condor_file.write("error  = /scratch/bsmithers/{}.$(cluster).err\n".format(name))
     condor_file.write("log    = /scratch/bsmithers/{}.$(cluster).log\n".format(name))
@@ -100,7 +100,7 @@ def write_dag_chain(execPath, dataPath, base_name, nJobs, nEvents):
     
     #arguments are provided as a list ["generic arguments", "input file"]
     # the input thingy may be provided as none, in which case there are no inputs
-    generator_name          = "gen"
+    generator_name          = "Agen"
     generator               = "{}/process-Gen.py".format(execPath)
     
     # TODO  may need to be frequently changed! 
@@ -113,17 +113,17 @@ def write_dag_chain(execPath, dataPath, base_name, nJobs, nEvents):
     # TODO
     
 
-    phot_name              = "photon"
+    phot_name              = "Bphoton"
     phot           = "{}/process-Phot.py".format(execPath)
-    phot_arguments         = [" ", phot_name]
+    phot_arguments         = [" ", generator_name]
     
-    det_name              = "detector"
+    det_name              = "Cdetector"
     det       = "{}/process-Det.py".format(execPath)
-    det_arguments         = [" ", det_name]
+    det_arguments         = [" ", phot_name]
     
-    l1_name              = "level1"
-    l1       = "{}/process-Phot.py".format(execPath)
-    l1_arguments         = [" ", l1_name]
+    l1_name              = "Dlevel1"
+    l1       = "{}/process-L1.py".format(execPath)
+    l1_arguments         = [" ", det_name]
 
 
     # default I3 file suffix! 
@@ -152,6 +152,7 @@ def write_dag_chain(execPath, dataPath, base_name, nJobs, nEvents):
     
     # use that dictionary, get the keys (which will be the data file names too)
     file_names = [jobname for jobname in level_arguments.keys() ]
+    file_names.sort()
     for outname in file_names:
         for job in range(nJobs):
             # JOB thing00002 thing.submit
@@ -166,7 +167,7 @@ def write_dag_chain(execPath, dataPath, base_name, nJobs, nEvents):
             if level_arguments[outname][1] is not None: 
                 # gen is the only level that doesn't take an input
                 # -i /path/to/output/thingin_000002.suffix
-                infile = "-i {}{}_{}{}".format(dataPath, level_arguments[outname][1], get_5d_string(job), suffix)
+                infile = "-i {}{}_{}{}".format(dataPath, base_name+level_arguments[outname][1], get_5d_string(job), suffix)
             else:
                 infile = ""
             
@@ -179,7 +180,8 @@ def write_dag_chain(execPath, dataPath, base_name, nJobs, nEvents):
     for job in range(nJobs):
         dag_file.write('PARENT {}{} CHILD {}{}\n'.format(file_names[0], get_5d_string(job), file_names[1],get_5d_string(job)))
         dag_file.write('PARENT {}{} CHILD {}{}\n'.format(file_names[1], get_5d_string(job), file_names[2],get_5d_string(job)))
-    
+        dag_file.write('PARENT {}{} CHILD {}{}\n'.format(file_names[2], get_5d_string(job), file_names[3],get_5d_string(job)))
+
     dag_file.close()
     
     # make the .submit files
@@ -189,9 +191,9 @@ def write_dag_chain(execPath, dataPath, base_name, nJobs, nEvents):
     make_condor_submit(l1, file_names[3], gpus=0, memory=2000)
 
 
-nJobs = 10
+nJobs = 2
 
-root_dir = "/data/user/bsmithers/snobo/simprod-scripts/resources/scripts/SnowSuite/"
+root_dir = "/home/bsmithers/software_dev/cascade/mc_gen/"
 workpath = "/data/user/bsmithers/data/cascade_mc/"
 
 # exec dir | data output | name | jobs | events per job
