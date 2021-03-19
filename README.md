@@ -57,30 +57,35 @@ It also keeps the cross sections in an object
 ```
 git clone git@github.com:BenSmithers/Cascade-Smearing.git
 ```
-5. Go into the newly cloned repository, Cascade-Smearing, and edit the datapath line in `config.json` to read
+5. Rename the downloaded folder, `mv Cascade-Smearing cascade`. Without doing this, the code will be looking for a module of the wrong name. 
+
+6. Go into the newly cloned repository, Cascade-Smearing, and edit the datapath line in `config.json` to read
   ```
   "datapath": "/path/to/data",
   ```
 replacing `/path/to/data` with your actual path. This tells my code where to look for the data.
 
-6. Edit your .bashrc, adding in the line
+7. Edit your .bashrc, adding in the line
 ```
-export PYTHONPATH=$PYTHONPATH:/home/benito/software/cascade/
+export PYTHONPATH=$PYTHONPATH:/path/to/root/
 ```
-This tells python how to find my code.
+This tells python how to find the code.
 
-7. Now you need to download the data:
-
-    a. If you have access to the cobalts, go to /path/to/data and run
+8. Now you need to download the data. If you have access to the cobalts, go to /path/to/data and run
 ```
-scp username@cobalt.icecube.wisc.edu:/data/user/bsmithers/data/cascades/flux_data_* .
+scp username@cobalt.icecube.wisc.edu:/data/user/bsmithers/data/cascades/hg_sib/flux_data_* .
+scp username@cobalt.icecube.wisc.edu:/data/user/bsmithers/data/cascades/hg_sib/downsized_* .
 ```
-Note: this might take a while!
+Note: this might take a while! I have a few other folders for fluxes from different MCEq fluxes. 
 
-8. You should now be able to run the gui, after restarting whatever terminal you're using, by going to `/path/to/root/Cascade-Smearing/plotting` and running 
+9. You should now be able to run the gui, after restarting whatever terminal you're using, by going to `/path/to/root/cascade/plotting` and running 
 ```
 python3 explo.py
 ```
+
+Note: I haven't tested this in Python2 and have no intentions of supporting Python2. 
+I'm pretty sure PyQt5 and some class decorators work differently. 
+If you *are*  still using Python2... *why?*
 
 ### Updates
 
@@ -88,15 +93,11 @@ python3 explo.py
  
  - There is a new slider to adjust the colorbar scale. It will always be centered on 1.0, but can have a width anywhere from (0.99-1.01) up to (0.00-2.00)
  
- - You can switch between reconstructed and raw fluxes using the checkbox at the bottom of the screen. Switching to raw fluxes takes a long time right now, and so the sliders are disabled when in raw flux mode. 
- 
- - Using the raw fluxes requires extra data, you can either get it using 
- ```
- scp username@cobalt.icecube.wisc.edu:/data/user/bsmithers/data/cascades/raw_det_flux_* .
- ```
- into your data folder.
+ - You can switch between reconstructed and raw fluxes (with cross-sections) using the checkbox at the bottom of the screen. Switching to raw fluxes takes a long time right now, and so the sliders are disabled when in raw flux mode. 
 
 ## Links
+
+These aren't realated, I'm just trying to keep track of these links for my own sake. 
 
 https://github.com/IceCubeOpenSource/HESE_data_release
 
