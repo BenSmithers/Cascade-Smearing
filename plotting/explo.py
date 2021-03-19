@@ -29,6 +29,9 @@ from cascade.utils import SterileParams, gen_filename
 from cascade.utils import bhist 
 from cascade.utils import Data
 
+from cascade.cross_section_test import get_total_flux as get_xs
+from cascade.nus_utils import get_flavor, get_neut, get_curr 
+
 class base_gui(object):
     """
     implements the UI for the window
@@ -99,7 +102,7 @@ class base_gui(object):
 
         self.recoBox = QtWidgets.QCheckBox(self.centralwidget)
         self.recoBox.setObjectName("recoBox")
-        self.recoBox.setChecked(True)
+        self.recoBox.setChecked(False)
         self.verticalLayout.addLayout(self.formLayout)
         self.verticalLayout.addWidget(self.recoBox)
         MainWindow.setCentralWidget(self.centralwidget)
@@ -162,7 +165,7 @@ class base_gui(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "Slide 2"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Flux Explorer"))
         self.electron_lbl.setText(_translate("MainWindow", "Theta 1-4:  0.00"))
         self.muon_lbl.setText(_translate("MainWindow", "Theta 2-4: 0.00"))
         self.tau_lbl.setText(_translate("MainWindow", "Theta 3-4: 0.00"))
@@ -256,22 +259,41 @@ class main_window(QMainWindow):
     def check_key(self, key):
         """
         Passed a key, checks whether the relevant action box is checked 
+
+        Returns True
         """
+        # only return the NC key flux when looking at the raw flux
+        # this prevents us from double-counting electron and tau fluxes
+        if ("CC" in key) and (not self.ui.recoBox.isChecked()):
+            value = True
+        else:
+            value = True
+
         if "E_nu_" in key:
-            return self.ui.actionElectron.isChecked()
+            return self.ui.actionElectron.isChecked() and value
         elif "E_nuBar_" in key:
-            return self.ui.actionNuEBar.isChecked()
+            return self.ui.actionNuEBar.isChecked() and value
         elif "Mu_nu_" in key:
-            return self.ui.actionNuMu.isChecked()
+            return self.ui.actionNuMu.isChecked() and value
         elif "Mu_nuBar_" in key:
-            return self.ui.actionNuMuBar.isChecked()
+            return self.ui.actionNuMuBar.isChecked() and value
         elif "Tau_nu_" in key:
-            return self.ui.actionNuTau.isChecked()
+            return self.ui.actionNuTau.isChecked() and value
         elif "Tau_nuBar_" in key:
-            return self.ui.actionNuTauBar.isChecked()
+            return self.ui.actionNuTauBar.isChecked() and value
         else:
             raise ValueError("Not sure what to do with key {}".format(key))
 
+    def apply_xs(self, flux,key):
+        neut = get_neut(key)
+        curr = get_curr(key)
+        flav = get_flavor(key)
+
+        for i_e in range(len(self.e_reco)):
+            xs = get_xs(self.e_reco[i_e], flav, neut, curr)
+            flux[i_e] *= xs
+
+        return(flux)
 
     def reload_null(self):
         """
@@ -279,8 +301,6 @@ class main_window(QMainWindow):
         """
 
         sp = SterileParams(0., 0., 0., 0.)
-
-
 
         if self.ui.recoBox.isChecked():
             which = config["recon_flux"]+".dat"
@@ -299,20 +319,11 @@ class main_window(QMainWindow):
             self.a_reco = np.array(all_data["a_true"])
 
         all_data = all_data["flux"]
-            
-
-
-        if False: # old code 
-            which = gen_filename("", config["nu_flux"]+".dat", sp)
-            temp = Data(which)
-            self.e_reco = np.array(temp.energies)
-            self.a_reco = temp.angles
-            all_data =  temp.fluxes
-            
+                
         self.flux_null = np.zeros(shape = (len(self.e_reco), len(self.a_reco)))
         for key in all_data.keys():
             if self.check_key(key):
-                self.flux_null += np.array(all_data[key])
+                self.flux_null += np.array(all_data[key]) if self.ui.recoBox.isChecked() else self.apply_xs(np.array(all_data[key]), key)
         
     def update_plot(self):
         """
@@ -325,7 +336,7 @@ class main_window(QMainWindow):
         
         flux = self.get_interp_flux()
         
-        limiter = True
+        limiter = False
 
         pmesh = ax.pcolormesh(self.a_reco, self.e_reco/(1e9), flux/self.flux_null, cmap=cm.coolwarm, vmin=None if limiter else 1.0-self.width, vmax=None if limiter else 1.+self.width)
         ax.set_yscale('log')
@@ -357,7 +368,7 @@ class main_window(QMainWindow):
         flux = np.zeros(shape=(len(self.e_reco), len(self.a_reco)))
         for key in all_data.keys():
             if self.check_key(key):
-                flux += np.array(all_data[key])
+                flux += np.array(all_data[key]) if self.ui.recoBox.isChecked() else self.apply_xs(np.array(all_data[key]),key)
 
         return(flux)
  
