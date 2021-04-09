@@ -70,10 +70,6 @@ parser.add_option("-c","--interaction", dest="interaction",
                   type="string",
                   default="NC",
                   help="What kind of interaction do you want to simulate?")
-parser.add_option("-r","--ranged", dest="is_ranged",
-                  action="store_false",
-                  help="This flag sets it to Volume Mode",
-                  default=True)
 options,args = parser.parse_args()
 
 #pass the arguments to python variables
@@ -87,7 +83,6 @@ Zmin        = float(options.Zmin)
 Zmax        = float(options.Zmax)
 radius      = float(options.radius)
 length      = float(options.length)
-is_ranged   = options.is_ranged
 nu_type     = options.type
 interaction = options.interaction
 
@@ -120,11 +115,6 @@ print("Number of Events: "+str(nEvents) + " "+nu_type+"s")
 print("Z range: "+str(Zmin)+" -> "+str(Zmax))
 print("Cylinder length: "+str(length)+", radius: "+str(radius))
 
-if is_ranged:
-    print("Running in Ranged Mode")
-else:
-    print("Running in Volume Mode")
-print("")
 
 tray = I3Tray()
 tray.AddService("I3GSLRandomServiceFactory")(("Seed",seed))
@@ -195,13 +185,15 @@ else:
     raise Exception("I don't know what kind of interaction '{}' is. Try GR, CC, or NC".format(interaction))
 
 for pair in party_pairs:
+    do_ranged = pair[0]==dataclasses.I3Particle.ParticleType.MuMinus or pair[0]==dataclasses.I3Particle.ParticleType.MuPlus
+
     injector_list.append( LeptonInjector.injector( 
             NEvents                             = int(nEvents / len(party_pairs)), # want this normalized to the number of events asked for! 
             FinalType1                          = pair[0], # the 
             FinalType2                          = pair[1],
             DoublyDifferentialCrossSectionFile  = doubly,
             TotalCrossSectionFile               = total,
-            Ranged                              = is_ranged)
+            Ranged                              = do_ranged)
             )
 
 
