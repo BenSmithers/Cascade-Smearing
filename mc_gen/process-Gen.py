@@ -153,13 +153,61 @@ def get_fs_particle_NC(nu_type):
         raise Exception("I don't recogize what a '{}' is. Try Electron, Muon, Tau, or All.".format(nu_type))
 
 
+def is_CC(pair):
+    """
+    Takes a pair of particles, tells if it's a CC interaction
+    """
+    if pair[1]==dataclasses.I3Particle.ParticleType.Hadrons:
+        if (pair[0]==dataclasses.I3Particle.ParticleType.TauMinus\
+        or pair[0]==dataclasses.I3Particle.ParticleType.TauPlus\
+        or pair[0]==dataclasses.I3Particle.ParticleType.MuMinus\
+        or pair[0]==dataclasses.I3Particle.ParticleType.MuPlus\
+        or pair[0]==dataclasses.I3Particle.ParticleType.EMinus\
+        or pair[0]==dataclasses.I3Particle.ParticleType.EPlus):
+            return True
+        else:
+            return False
+    else:
+        return False 
+
+def is_nubar(pair):
+    if (pair[0]==dataclasses.I3Particle.ParticleType.TauMinus\
+    or pair[0]==dataclasses.I3Particle.ParticleType.NuTau\
+    or pair[0]==dataclasses.I3Particle.ParticleType.MuMinus\
+    or pair[0]==dataclasses.I3Particle.ParticleType.NuMu\
+    or pair[0]==dataclasses.I3Particle.ParticleType.EMinus\
+    or pair[0]==dataclasses.I3Particle.ParticleType.NuE):
+        return False
+    else:
+        return True
+
+
 # need to prepare a list of inectors with which to instantiate the generator module
 #   the cross sections and final state particles will all depend on which interaction we're doing. 
 
-#dis_xs_folder = '/home/benito/software/snobo/cross_sections/'
 #dis_xs_folder = '/data/user/bsmithers/cross_sections/'
 dis_xs_folder = '/data/ana/SterileNeutrino/IC86/HighEnergy/MC/scripts/jobs/files/xs_iso/'
 injector_list = []
+
+def get_xs(current, nuCharge):
+    if not isinstance(current, str):
+        raise TypeError("Expected {}, not {}".format(str, type(current)))
+    if not isinstance(nuCharge, str):
+        raise TypeError("Expected {}, not {}".format(str, type(nuCharge)))
+
+    if not (nuCharge=="nu" or nuCharge=="nubar"):
+        raise ValueError("Expected 'nu' or 'nubar', got {}".format(nuCharge))
+
+    if current.lower() == "gr":
+        return('{}single_xs_gr.fits'.format(dis_xs_folder) , '{}total_xs_gr.fits'.format(dis_xs_folder))
+    elif current.lower()=="nc":
+        return('{}dsdxdy_{}_CC_iso.fits'.format(dis_xs_folder,nuCharge), '{}sigma_{}_CC_iso.fits'.format(dis_xs_folder,nuCharge))
+    elif current.lower()=="gr":
+        return('{}dsdxdy_{}_NC_iso.fits'.format(dis_xs_folder,nuCharge), '{}sigma_{}_NC_iso.fits'.format(dis_xs_folder,nuCharge))
+
+    else:
+        raise ValueError("Unrecognized current: {}".format(currnet.lower()))
+
 if interaction=='GR' or interaction=='gr':
     
     # in a GR interaciton, you have a NuEBar annihilate with an e-. Need to conserve charge + lepton no. 
@@ -167,32 +215,28 @@ if interaction=='GR' or interaction=='gr':
                 [dataclasses.I3Particle.ParticleType.MuMinus    , dataclasses.I3Particle.ParticleType.NuMuBar   ],
                 [dataclasses.I3Particle.ParticleType.TauMinus   , dataclasses.I3Particle.ParticleType.NuTauBar  ],
                 [dataclasses.I3Particle.ParticleType.Hadrons    , dataclasses.I3Particle.ParticleType.Hadrons   ]]
-    doubly  = '{}single_xs_gr.fits'.format(dis_xs_folder)
-    total   = '{}total_xs_gr.fits'.format(dis_xs_folder)
 elif interaction=='CC' or interaction=='cc':
     
     party_pairs = [ [ entry , dataclasses.I3Particle.ParticleType.Hadrons ] for entry in get_fs_particle_CC(nu_type)]
 
-    doubly  = '{}dsdxdy_nu_CC_iso.fits'.format(dis_xs_folder)
-    total   = '{}sigma_nu_CC_iso.fits'.format(dis_xs_folder)
 elif interaction=='NC' or interaction=='nc':
 
     party_pairs = [ [ entry , dataclasses.I3Particle.ParticleType.Hadrons ] for entry in get_fs_particle_NC(nu_type)]
-    
-    doubly  = '{}dsdxdy_nu_NC_iso.fits'.format(dis_xs_folder)
-    total   = '{}sigma_nu_NC_iso.fits'.format(dis_xs_folder)
+
 else:
     raise Exception("I don't know what kind of interaction '{}' is. Try GR, CC, or NC".format(interaction))
 
 for pair in party_pairs:
     do_ranged = pair[0]==dataclasses.I3Particle.ParticleType.MuMinus or pair[0]==dataclasses.I3Particle.ParticleType.MuPlus
 
+    xs_pair = get_xs(interaction.lower(), is_nubar(pair))
+
     injector_list.append( LeptonInjector.injector( 
             NEvents                             = int(nEvents / len(party_pairs)), # want this normalized to the number of events asked for! 
             FinalType1                          = pair[0], # the 
             FinalType2                          = pair[1],
-            DoublyDifferentialCrossSectionFile  = doubly,
-            TotalCrossSectionFile               = total,
+            DoublyDifferentialCrossSectionFile  = xs_pair[0],
+            TotalCrossSectionFile               = xs_pair[1],
             Ranged                              = do_ranged)
             )
 
