@@ -37,7 +37,7 @@ def _load_flux(name):
 #null_pt = gen_filename(config["datapath"], config["nu_flux"], 0.,0.,0.)
 
 null = SterileParams(0.,0.,0.,0.)
-mud = SterileParams(0., 0.1609, 0.2296, 4.47)
+mud = SterileParams(0., 0.1609, 0.2205, 4.47)
 eld = SterileParams(0.13, 0., 0.0, 1.3)
 
 e_reco, a_reco, flux_null = _load_flux(gen_filename(config["datapath"], config["recon_flux"]+".dat", null))

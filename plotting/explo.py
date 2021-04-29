@@ -5,7 +5,7 @@ Ben Smithers
 This is the cool script! It opens up a GUI allowing the user to explore theta_14 and theta_34 space 
 """
 # Gui stuff 
-from PyQt5.QtWidgets import QMainWindow, QWidget, QApplication
+from PyQt5.QtWidgets import QMainWindow, QWidget, QApplication, QFileDialog
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 # embedding matplotlib stuff
@@ -20,6 +20,8 @@ from math import pi # everyone needs pi
 import numpy as np
 import pickle # used to load in the fluxes 
 import os
+from glob import glob
+import json # update the config file 
 
 from cascade.utils import config # base configuration file, we need this to get the location of hte data
 
@@ -120,6 +122,8 @@ class base_gui(object):
         MainWindow.setStatusBar(self.statusbar)
         self.actionQuit = QtWidgets.QAction(MainWindow)
         self.actionQuit.setObjectName("actionQuit")
+        self.actionFolder = QtWidgets.QAction(MainWindow)
+        self.actionFolder.setObjectName("actinoFolder")
 
         self.actionElectron = QtWidgets.QAction(MainWindow)
         self.actionElectron.setCheckable(True)
@@ -145,6 +149,7 @@ class base_gui(object):
         self.actionNuTauBar.setCheckable(True)
         self.actionNuTauBar.setChecked(True)
         self.actionNuTauBar.setObjectName("actionNuTauBar")
+        self.menuFile.addAction(self.actionFolder)
         self.menuFile.addAction(self.actionQuit)
         self.menuFlavors.addAction(self.actionElectron)
         self.menuFlavors.addAction(self.actionNuEBar)
@@ -173,6 +178,7 @@ class base_gui(object):
         self.recoBox.setText(_translate("MainWnidow", "Reconstructed Fluxes"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
+        self.actionFolder.setText(_translate("MainWindow","Edit DataPath"))
 
         self.menuFlavors.setTitle(_translate("MainWindow", "Neutrinos"))
         self.actionQuit.setText(_translate("MainWindow", "Quit"))
@@ -209,6 +215,7 @@ class main_window(QMainWindow):
         self.ui.actionNuTau.triggered.connect(self.checked_changed)
         self.ui.actionNuTauBar.triggered.connect(self.checked_changed)    
         self.ui.recoBox.clicked.connect(self.checked_changed)
+        self.ui.actionFolder.triggered.connect(self.new_datapath)
 
         self.core_b = -0.98
         self.mantle_b = -0.83
@@ -226,7 +233,9 @@ class main_window(QMainWindow):
         self.thetamu =self.theta13s[3]
         self.theta23s = np.linspace(0, 40*pi/180., n_grid) #tau
         self.msq = 4.47
-        
+
+        self._n_fluxes = len(self.theta13s)*len(self.theta03s)*len(self.theta23s)
+
         for value in self.theta13s:
             self.ui.muon_combo.addItem(str(value))
         
@@ -239,6 +248,25 @@ class main_window(QMainWindow):
         self.width = 0.10
 
         self.update_plot()
+
+    def new_datapath(self):
+        global config
+        
+        new_folder = str(QFileDialog.getExistingDirectory(self, "Select New Datapath", config["datapath"]))
+        print(new_folder)
+        if new_folder is None:
+            return
+        if new_folder =="":
+            return 
+
+        n_found = len(glob(os.path.join(new_folder, "flux_data*")))
+        if n_found<self._n_fluxes:
+            print("Invalid folder")
+            return
+    
+        config["datapath"] = new_folder        
+        self.reload_null()
+        self.update_width()
 
     def update_width(self):
         self.width = float(self.ui.width_slider.value())/100.

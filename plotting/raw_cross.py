@@ -29,7 +29,7 @@ def _load_flux(params):
     return( all_data["e_true"], all_data["a_true"], all_data["flux"] )
 
 just_nubar = True
-keep_key = "_nuBar_"
+keep_key = "_NC"
 
 
 null = SterileParams(0., 0., 0., 0.)

@@ -9,7 +9,7 @@ Then I added a few other debugging plots
 """
 import numpy as np
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
@@ -18,7 +18,8 @@ from cascade.utils import bhist, SterileParams, gen_filename, config
 from cascade.deposit import generate_singly_diff_fluxes
 
 null = SterileParams(0.,0.,0.,0.)
-ster = SterileParams(0., 0.1609, 0.2296, 4.47)
+#ster = SterileParams(0., 0.1609, 0, 4.47)
+ster = SterileParams(0., 0.1609, 0.2205, 4.47)
 
 raw_null = gen_filename(config["datapath"], config["nu_flux"]+".dat", null)
 raw_ster = gen_filename(config["datapath"], config["nu_flux"]+".dat", ster)
@@ -131,7 +132,7 @@ if False:
     plt.show()
     plt.clf()
 
-cf = plt.pcolormesh(czeniths, energies/(1e9), ster_new/null_new, cmap=cm.coolwarm, vmin=0.9, vmax=1.1)
+cf = plt.pcolormesh(czeniths, energies/(1e9), ster_new/null_new, cmap=cm.coolwarm, vmin=0.8, vmax=1.2)
 plt.yscale('log')
 plt.ylabel("Depo Energy [GeV]", size=14)
 plt.xlabel(r"$\cos\theta$",size=14)
