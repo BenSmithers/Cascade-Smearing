@@ -264,15 +264,12 @@ def get_header(frame):
     frame["I3EventHeader"]  = header
 
 tray.AddModule(get_header,streams=[icetray.I3Frame.DAQ]);
-print("Creating lic file at " + os.path.abspath(os.path.join(outfile, os.pardir))  + "/Generation_data.lic")
-outpath = ''
-
-#this splits the outpath based around the slashes, and adds them all up until the second to last 
-for path in outfile.split('/')[:-1]:
-    outpath += path + '/'
 
 
-tray.AddModule("InjectionConfigSerializer", OutputPath = outpath  + "/{}_{}_Generation_data.lic".format(interaction, nu_type))
+lic_file = ".".join(outfile.split(".")[:-1])+".lic"
+print("Creating lic file at " +lic_file)
+
+tray.AddModule("InjectionConfigSerializer", OutputPath = lic_file)
 tray.AddModule("I3Writer",Filename=outfile)
 outputKeys = ['EventProperties','I3MCTree']
 
