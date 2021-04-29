@@ -25,8 +25,8 @@ config = json.load(f)
 f.close()
 
 import matplotlib.pyplot as plt
-this_cmap = plt.get_cmap("viridis")
-def get_color(n, colormax=3.0):
+def get_color(n, colormax=3.0, cmap="viridis"):
+    this_cmap = plt.get_cmap(cmap)
     return this_cmap(n/colormax)
 
 def backup(filename):
