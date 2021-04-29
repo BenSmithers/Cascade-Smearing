@@ -113,15 +113,21 @@ def write_dag_chain(execPath, dataPath, base_name, nJobs, nEvents):
     # TODO
     
 
-    phot_name              = "Bphoton"
-    phot           = "{}/process-Phot.py".format(execPath)
-    phot_arguments         = [" ", generator_name]
+    poly_name = "BPolyplop"
+    poly = "{}/process-Polyplopia.py".format(execPath)
+    poly_arguments         =["--mctype LeptonInjector ",poly_name]
+
+    config_file = "/home/bsmithers/software_dev/cascade/mc_gen/Snowstorm_FullSystematics.yml"
+
+    phot_name              = "Cphoton"
+    phot           = "{}/process-SnowStorm.py".format(execPath)
+    phot_arguments         = ["-g {} -c {} --domoversizefactor {} --events-per-model 100".format(gcd_file, config_file, 1.0), generator_name]
     
-    det_name              = "Cdetector"
+    det_name              = "Ddetector"
     det       = "{}/process-Det.py".format(execPath)
     det_arguments         = [" ", phot_name]
     
-    l1_name              = "Dlevel1"
+    l1_name              = "Elevel1"
     l1       = "{}/process-L1.py".format(execPath)
     l1_arguments         = [" ", det_name]
 
@@ -133,12 +139,13 @@ def write_dag_chain(execPath, dataPath, base_name, nJobs, nEvents):
     
     # dictionary for the names of each level of the MC generation and their arguments 
     level_arguments =  {base_name+generator_name : generation_arguments, 
+                        base_name+poly_name : poly_arguments,
                         base_name+phot_name : phot_arguments,
                         base_name+det_name : det_arguments,
                         base_name+l1_name : l1_arguments}
     
     # make sure each of the necessary executables exist and are executable. If they are not executable just issue a warning! 
-    for executable in [generator, phot, det, l1]:
+    for executable in [generator,poly, phot, det, l1]:
         if not os.path.isfile(executable):
             raise Exception("Executable doesn't exist at {}".format(executable))
         # the specified executable is not an executable, the job will fail unless this is changed. Warn the user. 
