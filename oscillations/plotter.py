@@ -28,8 +28,8 @@ thetas = np.arccos(czeniths)
 #initial_flavor  = 1
 #transmission    = [ [p_trans(en, d_earth, initial_flavor, flavor) for en in energy_range] for flavor in range(4) ] 
 
-start_flav = 0
-end_flav = 0
+start_flav = 1
+end_flav = 2
 
 def calc_odds(which_osc):
     values = np.array([[ which_osc.p_trans(en, sqrt(2*d_earth*d_earth*(1-cos(pi-theta-theta))), start_flav, end_flav) for theta in thetas] for en in energy_range])

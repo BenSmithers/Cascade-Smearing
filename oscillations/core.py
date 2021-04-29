@@ -21,12 +21,13 @@ class Oscillator:
             raise TypeError("Expected {}, got {}".format(SterileParams))
 
         self.n_flavors = 4
-        self._u_matrix = np.ones(shape=(self.n_flavors,self.n_flavors))*1j
+        self._u_matrix = np.zeros(shape=(self.n_flavors,self.n_flavors))*1j
         mixing_m = np.ones(shape=np.shape(self._u_matrix))
 
-        mixing_m[0][1] = mixing_m[1][0] = 0.563942 
-        mixing_m[0][2] = mixing_m[2][0] = 0.149575
-        mixing_m[1][2] = mixing_m[2][1] = 0.855211
+        mixing_m[0][1] = mixing_m[1][0] = 0.594371
+        mixing_m[0][2] = mixing_m[2][0] = 0.160875
+        mixing_m[1][2] = mixing_m[2][1] = 0.698357
+
 
         mixing_m[0][3] = mixing_m[3][0] = params.theta03
         mixing_m[1][3] = mixing_m[3][1] = params.theta13
@@ -57,7 +58,7 @@ class Oscillator:
         
         # we have these macros for creating 4x4 rotation matrices according to the mixing angles specified 
         def r_mat(i,j):
-            matrix = np.identity(self.n_flavors)*1j
+            matrix = np.identity(self.n_flavors)*(1+0j)
             matrix[i-1][i-1] = mcos(i,j)
             matrix[j-1][i-1] = msin(i,j)
             matrix[i-1][j-1] = -msin(i,j)
@@ -65,7 +66,7 @@ class Oscillator:
             return(matrix)
 
         def r_hat(i,j):
-            matrix = np.identity(self.n_flavors)*1j
+            matrix = np.identity(self.n_flavors)*(1+0j)
             matrix[i-1][i-1] = mcos(i,j)
             matrix[j-1][i-1] = msin(i,j)*exp(-deltas[i-1][j-1]*1j)
             matrix[i-1][j-1] = -conj(msin(i,j)*exp(-deltas[i-1][j-1]*1j))
