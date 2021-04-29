@@ -91,11 +91,11 @@
                 }
             },
             "subdirectory": "$sprintf('%07d-%07d',$eval($(job)//1000*1000),$eval($(job)//1000*1000+999))",
-            "TARGET::GEN": "gsiftp://gridftp.icecube.wisc.edu/data/user/bsmithers/data/cc_mc_cascades/lepton_injector/$(dataset)/$(subdirectory)",
-            "TARGET::SNOWSTORM": "gsiftp://gridftp.icecube.wisc.edu/data/user/bsmithers/data/cc_mc_cascades/photon_propagation/$(dataset)/$(subdirectory)",
-            "TARGET::LEVEL2": "gsiftp://gridftp.icecube.wisc.edu/data/user/bsmithers/data/cc_mc_cascades/level2/$(dataset)/$(subdirectory)",
-            "metaproject_py3": "gsiftp://gridftp.icecube.wisc.edu/data/user/bsmithers/icetray/install/",
-            "env_path_py3": "/cvmfs/icecube.opensciencegrid.org/py3-v4.1.1",
+            "TARGET::GEN": "/data/user/bsmithers/data/cc_mc_cascades/lepton_injector/$(dataset)/$(subdirectory)",
+            "TARGET::SNOWSTORM": "/data/user/bsmithers/data/cc_mc_cascades/photon_propagation/$(dataset)/$(subdirectory)",
+            "TARGET::LEVEL2": "/data/user/bsmithers/data/cc_mc_cascades/level2/$(dataset)/$(subdirectory)",
+            "metaproject_py3": "/data/user/bsmithers/icetray/install/",
+            "env_path_py3": "/cvmfs/icecube.opensciencegrid.org/py3-v4.1.1/",
             "revision": "",
             "outfile": "$sprintf('%s_%s.%06d.%06d',$steering(GENERATION::flavor),$steering(GENERATION::this_interaction),$(dataset),$(job))"
         },
@@ -151,7 +151,7 @@
                                 "type":"$steering(GENERATION::flavor)",
                                 "interaction":"$steering(GENERATION::this_interaction)"
                             },
-                            "env_shell": "$steering(metaproject_py3)/src/simprod-scripts/resources/scripts/SnowSuite/iceprod2/load_env $steering(env_path_py3)/setup.sh $steering(metaproject_py3)/build/env-shell.sh",
+                            "env_shell": "$steering(metaproject_py3)/simprod-scripts/resources/scripts/SnowSuite/iceprod2/load_env $steering(env_path_py3)/setup.sh $steering(metaproject_py3)/env-shell.sh",
                             "env_clear": true,
                             "configs": {}
                         },
@@ -188,7 +188,7 @@
                                 "UsePipe": false,
                                 "UseGSLRNG": true
                             },
-                            "env_shell": "$steering(metaproject_py3)/src/simprod-scripts/resources/scripts/SnowSuite/iceprod2/load_env $steering(env_path_py3)/setup.sh $steering(metaproject_py3)/build/env-shell.sh",
+                            "env_shell": "$steering(metaproject_py3)/simprod-scripts/resources/scripts/SnowSuite/iceprod2/load_env $steering(env_path_py3)/setup.sh $steering(metaproject_py3)/env-shell.sh",
                             "env_clear": true,
                             "configs": {}
                         },
@@ -214,7 +214,7 @@
                             "classes": [],
                             "parameters": {},
                             "running_class": "",
-                            "src": "$steering(metaproject_py3)/src/simprod-scripts/resources/scripts/SnowSuite/2-Polyplopia.py",
+                            "src": "$steering(metaproject_py3)/simprod-scripts/resources/scripts/SnowSuite/2-Polyplopia.py",
                             "args": {
                                 "seed": "$steering(seed)",
                                 "infile": "gen_$steering(GENERATION::this_interaction).i3.zst",
@@ -225,7 +225,7 @@
                                 "is-corsika": false,
                                 "TimeWindow": 40
                             },
-                            "env_shell": "$steering(metaproject_py3)/src/simprod-scripts/resources/scripts/SnowSuite/iceprod2/load_env $steering(env_path_py3)/setup.sh $steering(metaproject_py3)/build/env-shell.sh",
+                            "env_shell": "$steering(metaproject_py3)/simprod-scripts/resources/scripts/SnowSuite/iceprod2/load_env $steering(env_path_py3)/setup.sh $steering(metaproject_py3)/env-shell.sh",
                             "env_clear": true,
                             "configs": {}
                         }
@@ -296,7 +296,7 @@
                             "classes": [],
                             "parameters": {},
                             "running_class": "",
-                            "src": "$steering(metaproject_py3)/src/simprod-scripts/resources/scripts/SnowSuite/3-Snowstorm.py",
+                            "src": "$steering(metaproject_py3)/simprod-scripts/resources/scripts/SnowSuite/3-Snowstorm.py",
                             "args": {
                                 "seed": "$steering(seed)",
                                 "infile": "gen_poly_$steering(GENERATION::this_interaction).i3.zst",
@@ -308,7 +308,7 @@
                                 "config_file": "snowstorm.json",
                                 "summaryfile": "clsim_summary_$steering(GENERATION::this_interaction).json"
                             },
-                            "env_shell": "$steering(metaproject_py3)/src/simprod-scripts/resources/scripts/SnowSuite/iceprod2/load_env $steering(env_path_py3)/setup.sh $steering(metaproject_py3)/build/env-shell.sh",
+                            "env_shell": "$steering(metaproject_py3)/simprod-scripts/resources/scripts/SnowSuite/iceprod2/load_env $steering(env_path_py3)/setup.sh $steering(metaproject_py3)/env-shell.sh",
                             "env_clear": true,
                             "configs": {
                                 "snowstorm.json": "$steering(SNOWSTORM::config)"
@@ -393,7 +393,7 @@
                                 "seed": "$steering(seed)",
                                 "UseGSLRNG": true
                             },
-                            "env_shell": "$steering(metaproject_py3)/src/simprod-scripts/resources/scripts/SnowSuite/iceprod2/load_env $steering(env_path_py3)/setup.sh $steering(metaproject_py3)/build/env-shell.sh",
+                            "env_shell": "$steering(metaproject_py3)/simprod-scripts/resources/scripts/SnowSuite/iceprod2/load_env $steering(env_path_py3)/setup.sh $steering(metaproject_py3)/env-shell.sh",
                             "env_clear": true,
                             "configs": {}
                         },
@@ -404,7 +404,7 @@
                             "classes": [],
                             "parameters": {},
                             "running_class": "",
-                            "src": "$steering(metaproject_py3)/src/filterscripts/resources/scripts/SimulationFiltering.py",
+                            "src": "$steering(metaproject_py3)/filterscripts/resources/scripts/SimulationFiltering.py",
                             "args": {
                                 "input": "det_$steering(GENERATION::this_interaction).i3.zst",
                                 "output": "level1_$steering(GENERATION::this_interaction).i3.zst",
@@ -412,7 +412,7 @@
                                 "needs_wavedeform_spe_corr": "null",
                                 "enable-gfu": "null"
                             },
-                            "env_shell": "$steering(metaproject_py3)/src/simprod-scripts/resources/scripts/SnowSuite/iceprod2/load_env $steering(env_path_py3)/setup.sh $steering(metaproject_py3)/build/env-shell.sh",
+                            "env_shell": "$steering(metaproject_py3)/simprod-scripts/resources/scripts/SnowSuite/iceprod2/load_env $steering(env_path_py3)/setup.sh $steering(metaproject_py3)/env-shell.sh",
                             "env_clear": true,
                             "configs": {}
                         },
@@ -438,14 +438,14 @@
                             "classes": [],
                             "parameters": {},
                             "running_class": "",
-                            "src": "$steering(metaproject_py3)/src/filterscripts/resources/scripts/offlineL2/process.py",
+                            "src": "$steering(metaproject_py3)/filterscripts/resources/scripts/offlineL2/process.py",
                             "args": {
                                 "input": "level1_$steering(GENERATION::this_interaction).i3.zst",
                                 "output": "level2_$steering(GENERATION::this_interaction).i3.zst",
                                 "gcd": "$steering(gcdfile_pass2)",
                                 "simulation": "null"
                             },
-                            "env_shell": "$steering(metaproject_py3)/src/simprod-scripts/resources/scripts/SnowSuite/iceprod2/load_env $steering(env_path_py3)/setup.sh $steering(metaproject_py3)/build/env-shell.sh",
+                            "env_shell": "$steering(metaproject_py3)/simprod-scripts/resources/scripts/SnowSuite/iceprod2/load_env $steering(env_path_py3)/setup.sh $steering(metaproject_py3)/env-shell.sh",
                             "env_clear": true,
                             "configs": {}
                         }
