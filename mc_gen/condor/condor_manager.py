@@ -186,7 +186,7 @@ def write_dag_chain(execPath, dataPath, base_name, nJobs, nEvents):
                 args = "-s {} ".format(seedroot+job)
             else:
                 args = ""
-            args +=  " {} {} {}".format( seedroot+job, level_arguments[outname][0] , outfile, infile ) 
+            args +=  " {} {} {}".format(level_arguments[outname][0] , outfile, infile ) 
             
             #VARS thing00002 -arg1 A -arg2 B -arg3 C [...]
             dag_file.write('VARS  {}{}  arg="{}"\n'.format(outname, get_5d_string(job), args)) 
