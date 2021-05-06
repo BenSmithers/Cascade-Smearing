@@ -107,39 +107,43 @@ def write_dag_chain(execPath, dataPath, base_name, nJobs, nEvents):
     #
     #
     # 
-    generation_arguments    = ["-i 2 --Emin 100 --Emax 1000000 -t Electron -c NC -n {}".format(nEvents), None]
+    generation_arguments    = ["-i 2 --Emin 100 --Emax 1000000 -t Electron -c NC -n {}".format(nEvents), None, True]
     #
     #
     # TODO
-    
+   
+    corsika_name = "BCorsika"
+    corsika = "{}/gen-CORS.py".format(execPath)
+    corsika_args = ["-n {} -g{} ".format(nEvents*15, gcd_file), None, True]
 
-    poly_name = "BPolyplop"
+    poly_name = "CPolyplop"
     poly = "{}/process-Polyplopia.py".format(execPath)
-    poly_arguments         =["--mctype LeptonInjector ",poly_name]
+    poly_arguments         =["--mctype LeptonInjector --MCTreeName I3MCTree_preMuonProp --OutputMCTreeName I3MCTree --TimeWindow 40 ", generator_name,True]
 
     config_file = "/home/bsmithers/software_dev/cascade/mc_gen/Snowstorm_FullSystematics.yml"
 
-    phot_name              = "Cphoton"
+    phot_name              = "Bphoton"
     phot           = "{}/process-SnowStorm.py".format(execPath)
-    phot_arguments         = ["-g {} -c {} --domoversizefactor {} --events-per-model 100".format(gcd_file, config_file, 1.0), generator_name]
+    phot_arguments         = ["-g {} -c {} --domoversizefactor {} --events-per-model 100".format(gcd_file, config_file, 1.0), generator_name, True]
     
-    det_name              = "Ddetector"
+    det_name              = "Cdetector"
     det       = "{}/process-Det.py".format(execPath)
-    det_arguments         = [" ", phot_name]
+    det_arguments         = [" ", phot_name, True]
     
-    l1_name              = "Elevel1"
+    l1_name              = "Dlevel1"
     l1       = "{}/process-L1.py".format(execPath)
-    l1_arguments         = [" ", det_name]
+    l1_arguments         = [" ", det_name, False]
 
 
     # default I3 file suffix! 
-    suffix = ".i3.zst"
+    suffix = ".i3"
     print("Using file suffix: {}".format(suffix))
     
     
     # dictionary for the names of each level of the MC generation and their arguments 
     level_arguments =  {base_name+generator_name : generation_arguments, 
-                        base_name+poly_name : poly_arguments,
+                        #base_name+corsika_name : corsika_args,
+                        #base_name+poly_name : poly_arguments,
                         base_name+phot_name : phot_arguments,
                         base_name+det_name : det_arguments,
                         base_name+l1_name : l1_arguments}
@@ -178,7 +182,11 @@ def write_dag_chain(execPath, dataPath, base_name, nJobs, nEvents):
             else:
                 infile = ""
             
-            args =  "-s {} {} {} {}".format( seedroot+job, level_arguments[outname][0] , outfile, infile ) 
+            if level_arguments[outname][2]:
+                args = "-s {} ".format(seedroot+job)
+            else:
+                args = ""
+            args +=  " {} {} {}".format( seedroot+job, level_arguments[outname][0] , outfile, infile ) 
             
             #VARS thing00002 -arg1 A -arg2 B -arg3 C [...]
             dag_file.write('VARS  {}{}  arg="{}"\n'.format(outname, get_5d_string(job), args)) 
@@ -188,11 +196,13 @@ def write_dag_chain(execPath, dataPath, base_name, nJobs, nEvents):
         dag_file.write('PARENT {}{} CHILD {}{}\n'.format(file_names[0], get_5d_string(job), file_names[1],get_5d_string(job)))
         dag_file.write('PARENT {}{} CHILD {}{}\n'.format(file_names[1], get_5d_string(job), file_names[2],get_5d_string(job)))
         dag_file.write('PARENT {}{} CHILD {}{}\n'.format(file_names[2], get_5d_string(job), file_names[3],get_5d_string(job)))
-
+        
     dag_file.close()
     
     # make the .submit files
     make_condor_submit(generator,  file_names[0], gpus=0, memory=1000)
+   # make_condor_submit(corsika,  file_names[1], gpus=0, memory=1000)
+    #make_condor_submit(poly,  file_names[2], gpus=0, memory=1000)
     make_condor_submit(phot, file_names[1], gpus=1, memory=4000)
     make_condor_submit(det, file_names[2], gpus=0, memory=2000)
     make_condor_submit(l1, file_names[3], gpus=0, memory=2000)
@@ -201,7 +211,7 @@ def write_dag_chain(execPath, dataPath, base_name, nJobs, nEvents):
 nJobs = 2
 
 root_dir = "/home/bsmithers/software_dev/cascade/mc_gen/"
-workpath = "/data/user/bsmithers/data/cascade_mc/"
+workpath = "/data/user/bsmithers/data/nc_mc_cascades/"
 
 # exec dir | data output | name | jobs | events per job
 write_dag_chain(root_dir, workpath, "cascade", nJobs, 2000)
