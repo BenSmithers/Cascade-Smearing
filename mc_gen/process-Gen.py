@@ -229,7 +229,7 @@ else:
 for pair in party_pairs:
     do_ranged = pair[0]==dataclasses.I3Particle.ParticleType.MuMinus or pair[0]==dataclasses.I3Particle.ParticleType.MuPlus
 
-    xs_pair = get_xs(interaction.lower(), is_nubar(pair))
+    xs_pair = get_xs(interaction.lower(), "nubar" if is_nubar(pair) else "nu")
 
     injector_list.append( LeptonInjector.injector( 
             NEvents                             = int(nEvents / len(party_pairs)), # want this normalized to the number of events asked for! 

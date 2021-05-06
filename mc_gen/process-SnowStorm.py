@@ -1,3 +1,7 @@
+#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py3-v4.1.1/icetray-start
+#METAPROJECT /data/user/bsmithers/icetray/install/
+
+
 # -*- coding: utf-8 -*-
 # Copyright (c) 2019
 # Jakob van Santen <jakob.van.santen@desy.de>
@@ -42,7 +46,6 @@ print("")
 
 # just load in argparse so the help function can be quickly accessed
 from argparse import ArgumentParser
-from utils import str2bool
 
 parser = ArgumentParser()
 parser.add_argument("-i","--infile",
@@ -78,12 +81,12 @@ parser.add_argument("--events-per-model",
                     help="Number of frames to process before scrambling systematics")
 
 parser.add_argument("--cpu",
-                    type=str2bool, default=False,
+                    type=bool, default=False,
                     nargs='?', const=True,
                     help="Call this flag when NOT using GPUs.")
 
 parser.add_argument("--UseI3PropagatorService", dest="UseI3PropagatorService",
-                    type=str2bool, default=True,
+                    type=bool, default=True,
                     nargs='?', const=False,
                     help="Call this flag for NOT using I3PropagatorService.")
 
@@ -575,9 +578,6 @@ if not args.cpu:
     if summary['TotalNumPhotonsGenerated'] > 0.0:
         summary['AverageHostTimePerPhoton'] = summary['TotalHostTime']/summary['TotalNumPhotonsGenerated']
 
-if SummaryFile:
-    with open(SummaryFile, 'w') as f:
-        json.dump(dict(summary), f)
 print("done")
 
 # Hurray!
