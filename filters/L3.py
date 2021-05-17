@@ -1,5 +1,6 @@
-#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v2/icetray-start
-#METAPROJECT gsiftp://gridftp-users.icecube.wisc.edu/data/user/nwandkowsky/tarballs/icerec.V05-01-07
+#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py3-v4.1.1/icetray-start
+#METAPROJECT /data/user/bsmithers/metaprojects/combo/py3-v4.1.1/
+
 
 # ./L3.py -g /cvmfs/icecube.opensciencegrid.org/data/GCD/GeoCalibDetectorStatus_2016.57531_V0.i3.gz -i /data/ana/Cscd/StartingEvents/NuGen_new/NuE/medium_energy/IC86_flasher_p1=0.3_p2=0.0/l2/1/l2_00000001.i3.zst -o L3_nugen.i3.zst
 
@@ -18,7 +19,7 @@ import os
 import time
 
 start_time = time.asctime()
-print 'Started:', start_time
+print('Started:', start_time)
 
 # handling of command line arguments
 from optparse import OptionParser
@@ -168,7 +169,7 @@ class SplitToQ(I3PacketModule):
     '''
     def __init__(self, context):
         I3PacketModule.__init__(self, context, icetray.I3Frame.DAQ)
-      self.AddOutBox('OutBox')
+        self.AddOutBox('OutBox')
     def Configure(self):
         pass
     def FramePacket(self, frames):
@@ -246,7 +247,7 @@ tray.AddSegment(LayerVeto, "VetoLayer", Pulses='SplitInIcePulsesHLC_NoDC')
 def layer_veto_cut(frame):
     if "HESE_CausalQTot" in frame:
         if frame["HESE_CausalQTot"].value>6000. and frame["HESE_VHESelfVeto"].value==False:
-            print "HESE (ck) event!", frame["I3EventHeader"].event_id
+            print("HESE (ck) event!", frame["I3EventHeader"].event_id)
             frame["IsHESE_ck"]=icetray.I3Bool(True)
         else:
             frame["IsHESE_ck"]=icetray.I3Bool(False)
@@ -257,11 +258,11 @@ def layer_veto_cut(frame):
     layer_veto_charge = frame['VetoLayer0'].value + frame['VetoLayer1'].value
     if nstring>3 and layer_veto_charge<3 and frame['HomogenizedQTot'].value > 6e3:
         frame["IsHESE_jvs"]=icetray.I3Bool(True)
-        print "HESE (jvs) event!", frame["I3EventHeader"].event_id
+        print("HESE (jvs) event!", frame["I3EventHeader"].event_id)
         return True
     elif nstring>3 and layer_veto_charge==0 and frame['HomogenizedQTot'].value > 100.:
         frame["IsHESE_jvs"]=icetray.I3Bool(False)
-        print "Potential MESE event!", layer_veto_charge, frame['HomogenizedQTot'].value, frame['HomogenizedQTot_toposplit'].value, frame["I3EventHeader"].event_id
+        print("Potential MESE event!", layer_veto_charge, frame['HomogenizedQTot'].value, frame['HomogenizedQTot_toposplit'].value, frame["I3EventHeader"].event_id)
         return True
     elif frame["IsHESE_ck"].value==True:
         return True
@@ -473,7 +474,7 @@ def get_track_length(frame):
         for i in range(0,len(losses)):
             if first_loss_found==False and losses[i].energy>1 and losses[i].pos.z<500 and losses[i].pos.z>-500 and math.sqrt(losses[i].pos.x*losses[i].pos.x+losses[i].pos.y*losses[i].pos.y)<550:
                 first_loss = losses[i]
-               first_loss_found=True
+                first_loss_found=True
             if losses[i].energy>1 and losses[i].pos.z<500 and losses[i].pos.z>-500 and math.sqrt(losses[i].pos.x*losses[i].pos.x+losses[i].pos.y*losses[i].pos.y)<550:
                 last_loss = losses[i]
         if first_loss_found==False:
@@ -489,14 +490,14 @@ tray.Add('I3LCPulseCleaning', 'cleaning_fortw', OutputHLC='TWTSInIcePulsesHLC', 
 
 def CleanDeepCore(frame):
     mask = dataclasses.I3RecoPulseSeriesMapMask(frame, "TWTSInIcePulsesHLC", lambda om, idx, pulse: om.string <= 78)
-        frame["TWTSInIcePulsesHLC_NoDC"] = mask
+    frame["TWTSInIcePulsesHLC_NoDC"] = mask
 tray.AddModule(CleanDeepCore, 'nodc_again')
 
 def getRecoPulses(frame,name):
     pulses = frame[name]
-        if pulses.__class__ == dataclasses.I3RecoPulseSeriesMapMask:
-            pulses = pulses.apply(frame)
-        return pulses
+    if pulses.__class__ == dataclasses.I3RecoPulseSeriesMapMask:
+        pulses = pulses.apply(frame)
+    return pulses
 
 def ComputeChargeWeightedDist(frame, Pulses, Track):
     if(not frame.Stop==icetray.I3Frame.Physics):
@@ -509,9 +510,9 @@ def ComputeChargeWeightedDist(frame, Pulses, Track):
     track=frame[Track]
     if(track.__class__==dataclasses.I3String):
         Track=track.value
-                if(not frame.Has(Track)):
-                    return
-                track=frame[Track]
+        if(not frame.Has(Track)):
+            return
+        track=frame[Track]
     geo=frame.Get('I3Geometry')
     omgeo=geo.omgeo
 
@@ -519,12 +520,12 @@ def ComputeChargeWeightedDist(frame, Pulses, Track):
     AvgDistQ=0
     for dom in pulses:
         DomPosition=omgeo[dom[0]].position
-                Dist=phys_services.I3Calculator.closest_approach_distance(track,DomPosition)
-                Qdom=0
-                for pulse in dom[1]:
-                    Qdom+=pulse.charge
-                Qtot+=Qdom
-                AvgDistQ+=Dist*Qdom
+        Dist=phys_services.I3Calculator.closest_approach_distance(track,DomPosition)
+        Qdom=0
+        for pulse in dom[1]:
+            Qdom+=pulse.charge
+        Qtot+=Qdom
+        AvgDistQ+=Dist*Qdom
     if(Qtot==0):
         AvgDistQ=NaN
     else:
@@ -548,7 +549,7 @@ def check_type(frame):
             frame["IsTrack_true"]= icetray.I3Bool(False)
         elif (frame["MCPrimary"].type==14 or frame["MCPrimary"].type==-14) and frame["I3MCWeightDict"]["InteractionType"]==1.0:
             frame["IsCascade_true"]= icetray.I3Bool(False)
-                frame["IsTrack_true"]= icetray.I3Bool(True)
+            frame["IsTrack_true"]= icetray.I3Bool(True)
 
         if (frame["MCPrimary"].type==16 or frame["MCPrimary"].type==-16) and frame["I3MCWeightDict"]["InteractionType"]==2.0:
             frame["IsCascade_true"]= icetray.I3Bool(True)
@@ -612,12 +613,12 @@ def FindDetectorVolumeIntersections(frame, TrackName="", OutputTimeWindow=None, 
 
             if len(times) == 0:
                 #raise RuntimeError("track does not intersect the detector volume")
-                    frame[twName] = dataclasses.I3TimeWindow()
+                frame[twName] = dataclasses.I3TimeWindow()
             elif len(times) == 1:
                 raise RuntimeError("tracks with only one intersection are not supported")
             else:
                 tWindow = dataclasses.I3TimeWindow(times[0]-TimePadding, times[-1]+TimePadding)
-                    frame[twName] = tWindow
+                frame[twName] = tWindow
 tray.AddModule(FindDetectorVolumeIntersections, "FindDetectorVolumeIntersections",
         TimePadding = 60.*I3Units.m/dataclasses.I3Constants.c,
         TrackName="MCTrack",
@@ -656,7 +657,7 @@ def collectStats(frame):
                         losses += 0.8*p.energy
                     else:
                         energyScalingFactor = 1.0 + ((p.energy/I3Units.GeV/0.399)**-0.130)*(0.467 - 1)
-                                losses += energyScalingFactor*p.energy
+                        losses += energyScalingFactor*p.energy
                 else:
                     emlosses += p.energy
                     losses += p.energy
@@ -669,7 +670,7 @@ tray.AddModule(collectStats, "CollectStats")
 #tray.Add('Delete',
 tray.AddModule('I3Writer', 'writer',
         DropOrphanStreams=[icetray.I3Frame.DAQ],
-        Streams=[  icetray.I3Frame.DAQ, icetray.I3Frame.Physics],
+        Streams=[  icetray.I3Frame.DAQ, icetray.I3Frame.Physics,  icetray.I3Frame.Stream('M'),  icetray.I3Frame.Stream('S')],
         filename=outfile)
 
 tray.AddModule('TrashCan', 'thecan')
@@ -681,5 +682,5 @@ del tray
 
 stop_time = time.asctime()
 
-print 'Started:', start_time
-print 'Ended:', stop_time
+print('Started:', start_time)
+print('Ended:', stop_time)

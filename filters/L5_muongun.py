@@ -1,5 +1,8 @@
-#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v1/icetray-start
-#METAPROJECT /data/user/nwandkowsky/tarballs/icerec.V04-11-02
+#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py3-v4.1.1/icetray-start
+#METAPROJECT /data/user/bsmithers/metaprojects/combo/py3-v4.1.1/
+
+# #!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v1/icetray-start
+# #METAPROJECT /data/user/nwandkowsky/tarballs/icerec.V04-11-02
 
 # ./L5_muongun.py -i muongun_low_energy_l5.i3.bz2 -o muongun_lowe_l5.i3 -g /data/sim/sim-new/downloads/GCD/GeoCalibDetectorStatus_IC86.55697_corrected_V2.i3.gz
 

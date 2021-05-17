@@ -1,5 +1,8 @@
-#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v3/icetray-start
-#METAPROJECT /data/user/nwandkowsky/tarballs/icerec.V05-02-00
+#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py3-v4.1.1/icetray-start
+#METAPROJECT /data/user/bsmithers/metaprojects/combo/py3-v4.1.1/
+
+##!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v3/icetray-start
+##METAPROJECT /data/user/nwandkowsky/tarballs/icerec.V05-02-00
 
 # ./L3.py -g /cvmfs/icecube.opensciencegrid.org/data/GCD/GeoCalibDetectorStatus_2016.57531_V0.i3.gz -i /data/ana/Cscd/StartingEvents/NuGen_new/NuE/medium_energy/IC86_flasher_p1=0.3_p2=0.0/l2/1/l2_00000001.i3.zst -o L3_nugen.i3.zst
 
@@ -18,7 +21,7 @@ import os
 import time
 
 start_time = time.asctime()
-print 'Started:', start_time
+print('Started:', start_time)
 
 # handling of command line arguments
 from optparse import OptionParser
@@ -168,7 +171,7 @@ class SplitToQ(I3PacketModule):
     '''
     def __init__(self, context):
         I3PacketModule.__init__(self, context, icetray.I3Frame.DAQ)
-      self.AddOutBox('OutBox')
+        self.AddOutBox('OutBox')
     def Configure(self):
         pass
     def FramePacket(self, frames):
@@ -246,7 +249,7 @@ tray.AddSegment(LayerVeto, "VetoLayer", Pulses='SplitInIcePulsesHLC_NoDC')
 def layer_veto_cut(frame):
     if "HESE_CausalQTot" in frame:
         if frame["HESE_CausalQTot"].value>6000. and frame["HESE_VHESelfVeto"].value==False:
-            print "HESE (ck) event!", frame["I3EventHeader"].event_id
+            print("HESE (ck) event!", frame["I3EventHeader"].event_id)
             frame["IsHESE_ck"]=icetray.I3Bool(True)
         else:
             frame["IsHESE_ck"]=icetray.I3Bool(False)
@@ -257,11 +260,11 @@ def layer_veto_cut(frame):
     layer_veto_charge = frame['VetoLayer0'].value + frame['VetoLayer1'].value
     if nstring>3 and layer_veto_charge<3 and frame['HomogenizedQTot'].value > 6e3:
         frame["IsHESE_jvs"]=icetray.I3Bool(True)
-        print "HESE (jvs) event!", frame["I3EventHeader"].event_id
+        print("HESE (jvs) event!", frame["I3EventHeader"].event_id)
         return True
     elif nstring>3 and layer_veto_charge==0 and frame['HomogenizedQTot'].value > 100.:
         frame["IsHESE_jvs"]=icetray.I3Bool(False)
-        print "Potential MESE event!", layer_veto_charge, frame['HomogenizedQTot'].value, frame['HomogenizedQTot_toposplit'].value, frame["I3EventHeader"].event_id
+        print("Potential MESE event!", layer_veto_charge, frame['HomogenizedQTot'].value, frame['HomogenizedQTot_toposplit'].value, frame["I3EventHeader"].event_id)
         return True
     elif frame["IsHESE_ck"].value==True:
         return True
@@ -366,7 +369,7 @@ tray.AddModule(VetoMarginCalculator, 'VetoTrackMargin_mono', Vertex="MonopodFit4
 
 tray.AddModule('I3Writer', 'writer',
         DropOrphanStreams=[icetray.I3Frame.DAQ],
-        Streams=[  icetray.I3Frame.DAQ, icetray.I3Frame.Physics],
+        Streams=[  icetray.I3Frame.DAQ, icetray.I3Frame.Physics,  icetray.I3Frame.Stream('M'),  icetray.I3Frame.Stream('S')],
         filename=outfile)
 
 tray.AddModule('TrashCan', 'thecan')
@@ -378,5 +381,5 @@ del tray
 
 stop_time = time.asctime()
 
-print 'Started:', start_time
-print 'Ended:', stop_time
+print('Started:', start_time)
+print('Ended:', stop_time)
