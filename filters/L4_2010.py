@@ -1,5 +1,8 @@
-#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v1/icetray-start
-#METAPROJECT /data/user/nwandkowsky/tarballs/icerec.V04-11-02
+#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py3-v4.1.1/icetray-start
+#METAPROJECT /data/user/bsmithers/metaprojects/combo/py3-v4.1.1/
+
+##!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v1/icetray-start
+##METAPROJECT /data/user/nwandkowsky/tarballs/icerec.V04-11-02
 
 # ./L4.py -g /cvmfs/icecube.opensciencegrid.org/data/GCD/GeoCalibDetectorStatus_IC86.55697_corrected_V2.i3.gz -i /data/ana/Cscd/StartingEvents/NuGen/NuE/medium_energy/IC86_2011/l3_new/1/l3_00000001.i3.bz2 -o 2011_L4_nugen.i3
 
@@ -18,7 +21,7 @@ import os
 import time
 
 start_time = time.asctime()
-print 'Started:', start_time
+print('Started:', start_time)
 
 # handling of command line arguments
 from optparse import OptionParser
@@ -38,7 +41,7 @@ outfile = options.OUTPUT
 tray = I3Tray()
 
 tray.AddModule('I3Reader', 'reader', FilenameList=[options.GCD, options.INPUT])
-print "Reading input file...", options.INPUT
+print("Reading input file...", options.INPUT)
 
 def fix_header(frame):
     header = frame['I3EventHeader']
@@ -121,28 +124,28 @@ tray.Add(TrackVetoes, 'Split',pulses="SplitPulses",Vertex='L4MonopodFit')
 
 def selectFinalFit(frame):
     fits=[ "SplineMPE_split", "MPEFit_split","SPEFit4_split","SPEFitSingle_split","ImprovedLineFit_split"]
-        resultName="TrackFit"
-        result=None
-        params=None
-        for fitName in fits:
-            if(not frame.Has(fitName)):
-                continue
-            fit=frame.Get(fitName)
-                if(fit.fit_status==dataclasses.I3Particle.OK):
-                    frame.Put(resultName,fit)
-                        frame.Put(resultName+"Fallback",icetray.I3Int(fits.index(fitName)))
-                        if(frame.Has(fitName+"FitParams")):
-                            frame.Put(resultName+"FitParams",frame.Get(fitName+"FitParams"))
-                        break
-        if(not frame.Has(resultName+"Fallback")):
-            frame.Put(resultName+"Fallback",icetray.I3Int(len(fits)))
+    resultName="TrackFit"
+    result=None
+    params=None
+    for fitName in fits:
+        if(not frame.Has(fitName)):
+            continue
+        fit=frame.Get(fitName)
+        if(fit.fit_status==dataclasses.I3Particle.OK):
+            frame.Put(resultName,fit)
+            frame.Put(resultName+"Fallback",icetray.I3Int(fits.index(fitName)))
+            if(frame.Has(fitName+"FitParams")):
+                frame.Put(resultName+"FitParams",frame.Get(fitName+"FitParams"))
+            break
+    if(not frame.Has(resultName+"Fallback")):
+        frame.Put(resultName+"Fallback",icetray.I3Int(len(fits)))
 
 #fetch masks or pulses transparently
 def getRecoPulses(frame,name):
     pulses = frame[name]
-        if pulses.__class__ == dataclasses.I3RecoPulseSeriesMapMask:
-            pulses = pulses.apply(frame)
-        return pulses
+    if pulses.__class__ == dataclasses.I3RecoPulseSeriesMapMask:
+        pulses = pulses.apply(frame)
+    return pulses
 
 from icecube import improvedLinefit, lilliput
 tray.AddSegment(improvedLinefit.simple,"ImprovedLineFit_split",
@@ -258,7 +261,7 @@ tray.AddModule("muex", "muex_differential",
 
 def CleanDeepCore(frame):
     mask = dataclasses.I3RecoPulseSeriesMapMask(frame, "SplitPulses", lambda om, idx, pulse: om.string <= 78)
-        frame["SplitPulses_NoDC"] = mask
+    frame["SplitPulses_NoDC"] = mask
 tray.AddModule(CleanDeepCore, 'nodc_again')
 
 def ComputeChargeWeightedDist(frame, Pulses, Track):
@@ -272,9 +275,9 @@ def ComputeChargeWeightedDist(frame, Pulses, Track):
     track=frame[Track]
     if(track.__class__==dataclasses.I3String):
         Track=track.value
-                if(not frame.Has(Track)):
-                    return
-                track=frame[Track]
+        if(not frame.Has(Track)):
+            return
+        track=frame[Track]
     geo=frame.Get('I3Geometry')
     omgeo=geo.omgeo
 
@@ -282,12 +285,12 @@ def ComputeChargeWeightedDist(frame, Pulses, Track):
     AvgDistQ=0
     for dom in pulses:
         DomPosition=omgeo[dom[0]].position
-                Dist=phys_services.I3Calculator.closest_approach_distance(track,DomPosition)
-                Qdom=0
-                for pulse in dom[1]:
-                    Qdom+=pulse.charge
-                Qtot+=Qdom
-                AvgDistQ+=Dist*Qdom
+        Dist=phys_services.I3Calculator.closest_approach_distance(track,DomPosition)
+        Qdom=0
+        for pulse in dom[1]:
+            Qdom+=pulse.charge
+        Qtot+=Qdom
+        AvgDistQ+=Dist*Qdom
     if(Qtot==0):
         AvgDistQ=NaN
     else:
@@ -324,20 +327,20 @@ exclusionList = \
                 SaturationWindows='SaturationTimes'
                 )
 
-        common_millipede_params = dict(
-                ## params for I3MillipedeBase<ConditionalModule>
-                MuonPhotonicsService=muon_service,
-                CascadePhotonicsService=cascade_service_mie,
-                ShowerRegularization=1e-9,
-                PhotonsPerBin=15,
-                DOMEfficiency=0.99,
-                ExcludedDOMs=exclusionList,
-                PartialExclusion=False,
-                ReadoutWindow='SplitPulsesTimeRange',
-                Pulses='SplitPulses',
-                )
+common_millipede_params = dict(
+        ## params for I3MillipedeBase<ConditionalModule>
+        MuonPhotonicsService=muon_service,
+        CascadePhotonicsService=cascade_service_mie,
+        ShowerRegularization=1e-9,
+        PhotonsPerBin=15,
+        DOMEfficiency=0.99,
+        ExcludedDOMs=exclusionList,
+        PartialExclusion=False,
+        ReadoutWindow='SplitPulsesTimeRange',
+        Pulses='SplitPulses',
+        )
 
-        tray.AddModule(AddMissingTimeWindow, 'SplitPulsesTimeRange', Pulses='SplitPulses')
+tray.AddModule(AddMissingTimeWindow, 'SplitPulsesTimeRange', Pulses='SplitPulses')
 tray.AddModule('MuMillipede', 'mumillipede',
         ## params for MuMillipede
         SeedTrack="TrackFit",
@@ -396,7 +399,7 @@ def final_filter(frame):
         frame["IsHese"]=icetray.I3Bool(True)
         frame["IsCascade"]=icetray.I3Bool(False)
         frame["IsUpgoingMuon"]=icetray.I3Bool(False)
-        print frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id, " HESE"#, frame['MuonWeight_GaisserH4a'].value*3600*24*340/160000
+        print(frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id, " HESE") #, frame['MuonWeight_GaisserH4a'].value*3600*24*340/160000
         return True
     else:
         frame["IsHese"]=icetray.I3Bool(False)
@@ -405,11 +408,10 @@ def final_filter(frame):
     ##  CASCADES
     ###########
 
-    if frame["L4VetoTrackOfflineVetoCharge"].value<2 or frame["L4VetoTrackSplitVetoCharge"].value<2  or \
-            frame["L4VetoTrackMilliOfflineVetoCharge"].value<2 or frame["L4VetoTrackMilliSplitVetoCharge"].value<2:
-                frame["IsUpgoingMuon"]=icetray.I3Bool(False)
-    frame["IsCascade"]=icetray.I3Bool(True)
-        print frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id, " CASCADE",frame['HomogenizedQTot'].value#, frame['MuonWeight_GaisserH4a'].value*3600*24*340/160000
+    if frame["L4VetoTrackOfflineVetoCharge"].value<2 or frame["L4VetoTrackSplitVetoCharge"].value<2  or frame["L4VetoTrackMilliOfflineVetoCharge"].value<2 or frame["L4VetoTrackMilliSplitVetoCharge"].value<2:
+        frame["IsUpgoingMuon"]=icetray.I3Bool(False)
+        frame["IsCascade"]=icetray.I3Bool(True)
+        print(frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id, " CASCADE",frame['HomogenizedQTot'].value)#, frame['MuonWeight_GaisserH4a'].value*3600*24*340/160000
         return True
     else:
         frame["IsCascade"]=icetray.I3Bool(False)
@@ -426,8 +428,8 @@ def final_filter(frame):
             frame['L4VetoTrackMilliSplitVetoCharge'].value and frame['L4UpgoingTrackMilliSplitVetoChannels'].value > 3 or \
             ( frame['L4UpgoingTrackMilliOfflineVetoCharge'].value > 10 and frame['L4UpgoingTrackMilliOfflineVetoCharge'].value > \
             frame['L4VetoTrackMilliOfflineVetoCharge'].value and frame['L4UpgoingTrackMilliOfflineVetoChannels'].value > 3 )):
-                frame["IsUpgoingMuon"]=icetray.I3Bool(True)
-        print "Upgoing Muon event!", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id
+        frame["IsUpgoingMuon"]=icetray.I3Bool(True)
+        print("Upgoing Muon event!", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id)
     else:
         frame["IsUpgoingMuon"]=icetray.I3Bool(False)
 
@@ -508,7 +510,7 @@ tray.Add('Delete', "final_delete", Keys=['Cuts', 'InIceRawData', 'PoleEHESummary
 
 tray.AddModule('I3Writer', 'writer',
         DropOrphanStreams=[icetray.I3Frame.DAQ],
-        Streams=[ icetray.I3Frame.Stream('S'), icetray.I3Frame.DAQ, icetray.I3Frame.Physics],
+        Streams=[ icetray.I3Frame.Stream('S'), icetray.I3Frame.DAQ, icetray.I3Frame.Physics, icetray.I3Frame.Stream('M')],
         filename=outfile)
 
 tray.AddModule('TrashCan', 'thecan')
@@ -522,5 +524,5 @@ del tray
 
 stop_time = time.asctime()
 
-print 'Started:', start_time
-print 'Ended:', stop_time
+print('Started:', start_time)
+print('Ended:', stop_time)

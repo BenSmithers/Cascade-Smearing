@@ -1,5 +1,9 @@
-#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v2/icetray-start
-#METAPROJECT /data/user/nwandkowsky/tarballs/icerec.V05-01-07
+#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py3-v4.1.1/icetray-start
+#METAPROJECT /data/user/bsmithers/metaprojects/combo/py3-v4.1.1/
+
+
+###!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v2/icetray-start
+###METAPROJECT /data/user/nwandkowsky/tarballs/icerec.V05-01-07
 
 # ./L2.py -g /cvmfs/icecube.opensciencegrid.org/data/GCD/GeoCalibDetectorStatus_2016.57531_V0.i3.gz -i det_muongun.i3.zst -o L2_muongun.i3.zst
 # ./L2.py -g /cvmfs/icecube.opensciencegrid.org/data/GCD/GeoCalibDetectorStatus_2016.57531_V0.i3.gz -i det_nugen.i3.zst -o L2_nugen.i3.zst
@@ -288,7 +292,7 @@ tray.Add('Dump')
 
 tray.AddModule('I3Writer', 'writer',
         DropOrphanStreams=[icetray.I3Frame.DAQ],
-        Streams=[  icetray.I3Frame.DAQ, icetray.I3Frame.Physics],
+        Streams=[  icetray.I3Frame.DAQ, icetray.I3Frame.Physics,  icetray.I3Frame.Stream('M'),  icetray.I3Frame.Stream('S')],
         filename=outfile)
 
 tray.AddModule('TrashCan', 'thecan')

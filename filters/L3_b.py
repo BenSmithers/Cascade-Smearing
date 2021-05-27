@@ -1,5 +1,8 @@
-#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v3/icetray-start
-#METAPROJECT /data/user/nwandkowsky/tarballs/icerec.V05-02-00_legacy
+#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py3-v4.1.1/icetray-start
+#METAPROJECT /data/user/bsmithers/metaprojects/combo/py3-v4.1.1/
+
+##!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v3/icetray-start
+##METAPROJECT /data/user/nwandkowsky/tarballs/icerec.V05-02-00_legacy
 
 # ./L3_b.py -g /cvmfs/icecube.opensciencegrid.org/data/GCD/GeoCalibDetectorStatus_2016.57531_V0.i3.gz -i L3a_nugen.i3.zst -o L3b_nugen.i3.zst
 
@@ -417,7 +420,7 @@ tray.AddModule(collectStats, "CollectStats")
 #tray.Add('Delete',
 tray.AddModule('I3Writer', 'writer',
         DropOrphanStreams=[icetray.I3Frame.DAQ],
-        Streams=[  icetray.I3Frame.DAQ, icetray.I3Frame.Physics],
+        Streams=[  icetray.I3Frame.DAQ, icetray.I3Frame.Physics,  icetray.I3Frame.Stream('M'),  icetray.I3Frame.Stream('S')],
         filename=outfile)
 
 tray.AddModule('TrashCan', 'thecan')

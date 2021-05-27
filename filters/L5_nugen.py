@@ -1,5 +1,8 @@
-#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v1/icetray-start
-#METAPROJECT /data/user/nwandkowsky/tarballs/icerec.V04-11-02
+#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py3-v4.1.1/icetray-start
+#METAPROJECT /data/user/bsmithers/metaprojects/combo/py3-v4.1.1/
+
+# #!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v1/icetray-start
+# #METAPROJECT /data/user/nwandkowsky/tarballs/icerec.V04-11-02
 
 # ./L5_nugen.py -o nue_lowe.i3
 
@@ -14,7 +17,7 @@ import os
 import time
 
 start_time = time.asctime()
-print 'Started:', start_time
+print('Started:', start_time)
 
 # handling of command line arguments
 from optparse import OptionParser
@@ -36,7 +39,7 @@ outfile = options.OUTPUT
 tray = I3Tray()
 
 tray.AddModule('I3Reader', 'reader', FilenameList=infiles)
-print "Reading input file...", len(infiles)
+print("Reading input file...", len(infiles))
 
 def charge_cut(frame):
     if frame["HomogenizedQTot"].value<100.:
@@ -76,7 +79,7 @@ def final_filter(frame):
     ##  HESE
     ###########
     if (frame["L4VetoLayer0"].value+frame["L4VetoLayer1"].value==0 and frame["HomogenizedQTot"].value>6000.) or frame["IsHESE_ck"].value==True:
-        print "HESE event! ",frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id
+        print("HESE event! ",frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id)
         frame["IsHese"]=icetray.I3Bool(True)
         frame["IsCascade"]=icetray.I3Bool(False)
         frame["IsUpgoingMuon"]=icetray.I3Bool(False)
@@ -123,19 +126,19 @@ def final_filter(frame):
                 inside_volume_mono_offline and inside_volume_milli_offline) and \
                 (numpy.log10(frame["L4MonopodFit"].energy)-numpy.cos(frame["L4MonopodFit"].dir.zenith)>2.5 or \
                 numpy.cos(frame["L4MonopodFit"].dir.zenith)<0.5):
-                    frame["IsCascade"]=icetray.I3Bool(True)
+            frame["IsCascade"]=icetray.I3Bool(True)
             frame["IsUpgoingMuon"]=icetray.I3Bool(False)
-            print "CASCADE (cascade): ", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id,frame['HomogenizedQTot'].value#, frame['MuonWeight_GaisserH4a'].value*3600*24*340/160000
+            print("CASCADE (cascade): ", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id,frame['HomogenizedQTot'].value) #, frame['MuonWeight_GaisserH4a'].value*3600*24*340/160000
             return True
         else:
             frame["IsCascade"]=icetray.I3Bool(False)
     else:
         if (frame["MuonFilter"].value==True and frame["L4VetoTrackMilliOfflineVetoCharge"].value<2 and \
-                frame["L4VetoTrackOfflineVetoCharge"].value<2 and inside_volume_milli_offline and inside_volume_mono_offline):# or\
-                #(frame["L4VetoTrackMilliSplitVetoCharge"].value<2 and inside_volume_milli_split):
+            frame["L4VetoTrackOfflineVetoCharge"].value<2 and inside_volume_milli_offline and inside_volume_mono_offline):# or\
+            #(frame["L4VetoTrackMilliSplitVetoCharge"].value<2 and inside_volume_milli_split):
             frame["IsCascade"]=icetray.I3Bool(True)
             frame["IsUpgoingMuon"]=icetray.I3Bool(False)
-            print "CASCADE (track): ", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id,frame['HomogenizedQTot'].value#, frame['MuonWeight_GaisserH4a'].value*3600*24*340/160000
+            print("CASCADE (track): ", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id,frame['HomogenizedQTot'].value) #, frame['MuonWeight_GaisserH4a'].value*3600*24*340/160000
             return True
         else:
             frame["IsCascade"]=icetray.I3Bool(False)
@@ -151,8 +154,8 @@ def final_filter(frame):
             frame['L4VetoTrackMilliOfflineVetoCharge'].value and frame['L4UpgoingTrackMilliOfflineVetoChannels'].value > 3 and \
             frame['L4UpgoingTrackSplitVetoCharge'].value > 6 ) )\
             and frame["TrackFit"].dir.zenith>1.5 and frame["MuonFilter"].value==True and frame["OnlineL2Filter"].value==True:
-                frame["IsUpgoingMuon"]=icetray.I3Bool(True)
-        print "Upgoing Muon event!", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id
+        frame["IsUpgoingMuon"]=icetray.I3Bool(True)
+        print("Upgoing Muon event!", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id)
     else:
         frame["IsUpgoingMuon"]=icetray.I3Bool(False)
     return frame["IsUpgoingMuon"].value==True or frame["IsHese"].value==True or frame["IsCascade"].value==True
@@ -176,20 +179,20 @@ tray.Add(remove_coincident)
 from icecube import VHESelfVeto
 tray.AddModule('VertexInFiducialVolume', 'vertex_inside')
 tray.AddModule('TauGeneratesMuon', 'muon_from_tau')
+def sanitize(particle):
+    if particle is None:
+        return dataclasses.I3Particle()
+    else:
+        return particle
 
 def check_type(frame):
-    if "I3MCTree" in frame:
-        def sanitize(particle):
-            if particle is None:
-                return dataclasses.I3Particle()
-            else:
-                return particle
-
+    if "I3MCTree" in frame:    
         mcTree = frame["I3MCTree"]
         primary = None
         neutrino = None
         for p in mcTree:
-            if mcTree.depth(p) != 0: continue
+            if mcTree.depth(p) != 0: 
+                continue
 
             if p.is_neutrino:
                 if neutrino is None or p.energy > neutrino.energy:
@@ -279,19 +282,14 @@ tray.AddSegment(millipede.MonopodFit, 'L5MonopodFit4', Seed='L5MonopodPreFit',
 
 tray.AddModule('I3Writer', 'writer',
         DropOrphanStreams=[icetray.I3Frame.DAQ],
-        Streams=[  icetray.I3Frame.DAQ, icetray.I3Frame.Physics],
+        Streams=[  icetray.I3Frame.DAQ, icetray.I3Frame.Physics, icetray.I3Frame.Stream('M'),  icetray.I3Frame.Stream('S')],
         filename=outfile)
 
-tray.AddModule('TrashCan', 'thecan')
 
 tray.Execute()
 tray.Finish()
 
-os.system('bzip2 -f %s' % outfile)
-
-del tray
-
 stop_time = time.asctime()
 
-print 'Started:', start_time
-print 'Ended:', stop_time
+print('Started:', start_time)
+print('Ended:', stop_time)

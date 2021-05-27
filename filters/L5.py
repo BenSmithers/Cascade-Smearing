@@ -1,5 +1,9 @@
-#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v1/icetray-start
-#METAPROJECT /data/user/nwandkowsky/tarballs/icerec.V04-11-02
+#!/bin/sh /cvmfs/icecube.opensciencegrid.org/py3-v4.1.1/icetray-start
+#METAPROJECT /data/user/bsmithers/metaprojects/combo/py3-v4.1.1/
+
+
+##!/bin/sh /cvmfs/icecube.opensciencegrid.org/py2-v1/icetray-start
+##METAPROJECT /data/user/nwandkowsky/tarballs/icerec.V04-11-02
 
 #./L5_nugen.py -g /cvmfs/icecube.opensciencegrid.org/data/GCD/GeoCalibDetectorStatus_IC86.55697_corrected_V2.i3.gz -i /data/ana/Cscd/StartingEvents/NuGen/NuMu/low_energy/IC86_2011/l4/1/l4_00000002.i3.bz2 -o /data/user/nwandkowsky/simulations/2014/signal/condor/event_selection/data/nugen/IC86_2011/numu.i3
 from I3Tray import *
@@ -13,7 +17,7 @@ import os
 import time
 
 start_time = time.asctime()
-print 'Started:', start_time
+print('Started:', start_time)
 
 # handling of command line arguments
 from optparse import OptionParser
@@ -32,7 +36,7 @@ infiles=[options.GCD, options.INPUT]
 
 tray = I3Tray()
 tray.AddModule('I3Reader', 'reader', FilenameList=infiles)
-print "Reading input file...", len(infiles)
+print("Reading input file...", len(infiles))
 
 def charge_cut(frame):
     if frame["HomogenizedQTot"].value<100.:
@@ -66,7 +70,7 @@ def event_filter(frame):
     ###########
     if frame["IsHESE_ck"].value==False and (frame["L4VetoLayer0"].value+frame["L4VetoLayer1"].value)==0 and frame["HomogenizedQTot"].value>6000. and frame["IsCascade_reco"].value==False:
         frame["IsHese"]=icetray.I3Bool(False)
-        print "Jakob HESE event that's probably a muon removed..."
+        print("Jakob HESE event that's probably a muon removed...")
     elif (frame["L4VetoLayer0"].value+frame["L4VetoLayer1"].value==0 and frame["HomogenizedQTot"].value>6000.) or frame["IsHESE_ck"].value==True:
         #print "HESE event! ",frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id
         frame["IsHese"]=icetray.I3Bool(True)
@@ -114,27 +118,27 @@ def event_filter(frame):
                 inside_volume_mono_offline and inside_volume_milli_offline)) and \
                 (numpy.log10(frame["L4MonopodFit"].energy)-numpy.cos(frame["L4MonopodFit"].dir.zenith)>2.2 or \
                 numpy.cos(frame["L4MonopodFit"].dir.zenith)<0.65):
-                    frame["IsCascade"]=icetray.I3Bool(True)
+            frame["IsCascade"]=icetray.I3Bool(True)
             frame["IsUpgoingMuon"]=icetray.I3Bool(False)
             #print "CASCADE (cascade): ", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id,frame['HomogenizedQTot'].value#, frame['MuonWeight_GaisserH4a'].value*3600*24*340/160000
             return True
         else:
-            print "Cascade rejected: ", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id,\
+            print("Cascade rejected: ", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id,\
                     frame["L4VetoTrackOfflineVetoCharge"].value, inside_volume_mono_offline, \
-                    inside_volume_milli_offline, (numpy.log10(frame["L4MonopodFit"].energy)-numpy.cos(frame["L4MonopodFit"].dir.zenith)), numpy.cos(frame["L4MonopodFit"].dir.zenith)
+                    inside_volume_milli_offline, (numpy.log10(frame["L4MonopodFit"].energy)-numpy.cos(frame["L4MonopodFit"].dir.zenith)), numpy.cos(frame["L4MonopodFit"].dir.zenith))
             frame["IsCascade"]=icetray.I3Bool(False)
     else:
         if (frame["MuonFilter"].value==True and frame["HomogenizedQTot_split"].value>100. and frame["L4VetoTrackMilliOfflineVetoCharge"].value<2 and \
-                frame["L4VetoTrackOfflineVetoCharge"].value<2 and inside_volume_milli_offline and inside_volume_mono_offline):# or\
-                #(frame["L4VetoTrackMilliSplitVetoCharge"].value<2 and inside_volume_milli_split):
+            frame["L4VetoTrackOfflineVetoCharge"].value<2 and inside_volume_milli_offline and inside_volume_mono_offline):# or\
+            #(frame["L4VetoTrackMilliSplitVetoCharge"].value<2 and inside_volume_milli_split):
             frame["IsCascade"]=icetray.I3Bool(True)
             frame["IsUpgoingMuon"]=icetray.I3Bool(False)
             #print "CASCADE (track): ", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id,frame['HomogenizedQTot'].value#, frame['MuonWeight_GaisserH4a'].value*3600*24*340/160000
             return True
         else:
-            print "Cascade (tracklike) rejected ",  frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id,\
+            print("Cascade (tracklike) rejected ",  frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id,\
                     frame["L4VetoTrackOfflineVetoCharge"].value, inside_volume_mono_offline, \
-                    frame["L4VetoTrackMilliOfflineVetoCharge"].value, inside_volume_milli_offline
+                    frame["L4VetoTrackMilliOfflineVetoCharge"].value, inside_volume_milli_offline)
             frame["IsCascade"]=icetray.I3Bool(False)
 
     ###########
@@ -162,7 +166,7 @@ def get_track_length(frame):
     for i in range(0,len(losses)):
         if first_loss_found==False and losses[i].energy>1 and losses[i].pos.z<500 and losses[i].pos.z>-500 and math.sqrt(losses[i].pos.x*losses[i].pos.x+losses[i].pos.y*losses[i].pos.y)<550:
             first_loss = losses[i]
-           first_loss_found=True
+            first_loss_found=True
         if losses[i].energy>1 and losses[i].pos.z<500 and losses[i].pos.z>-500 and math.sqrt(losses[i].pos.x*losses[i].pos.x+losses[i].pos.y*losses[i].pos.y)<550:
             last_loss = losses[i]
     if first_loss_found==False:
@@ -336,23 +340,23 @@ def printy(frame):
         del frame["IsHese"]
         frame["IsHese"]=icetray.I3Bool(False)
     if frame["IsCascade"].value==True and frame["IsCascade_reco"].value==True and (frame["L5MonopodFit4"].pos.z<-500 or frame["L5MonopodFit4"].pos.z>500 or numpy.sqrt(frame["L5MonopodFit4"].pos.x*frame["L5MonopodFit4"].pos.x+frame["L5MonopodFit4"].pos.y*frame["L5MonopodFit4"].pos.y)>550):
-        print "Cascade event outside of detector... ",  frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id
+        print("Cascade event outside of detector... ",  frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id)
         del frame["IsCascade"]
         frame["IsCascade"]=icetray.I3Bool(False)
     if frame["IsCascade"].value==True and frame["IsCascade_reco"].value==False and (frame["L4VetoTrackMilliOfflineVetoCharge"].value>2 or frame['L4VetoTrackMarginMilliOfflineSide'].value<125):
         del frame["IsCascade"]
         frame["IsCascade"]=icetray.I3Bool(False)
     if frame["IsUpgoingMuon"].value==True:
-        print "UpMu event: ", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id
+        print("UpMu event: ", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id)
         return True
     elif frame["IsHese"].value==True:
-        print "HESE event: ", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id
+        print("HESE event: ", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id)
         return True
     elif frame["IsCascade"].value==True and frame["L4VetoTrackOfflineVetoCharge"].value<6 and frame["L4VetoTrackL5OfflineVetoCharge"].value<2:
-        print "Cascade event: ", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id
+        print("Cascade event: ", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id)
         return True
     elif frame["IsCascade"].value==True and frame["L4VetoTrackOfflineVetoCharge"].value<2 and frame["L4VetoTrackL5OfflineVetoCharge"].value<3:
-        print "Cascade event: ", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id
+        print("Cascade event: ", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id)
         return True
     else:
         if ( ( frame['L4UpgoingTrackOfflineVetoCharge'].value > 10 and frame['L4UpgoingTrackOfflineVetoCharge'].value > \
@@ -363,11 +367,11 @@ def printy(frame):
                 frame['L4VetoTrackMilliOfflineVetoCharge'].value and frame['L4UpgoingTrackMilliOfflineVetoChannels'].value > 3 and \
                 frame['L4UpgoingTrackSplitVetoCharge'].value > 6 ) )\
                 and frame["TrackFit"].dir.zenith>1.5 and frame["MuonFilter"].value==True:# and frame["OnlineL2Filter"].value==True:
-                    del frame["IsUpgoingMuon"]
+            del frame["IsUpgoingMuon"]
             del frame["IsCascade"]
             frame["IsUpgoingMuon"]=icetray.I3Bool(True)
             frame["IsCascade"]=icetray.I3Bool(False)
-            print "UpMu event!", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id
+            print("UpMu event!", frame["I3EventHeader"].run_id, frame["I3EventHeader"].event_id)
             return True
         else:
             return False
@@ -427,7 +431,7 @@ def FindDetectorVolumeIntersections(frame, TrackName="", OutputTimeWindow=None, 
             raise RuntimeError("tracks with only one intersection are not supported")
         else:
             tWindow = dataclasses.I3TimeWindow(times[0]-TimePadding, times[-1]+TimePadding)
-                frame[twName] = tWindow
+            frame[twName] = tWindow
 
 tray.AddModule(FindDetectorVolumeIntersections, "FindDetectorVolumeIntersections",
         TimePadding = 60.*I3Units.m/dataclasses.I3Constants.c,
@@ -466,7 +470,7 @@ def collectStats(frame):
                     losses += 0.8*p.energy
                 else:
                     energyScalingFactor = 1.0 + ((p.energy/I3Units.GeV/0.399)**-0.130)*(0.467 - 1)
-                            losses += energyScalingFactor*p.energy
+                    losses += energyScalingFactor*p.energy
             else:
                 emlosses += p.energy
                 losses += p.energy
@@ -501,7 +505,7 @@ tray.Add(add_primary)
 
 tray.AddModule('I3Writer', 'writer',
         DropOrphanStreams=[icetray.I3Frame.DAQ],
-        Streams=[  icetray.I3Frame.DAQ, icetray.I3Frame.Physics],
+        Streams=[  icetray.I3Frame.DAQ, icetray.I3Frame.Physics ,  icetray.I3Frame.Stream('M'),  icetray.I3Frame.Stream('S')],
         filename=options.OUTPUT)
 
 tray.AddModule('TrashCan', 'thecan')
@@ -515,5 +519,5 @@ del tray
 
 stop_time = time.asctime()
 
-print 'Started:', start_time
-print 'Ended:', stop_time
+print('Started:', start_time)
+print('Ended:', stop_time)
