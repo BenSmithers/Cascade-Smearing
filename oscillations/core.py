@@ -111,7 +111,7 @@ class Oscillator:
 
         if not (energy>0):
             raise ValueError("Energy must be positive: {}".format(energy))
-        if not (baseline>0):
+        if not (baseline>=0):
             raise ValueError("Baseline must be positive: {}".format(baseline))
 
         prob = 1. if flav_i==flav_f else 0.
