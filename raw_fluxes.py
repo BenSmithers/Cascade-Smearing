@@ -126,12 +126,16 @@ def get_initial_state(energies, zeniths, n_nu):
 
     return(inistate)
 
-def raw_flux(params, state_setter = get_initial_state):
+def raw_flux(params, state_setter = get_initial_state, forced_filename=None):
     """
     This is the main function. It saves a data file for the flux with a unique name for the given physics 
     """
     if not isinstance(params,SterileParams):
         raise TypeError("Expected {} for params, not {}".format(SterileParams, type(params)))
+
+    if forced_filename is not None:
+        if not isinstance(forced_filename, str):
+            raise TypeError("Forced filename should be {}, or {}".format(str, None))
 
     n_nu = 4 
     Emin = 1.*un.GeV
@@ -186,8 +190,10 @@ def raw_flux(params, state_setter = get_initial_state):
     int_cos = 100
     int_min_e = log10(Emin)
     int_max_e = log10(Emax)
-    
-    filename = gen_filename(config["datapath"], config["nu_flux"]+".dat", params)
+    if forced_filename is None: 
+        filename = gen_filename(config["datapath"], config["nu_flux"]+".dat", params)
+    else:
+        filename = forced_filename
     print("Saving File to {}".format(filename))
     
     if not config["overwrite"]:
