@@ -126,7 +126,7 @@ def get_initial_state(energies, zeniths, n_nu):
 
     return(inistate)
 
-def raw_flux(params):
+def raw_flux(params, state_setter = get_initial_state):
     """
     This is the main function. It saves a data file for the flux with a unique name for the given physics 
     """
