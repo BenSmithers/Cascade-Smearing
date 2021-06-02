@@ -504,7 +504,7 @@ class Data:
         data = np.loadtxt(location, dtype=float, comments='#',delimiter=' ')
         n_energies = 701
         n_angles = 100
-        self.livetime = 10*3600*24*365.
+        self.livetime = 1.0 # 10*3600*24*365.
         GeV=1e9
         if not (len(data)==n_energies*n_angles):
             raise ValueError("Datafile length error? {}!={}".format(len(data), n_energies*n_angles))

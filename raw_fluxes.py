@@ -63,7 +63,7 @@ def get_key(flavor, neutrino):
 
     return(key)
 
-def get_initial_state(energies, zeniths, n_nu):
+def get_initial_state(energies, zeniths, n_nu, kwargs):
     """
     This either loads the initial state, or generates it.
     Loading it is waaaay quicker.
@@ -126,16 +126,27 @@ def get_initial_state(energies, zeniths, n_nu):
 
     return(inistate)
 
-def raw_flux(params, state_setter = get_initial_state, forced_filename=None):
+def raw_flux(params, kwargs={}):
     """
     This is the main function. It saves a data file for the flux with a unique name for the given physics 
     """
     if not isinstance(params,SterileParams):
         raise TypeError("Expected {} for params, not {}".format(SterileParams, type(params)))
 
+   
+    if "forced_filename" in kwargs:
+        forced_filename = kwargs["forced_filename"]
+    else:
+        forced_filename = None
+    if "state_setter" in kwargs:
+        state_setter = kwargs["state_setter"]
+    else:
+        state_setter = get_initial_state
+
     if forced_filename is not None:
         if not isinstance(forced_filename, str):
             raise TypeError("Forced filename should be {}, or {}".format(str, None))
+  
 
     n_nu = 4 
     Emin = 1.*un.GeV
@@ -166,16 +177,16 @@ def raw_flux(params, state_setter = get_initial_state, forced_filename=None):
 
     nus_atm.SetNeutrinoCrossSections(xs)
 
-    #nus_atm.Set_TauRegeneration(True)
+    nus_atm.Set_TauRegeneration(True)
 
     #settting some zenith angle stuff 
     nus_atm.Set_rel_error(1.0e-6)
     nus_atm.Set_abs_error(1.0e-6)
     #nus_atm.Set_GSL_step(gsl_odeiv2_step_rk4)
     nus_atm.Set_GSL_step(nsq.GSL_STEP_FUNCTIONS.GSL_STEP_RK4)
-
+    
     # we load in the initial state. Generating or Loading from a file 
-    inistate = get_initial_state(energies, zeniths, n_nu)
+    inistate = state_setter(energies, zeniths, n_nu, kwargs)
     nus_atm.Set_initial_state(inistate, nsq.Basis.flavor)
     print("Done setting initial state")
     
