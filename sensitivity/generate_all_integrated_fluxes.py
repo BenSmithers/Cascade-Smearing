@@ -33,22 +33,16 @@ def make_meta_flux(params):
 
 theta_24s = np.linspace(0,90, 90)
 theta_34s = np.linspace(0,90, 90)
-msqs = np.linspace(0,10,20)
+msqs = np.linspace(0,20,40)
 
-t_prime = time()
-to_do = len(theta_24s)*len(theta_34s)*len(msqs)
-done = 0
-for i_24 in theta_24s:
-    for i_34 in theta_34s:
-        for msq in msqs:
-            t_start = time()
-            pm = SterileParams(theta13=i_24, theta23=i_34, msq2=msq)
-            make_meta_flux(pm)
 
-            t_end = time()
-            taken = t_end - t_prime 
-            done += 1 
-            more = t_prime + taken*to_do/done
-            print("Expected completion time {}".format(localtime(more)))
+if __name__=="__main__":
+    import sys
 
-            
+    th24 = float(sys.argv[1])
+    th34 = float(sys.argv[2])
+
+    for msq in msqs:
+        pm = SterileParams(theta13=th24, theta23=th34, msq2=msq)
+        make_meta_flux(pm)
+
