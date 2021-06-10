@@ -1,51 +1,56 @@
 """
-Get the expected flux at a given sterile neutrino point
+Defines some stuff to do the likelihood calculations 
 """
-
+import pickle
 import numpy as np
 
 from cascade.utils import get_closest, SterileParams, gen_filename, config, Data
 from cascade.sensitivity.eff_area_reader import build_flux
 
-null = SterileParams(0.,0.,0.,0.)
+null =  SterileParams()
 null_flux = Data(gen_filename(config["datapath"], config["nu_flux"]+".dat", null))
 
 from cascade.sensitivity.systematic_unc import astro_norm_unc
 from cascade.sensitivity.systematic_unc import astro_shift_unc, cr_perturb
-print("doing norm")
-astro_norm_unc(null_flux)
-print("doing shift")
-astro_shift_unc(null_flux)
-print("COSMIC")
-cr_perturb(dnorm=0.05)
-cr_perturb(dgamma=0.012)
+from cascade.sensitivity.systematic_unc import ice_grad_0, ice_grad_1
 
-ster = SterileParams(0., 0.1609, 0.2205, 4.47)
-ster_flux = Data(gen_filename(config["datapath"], config["nu_flux"]+".dat", ster))
+class LLHMachine:
+    def __init__(self):
 
-test = build_flux(null_flux)
-#test2 = build_flux(ster_flu)
+        # load null flux
+        f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux.dat", null)
+        f = open(f_name, 'rb')
+        self.expectation = pickle.load(f)
+        f.close()
 
-import matplotlib
-matplotlib.use('Qt5Agg')
-import matplotlib.pyplot as plt
+        self.astr_norm_shift = astro_norm_unc(null_flux)
+        self.astr_gamma_shift = astro_shift_unc(null_flux)
 
-if False:
-    plt.pcolormesh(test["a_edges"], test["e_edges"],test2["event_rate"]/test["event_rate"], vmin=0.60, vmax=1.40, cmap="coolwarm")
-    plt.xlim([-1.0,0.0])
-    plt.ylim([10**2,10**6])
-    plt.xlabel(r"$\cos\theta$",size=14)
-    plt.ylabel("Energy [GeV]", size=14)
-    plt.yscale('log')
-    plt.colorbar()
-    plt.show()
+        self.cr_norm_shift = cr_perturb(dnorm=0.05)
+        self.cr_gamma_shift = cr_perturb(dgamma=0.012)
+
+        self.ice_grad_0 = ice_grad_0(null)
+        self.ice_grad_1 = ice_graD_1(null)
+
+        self.net_error_m = self.expectation["stat_err"][0]**2 + self.astr_norm_shift[0]**2 + self.astr_gamma_shift[0]**2
+        self.net_error_m+= self.cr_norm_shift[0]**2 + self.cr_gamma_shift[0]**2 + self.ice_grad_0[0]**2 + self.ice_grad_1[0]**2
+        self.net_error_m = np.sqrt(self.net_error_m)
+        
+        self.net_error_p = self.expectation["stat_err"][1]**2 + self.astr_norm_shift[1]**2 + self.astr_gamma_shift[1]**2
+        self.net_error_p+= self.cr_norm_shift[1]**2 + self.cr_gamma_shift[1]**2 + self.ice_grad_0[1]**2 + self.ice_grad_1[1]**2
+        self.net_error_p = np.sqrt(self.net_error_p)
 
 
-plt.pcolormesh(test["a_edges"], test["e_edges"],100*test["stat_err"]/test["event_rate"],vmin=0, vmax=50, cmap="inferno")
-plt.xlim([-1.0,0.0])
-plt.ylim([10**2,10**6])
-plt.xlabel(r"$\cos\theta$",size=14)
-plt.ylabel("Energy [GeV]", size=14)
-plt.yscale('log')
-plt.colorbar()
-plt.show()
+    def get_likelihood(self, flux):
+        """
+        Calculates the odds that this flux was measured given the LLHMachine's expectation 
+        """
+        pass
+
+    def _eval_probability(i_cth, i_e, bflux):
+        """
+        For a specific
+        """
+
+
+
