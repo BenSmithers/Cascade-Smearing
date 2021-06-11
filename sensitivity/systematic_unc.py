@@ -7,7 +7,7 @@ Each of these functions should return a tuple for the (-1 sigma, +1 sigma) shift
 
 import numpy as np
 
-from cascade.utils import get_loc, Data
+from cascade.utils import get_loc, Data, config
 from cascade.utils import SterileParams
 from cascade.raw_fluxes import raw_flux
 
@@ -36,6 +36,29 @@ def ice_grad_0(data_dict):
 def ice_grad_1(data_dict):
     return _ice_grad(data_dict, 1)
 
+def _flipper(central,perturbed):
+    """
+    Takes a tuple with two numpy arrays. 
+    
+    """
+
+    u_minus = np.zeros(shape = np.shape(perturbed[0]))
+    u_plus  = np.zeros(shape = np.shape(perturbed[1]))
+
+    for i in range(len(u_minus)):
+        for j in range(len(u_minus[i])):
+            p1 = central[i][j] - perturbed[0][i][j]
+            p2 = central[i][j] - perturbed[1][i][j]
+
+            if p1>p2:
+                u_plus[i][j]  = abs(p1)
+                u_minus[i][j] = abs(p2)
+            else:
+                u_plus[i][j]  = abs(p2)
+                u_minus[i][j] = abs(p1)
+    return(u_minus, u_plus)
+    
+
 def _ice_grad(data_dict, grad_no):
     """
     Calculates the expected systematic uncertainty error in each of the bins from the ice gradients published in the MEOWS Paper
@@ -55,9 +78,12 @@ def _ice_grad(data_dict, grad_no):
     for e_i in range(len(energies)-1):
         for a_i in range(len(cos_th)-1):
             ice_bin = get_loc( energies[e_i], ice_e )[0]
-            
-            new_uncertainty[e_i][a_i] = data_dict["event_rate"]*ice_grads[ice_bin][grad_no+1]/100.0
-    return (-1*new_uncertainty, new_uncertainty)
+            new_uncertainty[e_i][a_i] = ice_grads[ice_bin][grad_no+1]/100.0
+
+    p_pert = (1+new_uncertainty)*data_dict["event_rate"]
+    m_pert = (1-new_uncertainty)*data_dict["event_rate"]
+
+    return _flipper( data_dict["event_rate"] , (m_pert, p_pert))
 
 def cr_perturb(dgamma = 0.0, dnorm=0.0):
     """
@@ -102,8 +128,8 @@ def cr_perturb(dgamma = 0.0, dnorm=0.0):
                 effective_e = 0.5*(e_edges[i_e] + e_edges[i_e+1])
                 p_plus[i_e][i_a] = flux_data["event_rate"][i_e][i_a]*(pow(effective_e/(2.2e3), mean_dgamma+dgamma) -1)
                 p_minus[i_e][i_a] = flux_data["event_rate"][i_e][i_a]*(pow(effective_e/(2.2e3), mean_dgamma-dgamma) -1)
-    
-        return (p_minus - flux_data["event_rate"], p_plus-flux_data["event_rate"])
+
+        return _flipper(flux_data["event_rate"], (p_minus, p_plus)) 
 
 
 
@@ -151,8 +177,8 @@ def astro_norm_unc(data_dict):
         norm_plus = build_flux(Data(generate_astr_flux(null, norm=norm_p)))
         pickle_save(norm_plus, filename)
 
-
-    return(norm_minus["event_rate"]-central["event_rate"], norm_plus["event_rate"]-central["event_rate"])
+    return _flipper( central["event_rate"], (norm_minus["event_rate"], norm_plus["event_rate"]))
+#    return(norm_minus["event_rate"]-central["event_rate"], norm_plus["event_rate"]-central["event_rate"])
 
 def astro_shift_unc(data_dict):
     null = SterileParams()
@@ -193,6 +219,6 @@ def astro_shift_unc(data_dict):
         pickle_save(norm_plus, filename)
 
 
-    return(norm_minus["event_rate"], norm_plus["event_rate"])
+    return _flipper(central["event_rate"], (norm_minus["event_rate"], norm_plus["event_rate"]))
 
 
