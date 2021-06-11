@@ -120,7 +120,7 @@ if __name__=="__main__":
     c_prob = np.zeros(shape=(len(theta24s), len(theta34s), len(msqs)))
     for entry in sorted_likelihoods:
 #        rtot += entry[3]/total_likelihood
-        c_prob[entry[0]][entry[1]][entry[2]] = rtot
+        c_prob[entry[0]][entry[1]][entry[2]] = entry[3]
 
     likelihood_dict = {
                 "theta24s":theta24s,
