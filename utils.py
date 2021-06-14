@@ -305,15 +305,16 @@ def get_loc(x, domain,closest=False):
         return(lower_bin, upper_bin)
 
 
-def parse_folder(path):
+def parse_folder(path, name_tmp = config["recon_flux"]+"*.dat"):
     """
     Takes a folder, and creates lists of all the parameters used there 
+    Optionally takes a name template "name_tmp" for the globbing 
     """
     if not os.path.exists(path):
         raise ValueError("Path does not exist: {}".format(path))
 
     # we want to scan over all these files and build ordered-lists of the paramters 
-    all_files = glob( os.path.join( path, config["recon_flux"] + "*.dat") )
+    all_files = glob( os.path.join( path, name_tmp) )
     def insert( value, list_like ):
         """
         This is a "smart insert" function I wrote
