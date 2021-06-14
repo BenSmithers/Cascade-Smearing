@@ -16,6 +16,7 @@ from cascade.sensitivity.eff_area_reader import build_flux
 
 import pickle 
 import os
+from math import log10
 
 perturb_folder = os.path.join(config["datapath"], "perturbed_rates")
 
@@ -66,7 +67,7 @@ def _ice_grad(data_dict, grad_no):
     if not isinstance(data_dict, dict):
         raise TypeError("Expected {}, got {}".format(dict, type(data_dict)))
 
-    new_uncertainty = np.zeros(shape=np.shape(data_dict["err"]))
+    new_uncertainty = np.zeros(shape=np.shape(data_dict["stat_err"]))
 
 
     energies = data_dict["e_edges"]
@@ -77,7 +78,12 @@ def _ice_grad(data_dict, grad_no):
 
     for e_i in range(len(energies)-1):
         for a_i in range(len(cos_th)-1):
-            ice_bin = get_loc( energies[e_i], ice_e )[0]
+            if energies[e_i]<ice_e[0]:
+                ice_bin = 0
+            elif energies[e_i]>ice_e[-1]:
+                ice_bin = len(ice_e)-1
+            else:
+                ice_bin = get_loc( energies[e_i], ice_e )[0]
             new_uncertainty[e_i][a_i] = ice_grads[ice_bin][grad_no+1]/100.0
 
     p_pert = (1+new_uncertainty)*data_dict["event_rate"]
