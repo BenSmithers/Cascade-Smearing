@@ -1,12 +1,14 @@
 from cascade.utils import gen_filename, config
+from cascade.utils import get_loc
 
 import pickle
+from math import log
 
 import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 
-levels = [90.0, 68.0]
+
 
 f = open(gen_filename(config["datapath"]+"/expected_fluxes_reco/","cummulative_probs.dat"),'rb')
 obj = pickle.load(f)
@@ -17,34 +19,71 @@ theta34s = obj["theta34s"]
 msqs = obj["msqs"]
 raw_sorted = obj["raw_sorted"]
 c_prob = obj["c_prob"]
+chi2 = obj["chi2s"]
 
-# sum over the mass-squareds 
-c_prob_msq = np.zeros(shape=(len(theta24s), len(theta34s)))
-for entry in sorted_likelihoods:
-    c_prob_msq[entry[0]][entry[1]] += entry[3]
+old = False
 
-plt.contour( theta24s, theta34s, 100*c_prob_msq.transpose(), levels=levels)
-plt.xlabel(r"$\theta_{24}$",size=14)
-plt.ylabel(r"$\theta_{34}$",size=14)
-plt.show()
+ps = [0.10, 0.01]
+chis = [-2*log(p) for p in ps]
+
+labels = ["90%", "99%"]
+def set_lbls(ct_plot):
+    fmt = {}
+    for l,s in zip(ct_plot.levels, labels):
+        fmt[l] = s
+    ax = plt.gca() #?
+    ax.clabel(ct_plot, ct_plot.levels, inline=True, fmt=fmt, fontsize=10)
+
+evs = [0., 2., 4.47, 10.]
+
+for ev in evs:
+    which_sliver = get_loc(ev, msqs)[0]
+    chis = np.zeros(shape=(len(theta24s), len(theta34s)))
+    for t24 in range(len(theta24s)):
+        for t34 in range(len(theta34s)):
+            chis[t24][t34] = chi2[t24][t34][which_sliver]
 
 
-c_prob_th34 = np.zeros(shape=(len(theta24s), len(msqs)))
-for entry in sorted_likelihoods:
-    c_prob_th34[entry[0]][entry[2]] += entry[3]
+    ct = plt.contour( theta24s, theta34s, chis.transpose(), levels=chis)
+    set_lbls(ct)
+    plt.title(r"Sensitivity with $\Delta m_{14}^{2}=$"+"{}".format(msqs[which_sliver]))
+    plt.xlabel(r"$\theta_{24}$",size=14)
+    plt.ylabel(r"$\theta_{34}$",size=14)
+    plt.show()
 
-plt.contour( msqs, theta24s, 100*c_prob_th34, levels=levels)
-plt.ylabel(r"$\theta_{24}$",size=14)
-plt.xlabel(r"$\Delta m_{14}^{2}$",size=14)
-plt.show()
 
-c_prob_th24 = np.zeros(shape=(len(theta34s), len(msqs)))
-for entry in sorted_likelihoods:
-    c_prob_th24[entry[1]][entry[2]] += entry[3]
 
-plt.contour( msqs, theta34s, 100*c_prob_th24, levels=levels)
-plt.ylabel(r"$\theta_{34}$",size=14)
-plt.xlabel(r"$\Delta m_{14}^{2}$",size=14)
-plt.show()
+# these were written using the older likelihood setup 
+if old:
+    levels = [90.0, 68.0]
+
+    # sum over the mass-squareds 
+    c_prob_msq = np.zeros(shape=(len(theta24s), len(theta34s)))
+    for entry in sorted_likelihoods:
+        c_prob_msq[entry[0]][entry[1]] += entry[3]
+
+    plt.contour( theta24s, theta34s, 100*c_prob_msq.transpose(), levels=levels)
+    plt.xlabel(r"$\theta_{24}$",size=14)
+    plt.ylabel(r"$\theta_{34}$",size=14)
+    plt.show()
+
+
+    c_prob_th34 = np.zeros(shape=(len(theta24s), len(msqs)))
+    for entry in sorted_likelihoods:
+        c_prob_th34[entry[0]][entry[2]] += entry[3]
+
+    plt.contour( msqs, theta24s, 100*c_prob_th34, levels=levels)
+    plt.ylabel(r"$\theta_{24}$",size=14)
+    plt.xlabel(r"$\Delta m_{14}^{2}$",size=14)
+    plt.show()
+
+    c_prob_th24 = np.zeros(shape=(len(theta34s), len(msqs)))
+    for entry in sorted_likelihoods:
+        c_prob_th24[entry[1]][entry[2]] += entry[3]
+
+    plt.contour( msqs, theta34s, 100*c_prob_th24, levels=levels)
+    plt.ylabel(r"$\theta_{34}$",size=14)
+    plt.xlabel(r"$\Delta m_{14}^{2}$",size=14)
+    plt.show()
 
 

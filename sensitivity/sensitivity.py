@@ -46,9 +46,14 @@ class LLHMachine:
         self.net_error_p+= self.cr_norm_shift[1]**2 + self.cr_gamma_shift[1]**2 + self.ice_grad_0[1]**2 + self.ice_grad_1[1]**2
         self.net_error_p = np.sqrt(self.net_error_p)
 
-        
+    
+    def get_chi2(self, flux):
+        return -2*self.get_llh(flux)
+    
+    def get_likelihood(self,flux):
+        return exp(self.get_llh(flux))
 
-    def get_likelihood(self, flux):
+    def get_llh(self, flux):
         """
         Calculates the odds that this flux was measured given the LLHMachine's expectation 
 
@@ -57,12 +62,11 @@ class LLHMachine:
         llh = 0.0
         for i_e in range(len(self.expectation["e_edges"])-1):
             for i_cth in range(len(self.expectation["a_edges"])-1):
-                llh += self._eval_llh(i_cth, i_e, flux[i_e][e_cth])
+                llh += self._eval_llh_bin(i_cth, i_e, flux[i_e][e_cth])
+        return llh
 
-        return exp(llh)
 
-
-    def _eval_llh(i_cth, i_e, bflux):
+    def _eval_llh_bin(i_cth, i_e, bflux):
         """
         We assume an asymmetric gaussian distribution
         """
@@ -92,6 +96,11 @@ if __name__=="__main__":
         theta14s, theta24s, theta34s, msqs = parse_folder(config["datapath"] + "/expected_fluxes_reco/", "exp*.dat")
 
     likelihoods = [[0,0,0,0.0] for i in range(len(msqs)*len(theta24s)*len(theta34s))]
+    chi2 = np.zeros(shape=(len(theta24s), len(theta34s), len(msqs)))
+
+    f = open(gen_filename(config["datapath"]+"/expected_fluxes_reco/", "expected_flux.dat", SterileParams()))
+    central_chi = -2*likelihooder.get_llh(pickle.load(f))
+    f.close()
 
     for th24 in range(len(theta24s)):
         for th34 in range(len(theta34s)):
@@ -99,35 +108,46 @@ if __name__=="__main__":
                 pam = SterileParams(theta13=theta24s[th24], theta32=theta34s[th34], msq2=msqs[msq])
 
                 f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux.dat", pam)
-                f = open(f_name, 'rb')
-                flux = pickle.load(f)
-                f.close()
-                
+                if not os.path.exists(f_name):
+                    print("File not found, skipping {}".format(f_name))
+                    likelihoods[index][3] = 0.0
+                    chi2[th24][th34][msq] = 1e8 #arbitrarily big...
+                else:
+                    f = open(f_name, 'rb')
+                    flux = pickle.load(f)
+                    f.close()
+
+                    llh = likelihooder.get_llh(flux)
+                    likelihoods[index][3] = exp(llh)
+                    chi2[th24][th34][msq] = -2*llh-central_chi
+                   
                 index = th24 + th34*len(theta24s) + msq*len(theta24s)*len(theta34s)
 
                 likelihoods[index][0] = th24 
                 likelihoods[index][1] = th34
                 likelihoods[index][2] = msq 
-                likelihoods[index][3] = likelihooder(flux)
 
+
+    # old code :frowning: 
     total_likelihood = np.sum(likelihoods, axis=0)[3]
     sorted_likelihoods = sorted(likelihoods, key=lambda entry:entry[3])
     for i in range(len(sorted_likelihoods))
         sorted_likelihoods[i][3] = sorted_likelihoods[i][3]/total_likelihood
 
     # make a bunch of cummulative probabilities 
-    rtot = 0.0
     c_prob = np.zeros(shape=(len(theta24s), len(theta34s), len(msqs)))
     for entry in sorted_likelihoods:
-#        rtot += entry[3]/total_likelihood
         c_prob[entry[0]][entry[1]][entry[2]] = entry[3]
+     
+    
 
     likelihood_dict = {
                 "theta24s":theta24s,
                 "theta34s":theta34s,
                 "msqs":msqs,
                 "raw_sorted":sorted_likelihoods,
-                "c_prob":c_prob
+                "c_prob":c_prob,
+                "chi2s":chi2
             }
     f = open(gen_filename(config["datapath"]+"/expected_fluxes_reco/","cummulative_probs.dat"),'wb')
     pickle.dump(likelihood_dict, f, -1)
