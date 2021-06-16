@@ -14,9 +14,17 @@ from cascade.sensitivity.systematic_unc import astro_norm_unc
 from cascade.sensitivity.systematic_unc import astro_shift_unc, cr_perturb
 from cascade.sensitivity.systematic_unc import ice_grad_0, ice_grad_1
 
-from math import sqrt, pi, exp
+from math import sqrt, pi, exp, log
+from math import lgamma
+twopi = sqrt(2/pi)
 
-twopi = 1./sqrt(2*pi)
+def llh_func(exp, cts, sigma):
+    kappa = exp/sigma
+    total = (kappa*kappa+1)*(log(exp)-2*log(sigma))
+    total = total + lgamma(kappa*kappa + cts + 1)
+    total = total - (cts + kappa*kappa+1)*log(cts*cts*(1+kappa/sigma))
+    total = total - lgamma(kappa*kappa + 1)
+    return total
 
 class LLHMachine:
     def __init__(self):
@@ -33,20 +41,19 @@ class LLHMachine:
         self.cr_norm_shift = cr_perturb(dnorm=0.05)
         self.cr_gamma_shift = cr_perturb(dgamma=0.012)
 
-        self.ice_grad_0 = ice_grad_0(null)
-        self.ice_grad_1 = ice_graD_1(null)
+        self.ice_grad_0 = ice_grad_0(self.expectation)
+        self.ice_grad_1 = ice_grad_1(self.expectation)
 
 
         # distinctly add up the plus/minus errors in quadrature 
-        self.net_error_m = self.expectation["stat_err"][0]**2 + self.astr_norm_shift[0]**2 + self.astr_gamma_shift[0]**2
-        self.net_error_m+= self.cr_norm_shift[0]**2 + self.cr_gamma_shift[0]**2 + self.ice_grad_0[0]**2 + self.ice_grad_1[0]**2
-        self.net_error_m = np.sqrt(self.net_error_m)
+        self._net_error_m = self.expectation["stat_err"]**2 + self.astr_norm_shift[0]**2 + self.astr_gamma_shift[0]**2
+        self._net_error_m = self._net_error_m +self.cr_norm_shift[0]**2 + self.cr_gamma_shift[0]**2 + self.ice_grad_0[0]**2 + self.ice_grad_1[0]**2
+        self._net_error_m = np.sqrt(self._net_error_m)
         
-        self.net_error_p = self.expectation["stat_err"][1]**2 + self.astr_norm_shift[1]**2 + self.astr_gamma_shift[1]**2
-        self.net_error_p+= self.cr_norm_shift[1]**2 + self.cr_gamma_shift[1]**2 + self.ice_grad_0[1]**2 + self.ice_grad_1[1]**2
-        self.net_error_p = np.sqrt(self.net_error_p)
-
-    
+        self._net_error_p = self.expectation["stat_err"]**2 + self.astr_norm_shift[1]**2 + self.astr_gamma_shift[1]**2
+        self._net_error_p = self._net_error_p + self.cr_norm_shift[1]**2 + self.cr_gamma_shift[1]**2 + self.ice_grad_0[1]**2 + self.ice_grad_1[1]**2
+        self._net_error_p = np.sqrt(self._net_error_p)
+ 
     def get_chi2(self, flux):
         return -2*self.get_llh(flux)
     
@@ -67,17 +74,38 @@ class LLHMachine:
 
 
     def _eval_llh_bin(i_cth, i_e, bflux):
+
         """
         We assume an asymmetric gaussian distribution
         """
 
         expected = self.expectation["event_rate"][i_e][i_cth]
 
+        #cutting this out until I find a better asymmetric likelihood function
         if bflux < expected:
             sigma = self._net_error_m[i_e][i_cth]
         else:
             sigma = self._net_error_p[i_e][i_cth]
-        return log(twopi/sigma) - (0.5*((bflux - expected)**2)/(sigma*sigma))
+        
+#        sigma = self._mean_error[i_e][i_cth]
+
+        if sigma<0.0:
+            raise ValueError("Negative signa??? {}".format(sigma))
+
+        if expected==0.0: #  and bflux==0:
+            return 0.0
+        
+        # likelihood! 
+        # https://arxiv.org/pdf/1901.04645.pdf
+
+        elif sigma==0 or (np.isnan(sigma)):
+            print("Bad Bin! {}, {}. Expected {}. Got {}".format(i_cth, i_e, expected, bflux))
+            return 0.0
+        
+#        return llh_func(expected, bflux, sigma)
+
+        thingy = -(0.5*((bflux - expected)*(bflux-expected))/(sigma*sigma))
+        return log(twopi/(self._net_error_m[i_e][i_cth] + self._net_error_p[i_e][i_cth])) + thingy 
 
 if __name__=="__main__":
     # we will now build up an llh machine, and build up all the likelihood values 
@@ -131,7 +159,7 @@ if __name__=="__main__":
     # old code :frowning: 
     total_likelihood = np.sum(likelihoods, axis=0)[3]
     sorted_likelihoods = sorted(likelihoods, key=lambda entry:entry[3])
-    for i in range(len(sorted_likelihoods))
+    for i in range(len(sorted_likelihoods)):
         sorted_likelihoods[i][3] = sorted_likelihoods[i][3]/total_likelihood
 
     # make a bunch of cummulative probabilities 
