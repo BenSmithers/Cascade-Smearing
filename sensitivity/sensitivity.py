@@ -3,6 +3,7 @@ Defines some stuff to do the likelihood calculations
 """
 import pickle
 import numpy as np
+import os
 
 from cascade.utils import get_closest, SterileParams, gen_filename, config, Data
 from cascade.sensitivity.eff_area_reader import build_flux
@@ -69,11 +70,11 @@ class LLHMachine:
         llh = 0.0
         for i_e in range(len(self.expectation["e_edges"])-1):
             for i_cth in range(len(self.expectation["a_edges"])-1):
-                llh += self._eval_llh_bin(i_cth, i_e, flux[i_e][e_cth])
+                llh += self._eval_llh_bin(i_cth, i_e, flux["event_rate"][i_e][i_cth])
         return llh
 
 
-    def _eval_llh_bin(i_cth, i_e, bflux):
+    def _eval_llh_bin(self, i_cth, i_e, bflux):
 
         """
         We assume an asymmetric gaussian distribution
@@ -126,30 +127,42 @@ if __name__=="__main__":
     likelihoods = [[0,0,0,0.0] for i in range(len(msqs)*len(theta24s)*len(theta34s))]
     chi2 = np.zeros(shape=(len(theta24s), len(theta34s), len(msqs)))
 
-    f = open(gen_filename(config["datapath"]+"/expected_fluxes_reco/", "expected_flux.dat", SterileParams()))
+    f = open(gen_filename(config["datapath"]+"/expected_fluxes_reco/", "expected_flux.dat", SterileParams()),'rb')
     central_chi = -2*likelihooder.get_llh(pickle.load(f))
     f.close()
 
+    skipped = 0
+    found = 0
     for th24 in range(len(theta24s)):
         for th34 in range(len(theta34s)):
             for msq in range(len(msqs)):
-                pam = SterileParams(theta13=theta24s[th24], theta32=theta34s[th34], msq2=msqs[msq])
+                pam = SterileParams(theta13=theta24s[th24], theta23=theta34s[th34], msq2=msqs[msq])
 
                 f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux.dat", pam)
+                index = th24 + th34*len(theta24s) + msq*len(theta24s)*len(theta34s)
                 if not os.path.exists(f_name):
-                    print("File not found, skipping {}".format(f_name))
+                    skipped+=1 
+                    if skipped%1000==0:
+                        print("Skipped {}, Found {}".format(skipped, found))
                     likelihoods[index][3] = 0.0
                     chi2[th24][th34][msq] = 1e8 #arbitrarily big...
                 else:
                     f = open(f_name, 'rb')
-                    flux = pickle.load(f)
+                    try:
+                        flux = pickle.load(f)
+                    except EOFError:
+                        likelihoods[index][3] = 0.0
+                        chi2[th24][th34][msq] = 1e8 #arbitrarily big...
+                        continue
+                    found += 1
+
                     f.close()
 
                     llh = likelihooder.get_llh(flux)
                     likelihoods[index][3] = exp(llh)
                     chi2[th24][th34][msq] = -2*llh-central_chi
                    
-                index = th24 + th34*len(theta24s) + msq*len(theta24s)*len(theta34s)
+
 
                 likelihoods[index][0] = th24 
                 likelihoods[index][1] = th34
@@ -177,6 +190,6 @@ if __name__=="__main__":
                 "c_prob":c_prob,
                 "chi2s":chi2
             }
-    f = open(gen_filename(config["datapath"]+"/expected_fluxes_reco/","cummulative_probs.dat"),'wb')
+    f = open("cummulative_probs.dat",'wb')
     pickle.dump(likelihood_dict, f, -1)
     f.close()

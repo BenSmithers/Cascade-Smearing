@@ -2,7 +2,8 @@ from cascade.utils import gen_filename, config
 from cascade.utils import get_loc
 
 import pickle
-from math import log
+from math import log, pi
+import numpy as np
 
 import matplotlib
 matplotlib.use('Qt5Agg')
@@ -10,7 +11,7 @@ import matplotlib.pyplot as plt
 
 
 
-f = open(gen_filename(config["datapath"]+"/expected_fluxes_reco/","cummulative_probs.dat"),'rb')
+f = open("cummulative_probs.dat",'rb')
 obj = pickle.load(f)
 f.close()
 
@@ -31,11 +32,11 @@ def set_lbls(ct_plot):
     fmt = {}
     for l,s in zip(ct_plot.levels, labels):
         fmt[l] = s
-    ax = plt.gca() #?
-    ax.clabel(ct_plot, ct_plot.levels, inline=True, fmt=fmt, fontsize=10)
+    plt.clabel(ct_plot, ct_plot.levels, inline=True, fmt=fmt, fontsize=10)
 
-evs = [0., 2., 4.47, 10.]
+evs = [2, 4.47, 10]
 
+print(chis)
 for ev in evs:
     which_sliver = get_loc(ev, msqs)[0]
     chis = np.zeros(shape=(len(theta24s), len(theta34s)))
@@ -44,11 +45,12 @@ for ev in evs:
             chis[t24][t34] = chi2[t24][t34][which_sliver]
 
 
-    ct = plt.contour( theta24s, theta34s, chis.transpose(), levels=chis)
+    ct = plt.contour(theta24s*180/pi, theta34s*180/pi, chis.transpose(), levels=[-2*log(0.10), -2*log(0.01)])
     set_lbls(ct)
-    plt.title(r"Sensitivity with $\Delta m_{14}^{2}=$"+"{}".format(msqs[which_sliver]))
-    plt.xlabel(r"$\theta_{24}$",size=14)
-    plt.ylabel(r"$\theta_{34}$",size=14)
+    plt.title(r"90% CL Sensitivity with $\Delta m_{14}^{2}=$"+"{:.2f}".format(msqs[which_sliver]),size=16)
+    plt.text(5,85, "Smithers Preliminary", color="r",size=14)
+    plt.xlabel(r"$\theta_{24}$ [deg]",size=14)
+    plt.ylabel(r"$\theta_{34}$ [deg]",size=14)
     plt.show()
 
 
