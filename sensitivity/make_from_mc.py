@@ -1,6 +1,8 @@
 from math import acos
 import os
+import numpy as np
 
+from cascade.utils import config
 from cascade.utils import get_loc
 from cascade.sensitivity.eff_area_reader import quickload
 
@@ -34,7 +36,7 @@ def build_mc_flux(*dataobjs):
             net_f += dobj.get_flux((1e9)*energy, key, angle=np.cos(angle))
         return net_f
 
-    filename = "effective_area.nu_{}.txt".format(flavor)
+    filename = "effective_area.nu_mu.txt"
     area_data = quickload(os.path.join(os.path.join(config["datapath"], "charm_search_supplemental/"), filename))
 
     e_edges = area_data["e_reco"]
@@ -43,6 +45,7 @@ def build_mc_flux(*dataobjs):
 
 
     f = open(file_dir,'rt')
+    print("Parsing MC")
     while True:
         line = f.readline()
         if line=="":
@@ -55,10 +58,19 @@ def build_mc_flux(*dataobjs):
         flux_here = metaflux(parsed[3], parsed[4], "Mu_nu_CC")
         flux_here+= metaflux(parsed[3], parsed[4], "Mu_nuBar_CC")
 
+        if parsed[1]<e_edges[0] or parsed[1]>e_edges[-1]:
+            continue
+        if parsed[2]<a_edges[0] or parsed[2]>a_edges[-1]:
+            continue
         i_e = get_loc(parsed[1], e_edges)[0]
         i_a = get_loc(parsed[2], a_edges)[0]
 
         # let's let this event add tothe total in this bin!         
         net_flux[i_e][i_a] = net_flux[i_e][i_a] + parsed[5]*flux_here
         
-        
+    return {
+            "e_edges": e_edges,
+            "a_edges": a_edges,
+            "event_rate": 10*net_flux,
+            "stat_err": np.sqrt(10*net_flux)
+            }
