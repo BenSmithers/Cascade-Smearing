@@ -583,11 +583,7 @@ class Data:
             for neut in self.neuts:
                 for curr in self.currents:
                     key = flav+'_'+neut + '_'+curr
-                    if flav=='Mu' and curr=='CC':
-                        # skip tracks 
-                        continue 
-                    else: 
-                        keys.append(key)
+                    keys.append(key)
         return(keys)
     def get_flux(self, energy, key, use_overflow = False, angle=None):
         '''
