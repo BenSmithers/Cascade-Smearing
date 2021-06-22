@@ -1,5 +1,6 @@
 from cascade.sensitivity.astro_flux_generator import generate_astr_flux
 from cascade.sensitivity.eff_area_reader import build_flux 
+from cascade.sensitivity.make_from_mc import build_mc_flux 
 
 from cascade.utils import SterileParams, gen_filename, config
 from cascade.utils import Data
@@ -10,7 +11,7 @@ import numpy as np
 import pickle
 from time import time, localtime
 
-def make_meta_flux(params):
+def make_meta_flux(params, do_mc = False):
     # look for the atmospheric fluxes. These should all be pre-generated 
     print("Loading Fluxes at {}".format(params))
     atmo_file = raw_flux(params)
@@ -36,6 +37,8 @@ theta_34s = np.linspace(0,90, 90)
 msqs = np.linspace(0,20,40)
 
 
+do_mc = False
+
 if __name__=="__main__":
     import sys
 
@@ -57,10 +60,10 @@ if __name__=="__main__":
             raise ValueError("Unrecognized option {}".format(switchy))
         for msq in subset:
             pm = SterileParams(theta13=th24, theta23=th34, msq2=msq)
-            make_meta_flux(pm)
+            make_meta_flux(pm, do_mc)
 
     else:
         for msq in msqs:
             pm = SterileParams(theta13=th24, theta23=th34, msq2=msq)
-            make_meta_flux(pm)
+            make_meta_flux(pm, do_mc)
 
