@@ -1,4 +1,4 @@
-from cascade.utils import config
+from cascade.utils import config, pathmaker
 import os
 
 def pathmaker(path):
