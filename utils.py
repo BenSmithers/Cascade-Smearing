@@ -29,6 +29,16 @@ def get_color(n, colormax=3.0, cmap="viridis"):
     this_cmap = plt.get_cmap(cmap)
     return this_cmap(n/colormax)
 
+def pathmaker(path):
+    if not os.path.exists(path):
+        broken = path.split("/")
+        working = ""
+        for part in broken:
+            working = "/".join([working] + [part])
+            if not os.path.exists(working):
+                os.mkdir(working)
+
+
 def backup(filename):
     """
     This function checks if a file exists by the given name
@@ -210,7 +220,7 @@ def parse_filename(path, as_params=True):
     else:
         return(theta03, theta13, theta23, msq2)
 
-def gen_filename(dirname, filename, params):
+def gen_filename(dirname, filename, params, subfolder=False):
     """
     Takes a directory, a generic filename (like "datafile.dat"), and some physics parameters
 
@@ -223,9 +233,19 @@ def gen_filename(dirname, filename, params):
     assert(len(names)==2) # name, ext
     prefix = names[0]
     suffix = names[1]
-    filename_partial = prefix+"_"+str(params)
+    str_params = str(params)
+    filename_partial = prefix+"_"+str_params
     filename = os.path.join( dirname, ".".join((filename_partial,suffix)))
-    return(filename)
+    if not subfolder:
+        return(filename)
+    # make a subfolder based on theta_24
+    th24 = str_params.split("_")[1]
+    new_dir = os.path.join(dirname, th24, ".".join((filename_partial,suffix)))
+    pathmaker(new_dir) # default cascade import 
+    return new_dir
+
+
+
 
 def get_index( key, n_flavor=3 ):
     '''
