@@ -5,6 +5,8 @@ Several functions for calculating systematic sources of uncertainty
 Each of these functions should return a tuple for the (-1 sigma, +1 sigma) shifts to the mean expectation 
 """
 
+import os 
+from shutil import move
 import numpy as np
 
 from cascade.utils import get_loc, Data, config
@@ -51,7 +53,7 @@ def _flipper(central,perturbed):
             p1 = central[i][j] - perturbed[0][i][j]
             p2 = central[i][j] - perturbed[1][i][j]
 
-            if p1>p2:
+            if p1>0:
                 u_plus[i][j]  = abs(p1)
                 u_minus[i][j] = abs(p2)
             else:
@@ -108,11 +110,8 @@ def cr_perturb(dgamma = 0.0, dnorm=0.0):
     
     null = SterileParams()
     filename = os.path.join(perturb_folder, "cr_central.dat")
-    if not os.path.exists(filename):
-        flux_data = build_flux(Data(raw_flux(null)))
-        pickle_save(flux_data, filename)
-    else:
-        flux_data = pickle_load(filename)
+    flux_data = build_flux(Data(raw_flux(null)))
+    pickle_save(flux_data, filename)
 
 
     p_plus = np.zeros(shape=np.shape(flux_data["stat_err"]))
@@ -120,7 +119,7 @@ def cr_perturb(dgamma = 0.0, dnorm=0.0):
 
     if perturb_norm:
         mean_norm = 1.19
-        return( (mean_norm-dnorm)*flux_data["event_rate"], (mean_norm+dnorm)*flux_data["event_rate"] )
+        return _flipper( flux_data["event_rate"], ((mean_norm-dnorm)*flux_data["event_rate"], (mean_norm+dnorm)*flux_data["event_rate"]))
     if perturb_gamma:
         # scale with 
         #phi(e) * (E/(2.2TeV))^deltagamma
@@ -132,8 +131,8 @@ def cr_perturb(dgamma = 0.0, dnorm=0.0):
                 # sooo
                 mean_dgamma = 0.068
                 effective_e = 0.5*(e_edges[i_e] + e_edges[i_e+1])
-                p_plus[i_e][i_a] = flux_data["event_rate"][i_e][i_a]*(pow(effective_e/(2.2e3), mean_dgamma+dgamma) -1)
-                p_minus[i_e][i_a] = flux_data["event_rate"][i_e][i_a]*(pow(effective_e/(2.2e3), mean_dgamma-dgamma) -1)
+                p_plus[i_e][i_a] = flux_data["event_rate"][i_e][i_a]*pow(effective_e/(2.2e3), -mean_dgamma-dgamma)
+                p_minus[i_e][i_a] = flux_data["event_rate"][i_e][i_a]*pow(effective_e/(2.2e3),-mean_dgamma+dgamma)
 
         return _flipper(flux_data["event_rate"], (p_minus, p_plus)) 
 

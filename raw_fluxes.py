@@ -143,6 +143,13 @@ def raw_flux(params, kwargs={}):
     else:
         state_setter = get_initial_state
 
+    if "osc" in kwargs:
+        osc = kwargs["osc"]
+    else:
+        osc = True
+    if not osc:
+        print("NOT USING OSCILLATIONS")
+
     if forced_filename is not None:
         if not isinstance(forced_filename, str):
             raise TypeError("Forced filename should be {}, or {}".format(str, None))
@@ -192,7 +199,7 @@ def raw_flux(params, kwargs={}):
     
     # we turn off the progress bar for jobs run on the cobalts 
     nus_atm.Set_ProgressBar(False)
-    nus_atm.Set_IncludeOscillations(True)
+    nus_atm.Set_IncludeOscillations(osc)
     
     print("Evolving State")
     nus_atm.EvolveState()

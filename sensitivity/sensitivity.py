@@ -27,6 +27,27 @@ def llh_func(exp, cts, sigma):
     total = total - lgamma(kappa*kappa + 1)
     return total
 
+
+import matplotlib
+matplotlib.use('Qt5Agg')
+import matplotlib.pyplot as plt
+def showplot(exp, thing, title):
+    plt.pcolormesh(exp["a_edges"], exp["e_edges"], thing[0])
+    plt.title("{}: Minus".format(title))
+    plt.xlabel("Cos th")
+    plt.ylabel("Energy")
+    plt.yscale('log')
+    plt.colorbar()
+    plt.show()
+
+    plt.pcolormesh(exp["a_edges"], exp["e_edges"], thing[1])
+    plt.title("{}: Plus".format(title))
+    plt.xlabel("Cos th")
+    plt.ylabel("Energy")
+    plt.yscale('log')
+    plt.colorbar()
+    plt.show()
+
 class LLHMachine:
     def __init__(self):
 
@@ -37,14 +58,19 @@ class LLHMachine:
         f.close()
 
         self.astr_norm_shift = astro_norm_unc(null_flux)
+        showplot(self.expectation, self.astr_norm_shift, "Astro Norm")
         self.astr_gamma_shift = astro_shift_unc(null_flux)
+        showplot(self.expectation, self.astr_gamma_shift, "Astro Gamma")
 
         self.cr_norm_shift = cr_perturb(dnorm=0.05)
         self.cr_gamma_shift = cr_perturb(dgamma=0.012)
+        showplot(self.expectation, self.cr_norm_shift, "CR Norm")
+        showplot(self.expectation, self.cr_gamma_shift, "CR Gamma")
 
         self.ice_grad_0 = ice_grad_0(self.expectation)
         self.ice_grad_1 = ice_grad_1(self.expectation)
-
+        showplot(self.expectation, self.ice_grad_0, "Icegrad 0")
+        showplot(self.expectation, self.ice_grad_1, "Icegrad 1")
 
         # distinctly add up the plus/minus errors in quadrature 
         self._net_error_m = self.expectation["stat_err"]**2 + self.astr_norm_shift[0]**2 + self.astr_gamma_shift[0]**2

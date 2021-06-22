@@ -34,7 +34,7 @@ def set_lbls(ct_plot):
         fmt[l] = s
     plt.clabel(ct_plot, ct_plot.levels, inline=True, fmt=fmt, fontsize=10)
 
-evs = [2, 4.47, 10]
+evs = [1.0, 4.47, 10.0]
 
 print(chis)
 for ev in evs:
@@ -45,7 +45,7 @@ for ev in evs:
             chis[t24][t34] = chi2[t24][t34][which_sliver]
 
 
-    ct = plt.contour(theta24s*180/pi, theta34s*180/pi, chis.transpose(), levels=[-2*log(0.10), -2*log(0.01)])
+    ct = plt.contour(theta24s*180/pi, theta34s*180/pi, chis.transpose(), levels=[-2*log(0.10), -2*log(0.01)])   
     set_lbls(ct)
     plt.title(r"90% CL Sensitivity with $\Delta m_{14}^{2}=$"+"{:.2f}".format(msqs[which_sliver]),size=16)
     plt.text(5,85, "Smithers Preliminary", color="r",size=14)
