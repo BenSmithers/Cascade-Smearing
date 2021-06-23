@@ -2,7 +2,7 @@ from cascade.utils import gen_filename, config
 from cascade.utils import get_loc
 
 import pickle
-from math import log, pi
+from math import log, pi, sin
 import numpy as np
 
 import matplotlib
@@ -34,7 +34,11 @@ def set_lbls(ct_plot):
         fmt[l] = s
     plt.clabel(ct_plot, ct_plot.levels, inline=True, fmt=fmt, fontsize=10)
 
-evs = [1.0, 4.47, 10.0]
+evs = [4.47,]
+
+def s2(theta):
+    si = np.sin(2*theta)
+    return si*si
 
 print(chis)
 for ev in evs:
@@ -44,12 +48,39 @@ for ev in evs:
         for t34 in range(len(theta34s)):
             chis[t24][t34] = chi2[t24][t34][which_sliver]
 
-
-    ct = plt.contour(theta24s*180/pi, theta34s*180/pi, chis.transpose(), levels=[-2*log(0.10), -2*log(0.01)])   
+    plt.pcolormesh(theta24s*180/pi, theta34s*180/pi, chis.transpose(), vmin=0, vmax=10, cmap="bwr_r")
+    #plt.pcolormesh(s2(theta24s), s2(theta34s), chis.transpose(), vmin=0, vmax=10, cmap="PuBu")
+    cbar = plt.colorbar(extend='max')
+    cbar.set_label(r"-2$\Delta$LLH", size=14)
+    #ct = plt.contour(s2(theta24s), s2(theta34s), chis.transpose(), levels=[-2*log(0.10), -2*log(0.01)], cmap='cool')   
+    ct = plt.contour(theta24s*180/pi, theta34s*180/pi, chis.transpose(), levels=[-2*log(0.10), -2*log(0.01)], cmap='cool')   
     set_lbls(ct)
+
     plt.title(r"90% CL Sensitivity with $\Delta m_{14}^{2}=$"+"{:.2f}".format(msqs[which_sliver]),size=16)
-    plt.text(5,85, "Smithers Preliminary", color="r",size=14)
+    plt.ylim([0,30])
+    plt.xlim([0,30])
+    plt.text(10,25, "Smithers Preliminary", color="r",size=14)
     plt.xlabel(r"$\theta_{24}$ [deg]",size=14)
+    plt.ylabel(r"$\theta_{34}$ [deg]",size=14)
+    plt.show()
+
+
+t24s = [9*pi/180]
+for t24 in t24s:
+    which_sliver = get_loc(t24, theta24s)[0]
+    chis = np.zeros(shape=(len(msqs), len(theta34s)))
+    for t34 in range(len(theta34s)):
+        for msq in range(len(msqs)):
+            chis[msq][t34] = chi2[which_sliver][t34][msq]
+    plt.pcolormesh(msqs, theta34s*180/pi, chis.transpose(), vmin=0, vmax=10, cmap="PuBu")
+    cbar = plt.colorbar(extend='max')
+    cbar.set_label(r"-2$\Delta$LLH", size=14)
+    ct = plt.contour(msqs, theta34s*180/pi, chis.transpose(), levels=[-2*log(0.10), -2*log(0.01)], cmap='cool')   
+    set_lbls(ct)
+    plt.title(r"90% CL Sensitivity with $\theta_{24}=$"+"{:.2f}".format(theta24s[which_sliver]),size=16)
+    plt.ylim([0,30])
+    plt.text(2,25, "Smithers Preliminary", color="r",size=14)
+    plt.xlabel(r"$\Delta m_{14}^{2}$ [eV$^{2}$]",size=14)
     plt.ylabel(r"$\theta_{34}$ [deg]",size=14)
     plt.show()
 

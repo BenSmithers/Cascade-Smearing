@@ -48,22 +48,25 @@ def showplot(exp, thing, title):
     plt.colorbar()
     plt.show()
 
-class LLHMachine:
+class _generic_LLHMachine:
     def __init__(self):
+        raise NotImplementedError("Use Inherited Class")
 
-        # load null flux
-        f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux.dat", null)
-        f = open(f_name, 'rb')
+        self.f_name = ""
+
+    def _configure(self):
+        f = open(self.f_name, 'rb')
         self.expectation = pickle.load(f)
         f.close()
 
-        self.astr_norm_shift = astro_norm_unc(null_flux)
+
+        self.astr_norm_shift = astro_norm_unc(null_flux, use_mc=self.use_mc)
         showplot(self.expectation, self.astr_norm_shift, "Astro Norm")
-        self.astr_gamma_shift = astro_shift_unc(null_flux)
+        self.astr_gamma_shift = astro_shift_unc(null_flux, use_mc=self.use_mc)
         showplot(self.expectation, self.astr_gamma_shift, "Astro Gamma")
 
-        self.cr_norm_shift = cr_perturb(dnorm=0.05)
-        self.cr_gamma_shift = cr_perturb(dgamma=0.012)
+        self.cr_norm_shift = cr_perturb(dnorm=0.05, use_mc = self.use_mc)
+        self.cr_gamma_shift = cr_perturb(dgamma=0.012, use_mc = self.use_mc)
         showplot(self.expectation, self.cr_norm_shift, "CR Norm")
         showplot(self.expectation, self.cr_gamma_shift, "CR Gamma")
 
@@ -134,26 +137,47 @@ class LLHMachine:
         thingy = -(0.5*((bflux - expected)*(bflux-expected))/(sigma*sigma))
         return log(twopi/(self._net_error_m[i_e][i_cth] + self._net_error_p[i_e][i_cth])) + thingy 
 
+class LLHMachine_from_mc(_generic_LLHMachine):
+    def __init__(self):
+        # load null flux
+        self.f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux_from_mc.dat", null)
+        self.use_mc = True
+        self._configure()
+ 
+class LLHMachine(_generic_LLHMachine):
+    def __init__(self):
+        # load null flux
+        self.f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux.dat", null)
+        self.use_mc = False
+        self._configure()
+
 if __name__=="__main__":
+    import sys
+
+    if len(sys.argv)>=2:
+        use_mc = True if (sys.argv[1].lower() in ["mc", "1"]) else False
+    else:
+        use_mc = False
+    print("{}sing MC fluxes".format("U" if use_mc else "Not u"))
+
     # we will now build up an llh machine, and build up all the likelihood values 
-    likelihooder = LLHMachine()
+    likelihooder = LLHMachine_from_mc() if use_mc else LLHMachine()
 
     # We can either scan over all the files found, or just hard-code in the ones...
     hardcode = True
     if hardcode:
         msqs = np.linspace(0,20,40)
         theta24s = np.linspace(0,0.5*pi, 90)
-        theta34s = np.linspace(0,0.5*pi, 90)
-    else:
-        # although more reliable, this is slower. 
-        # it's an O(n) process (or worse depending on the glob) 
-        from cascade.utils import parse_folder
-        theta14s, theta24s, theta34s, msqs = parse_folder(config["datapath"] + "/expected_fluxes_reco/", "exp*.dat")
+        if use_mc:
+            theta34s = [0]
+        else:
+            theta34s = np.linspace(0,0.5*pi, 90)
 
     likelihoods = [[0,0,0,0.0] for i in range(len(msqs)*len(theta24s)*len(theta34s))]
     chi2 = np.zeros(shape=(len(theta24s), len(theta34s), len(msqs)))
 
-    f = open(gen_filename(config["datapath"]+"/expected_fluxes_reco/", "expected_flux.dat", SterileParams()),'rb')
+    f_name_init = "expected_flux_from_mc.dat" if use_mc else "expected_flux.dat"
+    f = open(gen_filename(config["datapath"]+"/expected_fluxes_reco/", f_name_init, SterileParams()),'rb')
     central_chi = -2*likelihooder.get_llh(pickle.load(f))
     f.close()
 
@@ -164,7 +188,7 @@ if __name__=="__main__":
             for msq in range(len(msqs)):
                 pam = SterileParams(theta13=theta24s[th24], theta23=theta34s[th34], msq2=msqs[msq])
 
-                f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux.dat", pam)
+                f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", f_name_init, pam)
                 index = th24 + th34*len(theta24s) + msq*len(theta24s)*len(theta34s)
                 if not os.path.exists(f_name):
                     skipped+=1 
@@ -216,6 +240,7 @@ if __name__=="__main__":
                 "c_prob":c_prob,
                 "chi2s":chi2
             }
-    f = open("cummulative_probs.dat",'wb')
+    suffix = "_from_mc" if use_mc else ""
+    f = open("cummulative_probs.dat"+suffix,'wb')
     pickle.dump(likelihood_dict, f, -1)
     f.close()
