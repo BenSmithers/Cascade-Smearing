@@ -27,10 +27,11 @@ def build_mc_flux(*dataobjs):
     Takes some Data objects and uses the MC we have to build up expectation arrays 
     """
     cobalt = os.environ.get("_CONDOR_SCRATCH_DIR")
+    filename = "NuFSGenMC_nominal.dat"
     if cobalt==None or cobalt=="" or cobalt==".":
-        file_dir = "/home/benito/Downloads/IC86SterileNeutrinoDataRelease/monte_carlo/NuFSGenMC_nominal.dat"
+        file_dir = "/home/benito/Downloads/IC86SterileNeutrinoDataRelease/monte_carlo/" + filename
     else:
-        file_dir = os.path.join(cobalt, "data/NuFSGenMC_nomial.dat")
+        file_dir = os.path.join(cobalt, "data", filename)
     
     def metaflux(energy, angle, key):
         net_f = 0.0

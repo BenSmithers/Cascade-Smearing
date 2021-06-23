@@ -23,10 +23,14 @@ def make_meta_flux(params, do_mc = False):
 
     print("Calculating Expected Binned Flux at {}".format(params))
     # now we use these two to build the full expected flux
-    full_flux = build_flux(atmo_data, astr_data) #dict 
+    if do_mc:
+        full_flux = build_mc_flux(atmo_data, astr_data)
+    else:
+        full_flux = build_flux(atmo_data, astr_data) #dict 
     
     # save the object
-    new_filename = gen_filename(config["datapath"]+ "/expected_fluxes_reco/", "expected_flux.dat", params)
+    suffix = "_from_mc" if do_mc else ""
+    new_filename = gen_filename(config["datapath"]+ "/expected_fluxes_reco/", "expected_flux"+suffix+".dat", params)
     f = open(new_filename ,'wb')
     pickle.dump(full_flux, f, -1)
     f.close()
