@@ -30,6 +30,7 @@ def get_color(n, colormax=3.0, cmap="viridis"):
     return this_cmap(n/colormax)
 
 def pathmaker(path):
+    folder = os.path.split(path)[0]
     if not os.path.exists(path):
         broken = path.split("/")
         working = ""
@@ -220,7 +221,7 @@ def parse_filename(path, as_params=True):
     else:
         return(theta03, theta13, theta23, msq2)
 
-def gen_filename(dirname, filename, params, subfolder=False):
+def gen_filename(dirname, filename, params, subfolder=True):
     """
     Takes a directory, a generic filename (like "datafile.dat"), and some physics parameters
 
@@ -240,9 +241,12 @@ def gen_filename(dirname, filename, params, subfolder=False):
         return(filename)
     # make a subfolder based on theta_24
     th24 = str_params.split("_")[1]
-    new_dir = os.path.join(dirname, th24, ".".join((filename_partial,suffix)))
-    pathmaker(new_dir) # default cascade import 
-    return new_dir
+    new_path = os.path.join(dirname, th24, ".".join((filename_partial,suffix)))
+    new_dir = os.path.join(dirname, th24)
+    if not os.path.exists(new_dir):
+        os.mkdir(os.path.join(dirname, th24))
+#    pathmaker(new_dir) # default cascade import 
+    return new_path
 
 
 
@@ -284,6 +288,8 @@ def get_loc(x, domain,closest=False):
     Raises exception if x is outside the range of domain 
 
     Assumes 'domain' is sorted!! And this _only_ works if the domain is length 2 or above 
+
+    This is made for finding bin numbers on a list of bin edges 
     """
     if not isinstance(domain, (tuple,list,np.ndarray)):
         raise TypeError("'domain' has unrecognized type {}, try {}".format(type(domain), list))
