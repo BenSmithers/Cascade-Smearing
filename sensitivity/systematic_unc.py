@@ -15,6 +15,7 @@ from cascade.raw_fluxes import raw_flux
 
 from cascade.sensitivity.astro_flux_generator import generate_astr_flux
 from cascade.sensitivity.eff_area_reader import build_flux
+from cascade.sensitivity.make_from_mc import build_mc_flux
 
 import pickle 
 import os
@@ -93,7 +94,7 @@ def _ice_grad(data_dict, grad_no):
 
     return _flipper( data_dict["event_rate"] , (m_pert, p_pert))
 
-def cr_perturb(dgamma = 0.0, dnorm=0.0):
+def cr_perturb(dgamma = 0.0, dnorm=0.0, use_mc = False):
     """
     Calculates the expected cosmic ray spectrum, then returns the expected gains/losses in each bin by perturbing the overall spectram index (dgamma) and normalization (dnorm) down/up 
 
@@ -110,7 +111,7 @@ def cr_perturb(dgamma = 0.0, dnorm=0.0):
     
     null = SterileParams()
     filename = os.path.join(perturb_folder, "cr_central.dat")
-    flux_data = build_flux(Data(raw_flux(null)))
+    flux_data = build_mc_flux(Data(raw_flux(null))) if use_mc else build_flux(Data(raw_flux(null)))
     pickle_save(flux_data, filename)
 
 
@@ -138,7 +139,7 @@ def cr_perturb(dgamma = 0.0, dnorm=0.0):
 
 
 
-def astro_norm_unc(data_dict):
+def astro_norm_unc(data_dict, use_mc = False):
     """
     Calculates the expected astrophysical neutrino spectrum, then returns the expected gains/losses in each bin by perturbing the overall spectram index (dgamma) and normalization (dnorm) down/up 
 
@@ -153,7 +154,7 @@ def astro_norm_unc(data_dict):
 
 #    unperturbed = generate_astr_flux(null)
 
-    prefix = "astr_perturb"
+    prefix = "astr_perturb" + ("_frommc" if use_mc else "")
 
     # for each of these... 
     #    generate the flux
@@ -161,31 +162,33 @@ def astro_norm_unc(data_dict):
     #    parse it through the effective area integrator
     # yay now we have fluxes in reconstruction space! 
     
+    flux_func = build_mc_flux if use_mc else build_flux
+
     filename = os.path.join(perturb_folder, prefix+ "_central.dat")
     if os.path.exists(filename):
         central = pickle_load(filename)
     else:
-        central = build_flux(Data(generate_astr_flux(null)))
+        central = flux_func(Data(generate_astr_flux(null)))
         pickle_save(central, filename) 
 
     filename = os.path.join(perturb_folder, prefix+ "_norm_minus.dat")
     if os.path.exists(filename):
         norm_minus = pickle_load(filename)
     else:
-        norm_minus = build_flux(Data(generate_astr_flux(null, norm=-1*norm_p)))
+        norm_minus = flux_func(Data(generate_astr_flux(null, norm=-1*norm_p)))
         pickle_save(norm_minus, filename)
 
     filename = os.path.join(perturb_folder, prefix+"_norm_plus.dat")
     if os.path.exists(filename):
         norm_plus = pickle_load(filename)
     else:
-        norm_plus = build_flux(Data(generate_astr_flux(null, norm=norm_p)))
+        norm_plus = flux_func(Data(generate_astr_flux(null, norm=norm_p)))
         pickle_save(norm_plus, filename)
 
     return _flipper( central["event_rate"], (norm_minus["event_rate"], norm_plus["event_rate"]))
 #    return(norm_minus["event_rate"]-central["event_rate"], norm_plus["event_rate"]-central["event_rate"])
 
-def astro_shift_unc(data_dict):
+def astro_shift_unc(data_dict, use_mc=False):
     null = SterileParams()
 
     norm_p = 0.21
@@ -193,7 +196,9 @@ def astro_shift_unc(data_dict):
 
 #    unperturbed = generate_astr_flux(null)
 
-    prefix = "astr_perturb"
+    prefix = "astr_perturb" + ("_frommc" if use_mc else "")
+
+    flux_func = build_mc_flux if use_mc else build_flux
 
     # for each of these... 
     #    generate the flux
@@ -205,7 +210,7 @@ def astro_shift_unc(data_dict):
     if os.path.exists(filename):
         central = pickle_load(filename)
     else:
-        central = build_flux(Data(generate_astr_flux(null)))
+        central = flux_func(Data(generate_astr_flux(null)))
         pickle_save(central, filename) 
 
 
@@ -213,14 +218,14 @@ def astro_shift_unc(data_dict):
     if os.path.exists(filename):
         norm_minus = pickle_load(filename)
     else:
-        norm_minus = build_flux(Data(generate_astr_flux(null, dgamma=-1*shift_p)))
+        norm_minus = flux_func(Data(generate_astr_flux(null, dgamma=-1*shift_p)))
         pickle_save(norm_minus, filename)
 
     filename = os.path.join(perturb_folder, prefix+"_gamma_plus.dat")
     if os.path.exists(filename):
         norm_plus = pickle_load(filename)
     else:
-        norm_plus = build_flux(Data(generate_astr_flux(null, dgamma=shift_p)))
+        norm_plus = flux_func(Data(generate_astr_flux(null, dgamma=shift_p)))
         pickle_save(norm_plus, filename)
 
 
