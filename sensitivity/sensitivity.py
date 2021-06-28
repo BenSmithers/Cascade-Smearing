@@ -5,6 +5,8 @@ import pickle
 import numpy as np
 import os
 
+from scipy.optimize import minimize 
+
 from cascade.utils import get_closest, SterileParams, gen_filename, config, Data
 from cascade.sensitivity.eff_area_reader import build_flux
 
@@ -61,27 +63,27 @@ class _generic_LLHMachine:
 
 
         self.astr_norm_shift = astro_norm_unc(null_flux, use_mc=self.use_mc)
-        showplot(self.expectation, self.astr_norm_shift, "Astro Norm")
+        #showplot(self.expectation, self.astr_norm_shift, "Astro Norm")
         self.astr_gamma_shift = astro_shift_unc(null_flux, use_mc=self.use_mc)
-        showplot(self.expectation, self.astr_gamma_shift, "Astro Gamma")
+        #showplot(self.expectation, self.astr_gamma_shift, "Astro Gamma")
 
         self.cr_norm_shift = cr_perturb(dnorm=0.05, use_mc = self.use_mc)
         self.cr_gamma_shift = cr_perturb(dgamma=0.012, use_mc = self.use_mc)
-        showplot(self.expectation, self.cr_norm_shift, "CR Norm")
-        showplot(self.expectation, self.cr_gamma_shift, "CR Gamma")
+        #showplot(self.expectation, self.cr_norm_shift, "CR Norm")
+        #showplot(self.expectation, self.cr_gamma_shift, "CR Gamma")
 
         self.ice_grad_0 = ice_grad_0(self.expectation)
         self.ice_grad_1 = ice_grad_1(self.expectation)
-        showplot(self.expectation, self.ice_grad_0, "Icegrad 0")
-        showplot(self.expectation, self.ice_grad_1, "Icegrad 1")
+        #showplot(self.expectation, self.ice_grad_0, "Icegrad 0")
+        #showplot(self.expectation, self.ice_grad_1, "Icegrad 1")
 
         # distinctly add up the plus/minus errors in quadrature 
         self._net_error_m = self.expectation["stat_err"]**2 + self.astr_norm_shift[0]**2 + self.astr_gamma_shift[0]**2
-        self._net_error_m = self._net_error_m +self.cr_norm_shift[0]**2 + self.cr_gamma_shift[0]**2 + self.ice_grad_0[0]**2 + self.ice_grad_1[0]**2
+        self._net_error_m = self._net_error_m  + self.cr_gamma_shift[0]**2 + self.ice_grad_0[0]**2 + self.ice_grad_1[0]**2
         self._net_error_m = np.sqrt(self._net_error_m)
         
         self._net_error_p = self.expectation["stat_err"]**2 + self.astr_norm_shift[1]**2 + self.astr_gamma_shift[1]**2
-        self._net_error_p = self._net_error_p + self.cr_norm_shift[1]**2 + self.cr_gamma_shift[1]**2 + self.ice_grad_0[1]**2 + self.ice_grad_1[1]**2
+        self._net_error_p = self._net_error_p  + self.cr_gamma_shift[1]**2 + self.ice_grad_0[1]**2 + self.ice_grad_1[1]**2
         self._net_error_p = np.sqrt(self._net_error_p)
  
     def get_chi2(self, flux):
@@ -92,14 +94,25 @@ class _generic_LLHMachine:
 
     def get_llh(self, flux):
         """
+        Like below, but we allow the normalization to flutuate 
+        """
+        norm_central=1.0
+
+        opt = minimize(lambda norm : -2*self.get_llh_fixed(flux, norm[0]), [norm_central])
+        return self.get_llh_fixed(flux, opt.x[0])
+
+    def get_llh_fixed(self, flux, norm=1.0):
+        """
         Calculates the odds that this flux was measured given the LLHMachine's expectation 
 
         So we scan over the bins and calculate the odds of measuring "flux" given the expected one
+
+        Overall normalization is fixed in this one
         """
         llh = 0.0
         for i_e in range(len(self.expectation["e_edges"])-1):
             for i_cth in range(len(self.expectation["a_edges"])-1):
-                llh += self._eval_llh_bin(i_cth, i_e, flux["event_rate"][i_e][i_cth])
+                llh += self._eval_llh_bin(i_cth, i_e, norm*flux["event_rate"][i_e][i_cth])
         return llh
 
 
@@ -135,7 +148,7 @@ class _generic_LLHMachine:
 #        return llh_func(expected, bflux, sigma)
 
         thingy = -(0.5*((bflux - expected)*(bflux-expected))/(sigma*sigma))
-        return log(twopi/(self._net_error_m[i_e][i_cth] + self._net_error_p[i_e][i_cth])) + thingy 
+        return thingy #log(twopi/(self._net_error_m[i_e][i_cth] + self._net_error_p[i_e][i_cth])) + thingy 
 
 class LLHMachine_from_mc(_generic_LLHMachine):
     def __init__(self):
@@ -162,16 +175,21 @@ if __name__=="__main__":
 
     # we will now build up an llh machine, and build up all the likelihood values 
     likelihooder = LLHMachine_from_mc() if use_mc else LLHMachine()
+    print("Built Likelihooder")
 
     # We can either scan over all the files found, or just hard-code in the ones...
     hardcode = True
     if hardcode:
-        msqs = np.linspace(0,20,40)
-        theta24s = np.linspace(0,0.5*pi, 90)
+
+
         if use_mc:
             theta34s = [0]
+            msqs = np.logspace(-2,2,40)
+            theta24s = np.arcsin(np.sqrt(np.logspace(-3,0, 100)))/2
         else:
+            theta24s = np.linspace(0,0.5*pi, 90)
             theta34s = np.linspace(0,0.5*pi, 90)
+            msqs = np.linspace(0,20,40)
 
     likelihoods = [[0,0,0,0.0] for i in range(len(msqs)*len(theta24s)*len(theta34s))]
     chi2 = np.zeros(shape=(len(theta24s), len(theta34s), len(msqs)))
