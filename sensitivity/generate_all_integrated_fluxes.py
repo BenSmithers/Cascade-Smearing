@@ -36,14 +36,12 @@ def make_meta_flux(params, do_mc = False):
     f.close()
 
 
-theta_24s = np.linspace(0,90, 90)
-theta_34s = np.linspace(0,90, 90)
-msqs = np.linspace(0,20,40)
-
-
-do_mc = False
 
 if __name__=="__main__":
+
+    msqs = np.linspace(0,20,40)
+    do_mc = False
+
     import sys
 
     th24 = float(sys.argv[1])

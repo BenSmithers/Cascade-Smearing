@@ -11,7 +11,8 @@ from cascade.utils import get_closest, SterileParams, gen_filename, config, Data
 from cascade.sensitivity.eff_area_reader import build_flux
 
 null =  SterileParams()
-null_flux = Data(gen_filename(config["datapath"], config["nu_flux"]+".dat", null))
+#null_flux = Data(gen_filename(config["datapath"], config["nu_flux"]+".dat", null))
+null_flux=""
 
 from cascade.sensitivity.systematic_unc import astro_norm_unc
 from cascade.sensitivity.systematic_unc import astro_shift_unc, cr_perturb
