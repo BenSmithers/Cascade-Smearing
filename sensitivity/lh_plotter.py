@@ -24,7 +24,7 @@ chi2 = obj["chi2s"]
 
 old = False
 
-ps = [0.10, 0.01]
+ps = [0.10] #, 0.01]
 chis = [-2*log(p) for p in ps]
 
 labels = ["90%", "99%"]
@@ -34,7 +34,7 @@ def set_lbls(ct_plot):
         fmt[l] = s
     plt.clabel(ct_plot, ct_plot.levels, inline=True, fmt=fmt, fontsize=10)
 
-evs = [4.47,]
+evs = [1.0, 4.47,10.0]
 
 def s2(theta):
     si = np.sin(2*theta)
@@ -48,12 +48,12 @@ for ev in evs:
         for t34 in range(len(theta34s)):
             chis[t24][t34] = chi2[t24][t34][which_sliver]
 
-    plt.pcolormesh(theta24s*180/pi, theta34s*180/pi, chis.transpose(), vmin=0, vmax=10, cmap="bwr_r")
+    plt.pcolormesh(theta24s*180/pi, theta34s*180/pi, chis.transpose(), vmin=0, vmax=10, cmap="PuBu")
     #plt.pcolormesh(s2(theta24s), s2(theta34s), chis.transpose(), vmin=0, vmax=10, cmap="PuBu")
     cbar = plt.colorbar(extend='max')
     cbar.set_label(r"-2$\Delta$LLH", size=14)
     #ct = plt.contour(s2(theta24s), s2(theta34s), chis.transpose(), levels=[-2*log(0.10), -2*log(0.01)], cmap='cool')   
-    ct = plt.contour(theta24s*180/pi, theta34s*180/pi, chis.transpose(), levels=[-2*log(0.10), -2*log(0.01)], cmap='cool')   
+    ct = plt.contour(theta24s*180/pi, theta34s*180/pi, chis.transpose(), levels=[-2*log(0.10)], cmap='Oranges_r')   
     set_lbls(ct)
 
     plt.title(r"90% CL Sensitivity with $\Delta m_{14}^{2}=$"+"{:.2f}".format(msqs[which_sliver]),size=16)
