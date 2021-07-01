@@ -76,12 +76,12 @@ def get_initial_state(energies, zeniths, n_nu, kwargs):
     """
     path = os.path.join(config["datapath"], config["mceq_flux"])
     if os.path.exists(path): 
-        print("Loading MCEq Flux")
+#        print("Loading MCEq Flux")
         f = open(path, 'rb')
         inistate = pickle.load(f)
         f.close()
     else: 
-        print("Generating MCEq Flux")
+#        print("Generating MCEq Flux")
         inistate = np.zeros(shape=(angular_bins, energy_bins, 2, n_nu))
         mceq = MCEqRun(
                 interaction_model = config["interaction_model"],
@@ -161,7 +161,7 @@ def raw_flux(params, kwargs={}):
         if not isinstance(forced_filename, str):
             raise TypeError("Forced filename should be {}, or {}".format(str, None))
   
-
+    print("Generating Flux at {}")
     n_nu = 4 
     Emin = 1.*un.GeV
     Emax = 10.*un.PeV
@@ -202,30 +202,30 @@ def raw_flux(params, kwargs={}):
     # we load in the initial state. Generating or Loading from a file 
     inistate = state_setter(energies, zeniths, n_nu, kwargs)
     nus_atm.Set_initial_state(inistate, nsq.Basis.flavor)
-    print("Done setting initial state")
     
     # we turn off the progress bar for jobs run on the cobalts 
     nus_atm.Set_ProgressBar(False)
     nus_atm.Set_IncludeOscillations(osc)
     
-    print("Evolving State")
     nus_atm.EvolveState()
 
     int_en = 700
     int_cos = 100
     int_min_e = log10(Emin)
     int_max_e = log10(Emax)
-    if forced_filename is None: 
-        filename = gen_filename(config["datapath"], config["nu_flux"]+".dat", params)
-    else:
-        filename = forced_filename
-    print("Saving File to {}".format(filename))
-    
-    if not config["overwrite"]:
-        backup(filename)
-
-    
+      
+    filename=""
     if not as_data:
+        
+        if forced_filename is None: 
+            filename = gen_filename(config["datapath"], config["nu_flux"]+".dat", params)
+        else:
+            filename = forced_filename
+        print("Saving File to {}".format(filename))
+        
+        if not config["overwrite"]:
+            backup(filename)
+
         obj = open(filename, 'wt')
     else:
         cobalt = os.environ.get("_CONDOR_SCRATCH_DIR")

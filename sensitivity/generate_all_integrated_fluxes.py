@@ -14,6 +14,7 @@ import os
 
 def make_meta_flux(params, do_mc = False):
     # look for the atmospheric fluxes. These should all be pre-generated 
+    start = time() 
     print("Loading Fluxes at {}".format(params))
     kwargs = {}
     kwargs["as_data"]=True
@@ -26,19 +27,24 @@ def make_meta_flux(params, do_mc = False):
         full_flux = build_mc_flux(atmo_data, astr_data)
     else:
         full_flux = build_flux(atmo_data, astr_data) #dict 
-    
+    middle = time()
     # save the object
     suffix = "_from_mc" if do_mc else ""
     new_filename = gen_filename(config["datapath"]+ "/expected_fluxes_reco/", "expected_flux"+suffix+".dat", params)
     f = open(new_filename ,'wb')
     pickle.dump(full_flux, f, -1)
     f.close()
+    end = time()
+
+    print("Flux Sim took {:.1f} seconds".format(middle-start))
+    print("Saving took {:.3f} seconds".format(end-middle))
+
 
     
 
 if __name__=="__main__":
 
-    msqs = np.linspace(0,20,40)
+    msqs = np.linspace(0,20,2)
     do_mc = False
 
     import sys

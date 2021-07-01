@@ -28,7 +28,6 @@ def get_flavor_ratio(params):
             for ratio in arbitrarily_large_ratio*np.logspace(-3, 3, 600):
                 osc_prob = osc.p_trans(1.0, ratio, i, j)*initial[i]
                 final_ratio[j] = final_ratio[j]+ osc_prob 
-            print("{} to {} Mixing: {}".format(i, j, osc_prob))
 
     # normalize these all to the muons!
     norm_flavor = 1
@@ -36,7 +35,6 @@ def get_flavor_ratio(params):
     for i in range(4):
         final_ratio[i] = final_ratio[i]/norm_amt
 
-    print("Calculated Ratios: {}".format(final_ratio))
     return final_ratio
     
 

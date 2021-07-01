@@ -63,7 +63,7 @@ def build_flux(*dataobjs):
     # energies, cos_th 
     casc_flux = np.zeros(shape=(28,10))
     casc_err = np.zeros(shape=(28,10))
-    
+    print("Integrating Flux over bins") 
     def metaflux(energy, angle, key):
         net_f = 0.0
         for dobj in dataobjs:
@@ -88,13 +88,11 @@ def build_flux(*dataobjs):
 
                 if flav=="Mu" and curr.lower()=="cc":
                     continue
-                print("Integrating {} Flux".format(key))
                 for i_e in range(len(casc_flux)):
                     for i_cth in range(len(casc_flux[i_e])):
                         if np.cos(angles[i_cth])>0:
                             continue
                         
-
                         flux_integrated = dblquad( lambda energy, angle: metaflux(energy, angle, key), a=angles[i_cth+1], b=angles[i_cth],gfun=energies[i_e], hfun=energies[i_e+1] )[0]
                         
                         
