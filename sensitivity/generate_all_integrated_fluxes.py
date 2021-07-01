@@ -10,16 +10,14 @@ import numpy as np
 
 import pickle
 from time import time, localtime
+import os
 
 def make_meta_flux(params, do_mc = False):
     # look for the atmospheric fluxes. These should all be pre-generated 
     print("Loading Fluxes at {}".format(params))
-    atmo_file = raw_flux(params)
-    atmo_data = Data(atmo_file)
 
-    # we need to load in the data ojects! 
-    astr_filepath = generate_astr_flux(params) # will load file if it exists 
-    astr_data = Data(astr_filepath)
+    atmo_data = raw_flux(params, as_data=True)
+    astr_data = generate_astr_flux(params, as_data=True)
 
     print("Calculating Expected Binned Flux at {}".format(params))
     # now we use these two to build the full expected flux
@@ -35,7 +33,7 @@ def make_meta_flux(params, do_mc = False):
     pickle.dump(full_flux, f, -1)
     f.close()
 
-
+    
 
 if __name__=="__main__":
 

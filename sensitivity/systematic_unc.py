@@ -139,7 +139,7 @@ def cr_perturb(dgamma = 0.0, dnorm=0.0, use_mc = False):
 
 
 
-def astro_norm_unc(data_dict, use_mc = False):
+def astro_norm_unc(use_mc = False):
     """
     Calculates the expected astrophysical neutrino spectrum, then returns the expected gains/losses in each bin by perturbing the overall spectram index (dgamma) and normalization (dnorm) down/up 
 
@@ -188,7 +188,7 @@ def astro_norm_unc(data_dict, use_mc = False):
     return _flipper( central["event_rate"], (norm_minus["event_rate"], norm_plus["event_rate"]))
 #    return(norm_minus["event_rate"]-central["event_rate"], norm_plus["event_rate"]-central["event_rate"])
 
-def astro_shift_unc(data_dict, use_mc=False):
+def astro_shift_unc(use_mc=False):
     null = SterileParams()
 
     norm_p = 0.21

@@ -52,20 +52,22 @@ def showplot(exp, thing, title):
     plt.show()
 
 class _generic_LLHMachine:
-    def __init__(self):
-        raise NotImplementedError("Use Inherited Class")
-
-        self.f_name = ""
-
+    def __init__(self, expectation=SterileParams(), use_syst=True):
+        if not isinstance(expectation, SterileParams):
+            raise TypeError("Expected {}, got {}".format(SterileParams, type(expectation)))
+        if not isinstance(use_syst, bool):
+            raise TypeError("Expected {}, got {}".format(bool, type(use_syst)))
+        self._use_systematics=use_syst
+        self._configure()
+ 
     def _configure(self):
         f = open(self.f_name, 'rb')
         self.expectation = pickle.load(f)
         f.close()
 
 
-        self.astr_norm_shift = astro_norm_unc(null_flux, use_mc=self.use_mc)
         #showplot(self.expectation, self.astr_norm_shift, "Astro Norm")
-        self.astr_gamma_shift = astro_shift_unc(null_flux, use_mc=self.use_mc)
+        self.astr_gamma_shift = astro_shift_unc(use_mc=self.use_mc)
         #showplot(self.expectation, self.astr_gamma_shift, "Astro Gamma")
 
         self.cr_norm_shift = cr_perturb(dnorm=0.05, use_mc = self.use_mc)
@@ -79,13 +81,17 @@ class _generic_LLHMachine:
         #showplot(self.expectation, self.ice_grad_1, "Icegrad 1")
 
         # distinctly add up the plus/minus errors in quadrature 
-        self._net_error_m = self.expectation["stat_err"]**2 + self.astr_norm_shift[0]**2 + self.astr_gamma_shift[0]**2
-        self._net_error_m = self._net_error_m  + self.cr_gamma_shift[0]**2 + self.ice_grad_0[0]**2 + self.ice_grad_1[0]**2
-        self._net_error_m = np.sqrt(self._net_error_m)
-        
-        self._net_error_p = self.expectation["stat_err"]**2 + self.astr_norm_shift[1]**2 + self.astr_gamma_shift[1]**2
-        self._net_error_p = self._net_error_p  + self.cr_gamma_shift[1]**2 + self.ice_grad_0[1]**2 + self.ice_grad_1[1]**2
-        self._net_error_p = np.sqrt(self._net_error_p)
+        self._net_error_m = self.expectation["stat_err"]    
+        self._net_error_p = self.expectation["stat_err"]
+
+        if self.use_systematics:
+            self._net_error_m = self._net_error_m**2 + self.astr_gamma_shift[0]**2
+            self._net_error_m = self._net_error_m  + self.cr_gamma_shift[0]**2 + self.ice_grad_0[0]**2 + self.ice_grad_1[0]**2
+            self._net_error_m = np.sqrt(self._net_error_m)
+
+            self._net_error_p = self._net_error_p**2 + self.astr_gamma_shift[1]**2
+            self._net_error_p = self._net_error_p  + self.cr_gamma_shift[1]**2 + self.ice_grad_0[1]**2 + self.ice_grad_1[1]**2
+            self._net_error_p = np.sqrt(self._net_error_p)
  
     def get_chi2(self, flux):
         return -2*self.get_llh(flux)
@@ -95,7 +101,7 @@ class _generic_LLHMachine:
 
     def get_llh(self, flux):
         """
-        Like below, but we allow the normalization to flutuate 
+        Like below, but we allow the normalization to fluctuate 
         """
         norm_central=1.0
 
@@ -152,30 +158,58 @@ class _generic_LLHMachine:
         return thingy #log(twopi/(self._net_error_m[i_e][i_cth] + self._net_error_p[i_e][i_cth])) + thingy 
 
 class LLHMachine_from_mc(_generic_LLHMachine):
-    def __init__(self):
-        # load null flux
-        self.f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux_from_mc.dat", null)
+    def __init__(self, expectation=SterileParams(), use_syst=True):
+        self.f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux_from_mc.dat", expectation)
         self.use_mc = True
-        self._configure()
- 
+        _generic_LLHMachine.__init__(self, expectation, use_syst)
+
 class LLHMachine(_generic_LLHMachine):
-    def __init__(self):
-        # load null flux
-        self.f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux.dat", null)
+    def __init__(self, expectation=SterileParams(), use_syst=True):
+        self.f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux.dat", expectation)
         self.use_mc = False
-        self._configure()
+        _generic_LLHMachine.__init__(self, expectation, use_syst)
 
 if __name__=="__main__":
     import sys
+    from argparse import ArgumentParser
 
-    if len(sys.argv)>=2:
-        use_mc = True if (sys.argv[1].lower() in ["mc", "1"]) else False
-    else:
-        use_mc = False
+    parser = ArgumentParser()
+    parser.add_argument("-m","--is_mc", dest="is_mc",
+                        type=str, required=False, default="False",
+                        help="Should we use the MC data (only for tracks)?")
+    parser.add_argument("-s","--systematics", dest="use_syst",
+                        type=str, required=False, default="True",
+                        help="Should we apply systematic uncertainties?")
+    parser.add_argument("--th14", dest="th14",
+                        type=float, required=False,
+                        default=0.0,
+                        help="Value to use for theta-14 for the expectation")
+    parser.add_argument("--th24", dest="th24",
+                        type=float, required=False,
+                        default=0.0,
+                        help="Value to use for theta-24 for the expectation")
+    parser.add_argument("--th34", dest="th34",
+                        type=float, required=False,
+                        default=0.0,
+                        help="Value to use for theta-34 for the expectation")
+    parser.add_argument("--deltam", dest="deltam",
+                        type=float, required=False,
+                        default=0.0,
+                        help="Value to use for delta-m squared for the expectation")
+    args = parser.parse_args()
+    use_mc = str(args.is_mc).lower()=='true'
+    th14 = args.th14
+    th24 = args.th24
+    th34 = args.th34
+    deltam = args.deltam
+    use_syst = str(args.use_syst).lower()=="true"
+    expectation = SterileParams(theta03=th14, theta13=th24, theta23=th34, msq2=deltam)
+
     print("{}sing MC fluxes".format("U" if use_mc else "Not u"))
+    print("Using expectation {}".format(expectation))
 
     # we will now build up an llh machine, and build up all the likelihood values 
-    likelihooder = LLHMachine_from_mc() if use_mc else LLHMachine()
+    likelihooder = LLHMachine_from_mc(expectation, use_syst) if use_mc else LLHMachine(expectation,use_syst)
     print("Built Likelihooder")
 
     # We can either scan over all the files found, or just hard-code in the ones...
@@ -196,7 +230,7 @@ if __name__=="__main__":
     chi2 = np.zeros(shape=(len(theta24s), len(theta34s), len(msqs)))
 
     f_name_init = "expected_flux_from_mc.dat" if use_mc else "expected_flux.dat"
-    f = open(gen_filename(config["datapath"]+"/expected_fluxes_reco/", f_name_init, SterileParams()),'rb')
+    f = open(gen_filename(config["datapath"]+"/expected_fluxes_reco/", f_name_init, expectation),'rb')
     central_chi = -2*likelihooder.get_llh(pickle.load(f))
     f.close()
 
@@ -260,6 +294,8 @@ if __name__=="__main__":
                 "chi2s":chi2
             }
     suffix = "_from_mc" if use_mc else ""
-    f = open("cummulative_probs.dat"+suffix,'wb')
+    filename = gen_filename(config["datapath"]+"/expectations/", "cummulative_probs"+suffix+".dat", expectation)
+
+    f = open(filename,'wb')
     pickle.dump(likelihood_dict, f, -1)
     f.close()

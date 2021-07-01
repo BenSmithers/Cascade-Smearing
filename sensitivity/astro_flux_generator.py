@@ -60,7 +60,8 @@ def generate_astr_flux(params, **kwargs):
     It saves the flux to the datapath that the configuration file is configured to
     """
     print("Received {} point".format(params))
-    forced_filename = gen_filename(config["datapath"], config["prop_astro_flux"], params)
+    if "forced_filename" not in kwargs:
+        kwargs["forced_filename"] =  gen_filename(config["datapath"], config["prop_astro_flux"], params)
 
     if "flavor_ratio" not in kwargs:
         flavor_ratio = get_flavor_ratio(params)
@@ -69,7 +70,6 @@ def generate_astr_flux(params, **kwargs):
         print("Using ratio: {}".format(kwargs["flavor_ratio"]))
 
     kwargs["state_setter"] = astro_initial_state
-    kwargs["forced_filename"] =  forced_filename
     kwargs["osc"] = False
 
     return raw_flux(params, kwargs)
