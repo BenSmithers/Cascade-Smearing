@@ -24,6 +24,7 @@ from cascade.utils import sci # used to generate save names
 from cascade.utils import get_closest # interpolation
 from cascade.utils import config 
 from cascade.utils import backup
+from cascade.utils import Data
 from cascade.cross_section_test import xs_obj as xs
 
 # simulates the cosmic ray showers 
@@ -31,6 +32,7 @@ from MCEq.core import MCEqRun
 import crflux.models as crf
 
 import pickle # saving the 4D MCEq Datafile 
+from tempfile import NamedTemporaryFile
 
 un = nsq.Const()
 
@@ -150,6 +152,11 @@ def raw_flux(params, kwargs={}):
     if not osc:
         print("NOT USING OSCILLATIONS")
 
+    if "as_data" in kwargs:
+        as_data = kwargs["as_data"]
+    else:
+        as_data = False
+
     if forced_filename is not None:
         if not isinstance(forced_filename, str):
             raise TypeError("Forced filename should be {}, or {}".format(str, None))
@@ -217,7 +224,17 @@ def raw_flux(params, kwargs={}):
     if not config["overwrite"]:
         backup(filename)
 
-    obj = open(filename, 'wt')
+    
+    if not as_data:
+        obj = open(filename, 'wt')
+    else:
+        cobalt = os.environ.get("_CONDOR_SCRATCH_DIR")
+        if cobalt==None or cobalt=="" or cobalt==".":
+            this_dir = None
+        else:
+            this_dir = cobalt
+        obj = NamedTemporaryFile(mode='wt',buffering=1, dir=this_dir)
+
     angle = cos_zenith_min
     energy = int_min_e
     obj.write("# log10(energy) cos(zenith) flux_nuE flux_nuMu flux_nuTau flux_nuEBar flux_nuMuBar flux_nuTauBar\n")
@@ -236,5 +253,11 @@ def raw_flux(params, kwargs={}):
             obj.write("\n")
 
         angle += (cos_zenith_max-cos_zenith_min)/int_cos
-    obj.close()
-    return(filename)
+    
+    if as_data:
+        data_obj = Data(obj.name)
+        obj.close() # deletes tempfile 
+        return data_obj
+    else:
+        obj.close()
+        return(filename)

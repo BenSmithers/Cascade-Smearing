@@ -15,8 +15,9 @@ import os
 def make_meta_flux(params, do_mc = False):
     # look for the atmospheric fluxes. These should all be pre-generated 
     print("Loading Fluxes at {}".format(params))
-
-    atmo_data = raw_flux(params, as_data=True)
+    kwargs = {}
+    kwargs["as_data"]=True
+    atmo_data = raw_flux(params,kwargs=kwargs)
     astr_data = generate_astr_flux(params, as_data=True)
 
     print("Calculating Expected Binned Flux at {}".format(params))
