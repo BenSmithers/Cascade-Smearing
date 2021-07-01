@@ -205,6 +205,8 @@ def generate_singly_diff_fluxes(n_bins,datafile=config["nu_flux"]):
     errs = {}
 
     for key in data.get_keys(): #flavor, current, interaction 
+        if "Mu_nu" in key:
+            continue
         fluxy, erry = do_for_key(event_edges,e_deposited_edges,key,data=data, angles=angle_edges)
         nuflux[key] = fluxy
         errs[key] = erry
