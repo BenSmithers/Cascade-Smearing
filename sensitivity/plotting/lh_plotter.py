@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 
 
-f = open("cummulative_probs.dat",'rb')
+f = open("../cummulative_probs.dat",'rb')
 obj = pickle.load(f)
 f.close()
 
@@ -25,14 +25,15 @@ chi2 = obj["chi2s"]
 old = False
 
 ps = [0.10] #, 0.01]
-chis = [-2*log(p) for p in ps]
+chis_l = [6.251, 11.345]
 
 labels = ["90%", "99%"]
 def set_lbls(ct_plot):
     fmt = {}
     for l,s in zip(ct_plot.levels, labels):
         fmt[l] = s
-    plt.clabel(ct_plot, ct_plot.levels, inline=True, fmt=fmt, fontsize=10)
+    loc = ((2.53,22.39), (5.0, 10.93))
+    plt.clabel(ct_plot, ct_plot.levels, inline=True, fmt=fmt, fontsize=10, manual=loc)
 
 evs = [1.0, 4.47,10.0]
 
@@ -40,7 +41,6 @@ def s2(theta):
     si = np.sin(2*theta)
     return si*si
 
-print(chis)
 for ev in evs:
     which_sliver = get_loc(ev, msqs)[0]
     chis = np.zeros(shape=(len(theta24s), len(theta34s)))
@@ -48,20 +48,20 @@ for ev in evs:
         for t34 in range(len(theta34s)):
             chis[t24][t34] = chi2[t24][t34][which_sliver]
 
-    plt.pcolormesh(theta24s*180/pi, theta34s*180/pi, chis.transpose(), vmin=0, vmax=10, cmap="PuBu")
+    plt.pcolormesh(theta24s*180/pi, theta34s*180/pi, chis.transpose(), vmin=0, vmax=18, cmap="PuBu")
     #plt.pcolormesh(s2(theta24s), s2(theta34s), chis.transpose(), vmin=0, vmax=10, cmap="PuBu")
     cbar = plt.colorbar(extend='max')
     cbar.set_label(r"-2$\Delta$LLH", size=14)
     #ct = plt.contour(s2(theta24s), s2(theta34s), chis.transpose(), levels=[-2*log(0.10), -2*log(0.01)], cmap='cool')   
-    ct = plt.contour(theta24s*180/pi, theta34s*180/pi, chis.transpose(), levels=[-2*log(0.10)], cmap='Oranges_r')   
-    set_lbls(ct)
-
+    ct = plt.contour(theta24s*180/pi, theta34s*180/pi, chis.transpose(), levels=chis_l, cmap='Oranges_r')   
     plt.title(r"90% CL Sensitivity with $\Delta m_{14}^{2}=$"+"{:.2f}".format(msqs[which_sliver]),size=16)
     plt.ylim([0,30])
     plt.xlim([0,30])
-    plt.text(10,25, "Smithers Preliminary", color="r",size=14)
+    set_lbls(ct)
+#    plt.text(10,25, "Smithers Preliminary", color="r",size=14)
     plt.xlabel(r"$\theta_{24}$ [deg]",size=14)
     plt.ylabel(r"$\theta_{34}$ [deg]",size=14)
+    plt.savefig("cascade_sens_{:.2f}.png".format(msqs[which_sliver]), dpi=400)
     plt.show()
 
 
@@ -72,10 +72,10 @@ for t24 in t24s:
     for t34 in range(len(theta34s)):
         for msq in range(len(msqs)):
             chis[msq][t34] = chi2[which_sliver][t34][msq]
-    plt.pcolormesh(msqs, theta34s*180/pi, chis.transpose(), vmin=0, vmax=10, cmap="PuBu")
+    plt.pcolormesh(msqs, theta34s*180/pi, chis.transpose(), vmin=0, vmax=12, cmap="PuBu")
     cbar = plt.colorbar(extend='max')
     cbar.set_label(r"-2$\Delta$LLH", size=14)
-    ct = plt.contour(msqs, theta34s*180/pi, chis.transpose(), levels=[-2*log(0.10), -2*log(0.01)], cmap='cool')   
+    ct = plt.contour(msqs, theta34s*180/pi, chis.transpose(), levels=chis_l, cmap='cool')   
     set_lbls(ct)
     plt.title(r"90% CL Sensitivity with $\theta_{24}=$"+"{:.2f}".format(theta24s[which_sliver]),size=16)
     plt.ylim([0,30])

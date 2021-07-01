@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 
 
-f = open("cummulative_probs.dat_from_mc",'rb')
+f = open("../cummulative_probs.dat_from_mc",'rb')
 obj = pickle.load(f)
 f.close()
 
@@ -57,10 +57,10 @@ chis = np.zeros(shape=(len(theta24s), len(msqs)))
 for t24 in range(len(theta24s)):
     for msq in range(len(msqs)):
         chis[t24][msq] = chi2[t24][0][msq]
-plt.pcolormesh(si2(theta24s), msqs, chis.transpose(), vmin=0, vmax=10, cmap=cmap)
+plt.pcolormesh(si2(theta24s), msqs, chis.transpose(), vmin=0, vmax=10, cmap="PuBu")
 cbar = plt.colorbar(extend='max')
 cbar.set_label(r"-2$\Delta$LLH", size=14)
-ct = plt.contour(si2(theta24s), msqs, chis.transpose(), levels=[-2*log(0.10)], cmap='cool')
+ct = plt.contour(si2(theta24s), msqs, chis.transpose(), levels=[-2*log(0.10)], cmap='Oranges_r')
 plt.xlim([0.001, 1])
 plt.ylim([0.01, 100])
 set_lbls(ct)
@@ -71,6 +71,7 @@ plt.title(r"90% CL Sensitivity from Tracks", size=14)
 plt.ylabel(r"$\Delta m_{14}^{2}$ [eV$^{2}$]",size=14)
 plt.xlabel(r"$\sin^{2}(2\theta_{24})$",size=14)
 plt.tight_layout()
+plt.savefig("track_sensitivity.png", dpi=400)
 plt.show()
 
 
