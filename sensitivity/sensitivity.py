@@ -196,6 +196,10 @@ if __name__=="__main__":
                         type=float, required=False,
                         default=0.0,
                         help="Value to use for delta-m squared for the expectation")
+    parser.add_argument("-l","--is_linear", dest="is_linear",
+                        type=str, required=False,
+                        default="",
+                        help="Is the point distribution linear? False means it's logarithmic with the sines")
     args = parser.parse_args()
     use_mc = str(args.is_mc).lower()=='true'
     th14 = args.th14
@@ -203,6 +207,11 @@ if __name__=="__main__":
     th34 = args.th34
     deltam = args.deltam
     use_syst = str(args.use_syst).lower()=="true"
+
+    if is_linear!="":
+        is_linear = str(args.is_linear).lower()=='true'
+    else:
+        is_linear = not use_mc
     expectation = SterileParams(theta03=th14, theta13=th24, theta23=th34, msq2=deltam)
 
     print("{}sing MC fluxes".format("U" if use_mc else "Not u"))
@@ -215,16 +224,20 @@ if __name__=="__main__":
     # We can either scan over all the files found, or just hard-code in the ones...
     hardcode = True
     if hardcode:
-
-
-        if use_mc:
-            theta34s = [0]
-            msqs = np.logspace(-2,2,40)
-            theta24s = np.arcsin(np.sqrt(np.logspace(-3,0, 100)))/2
-        else:
+        if is_linear:
             theta24s = np.linspace(0,0.5*pi, 90)
             theta34s = np.linspace(0,0.5*pi, 90)
             msqs = np.linspace(0,20,40)
+        else:
+            n_p = 100 if use_mc else 90 # I don't know why I did this...
+            min_s = -3 if use_mc else -2.5
+            if use_mc:
+                theta34s = [0]
+            else:
+                theta34s = np.arcsin(np.sqrt(np.logspace(min_s,0, n_p)))/2
+            msqs = np.logspace(-2,2,40)
+            theta24s = np.arcsin(np.sqrt(np.logspace(min_s,0, n_p)))/2
+
 
     likelihoods = [[0,0,0,0.0] for i in range(len(msqs)*len(theta24s)*len(theta34s))]
     chi2 = np.zeros(shape=(len(theta24s), len(theta34s), len(msqs)))
@@ -294,6 +307,8 @@ if __name__=="__main__":
                 "chi2s":chi2
             }
     suffix = "_from_mc" if use_mc else ""
+    suffix += "" if use_syst else "_nosys"
+
     filename = gen_filename(config["datapath"]+"/expectations/", "cummulative_probs"+suffix+".dat", expectation)
 
     f = open(filename,'wb')

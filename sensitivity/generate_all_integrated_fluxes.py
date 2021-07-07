@@ -44,7 +44,7 @@ def make_meta_flux(params, do_mc = False):
 
 if __name__=="__main__":
 
-    msqs = np.linspace(0,20,2)
+    msqs = np.logspace(-2,2,40)
     do_mc = False
 
     import sys
