@@ -531,7 +531,7 @@ class Data:
         data = np.loadtxt(location, dtype=float, comments='#',delimiter=' ')
         n_energies = 701
         n_angles = 100
-        self.livetime = 1.0 # 10*3600*24*365.
+        self.livetime = 1.0 
         GeV=1e9
         if not (len(data)==n_energies*n_angles):
             raise ValueError("Datafile length error? {}!={}".format(len(data), n_energies*n_angles))
@@ -563,7 +563,7 @@ class Data:
             # indexed like [energy_bin][angle_bin]
             # you may notice that NC and CC are treated as having separate fluxes, when really it'sthe same flux 
             #       this is for the most part okay since the interactions are rare enough that the fluxes are unchanged 
-            self._fluxes[ key ] = [[ data[energy+angle*n_energies][get_index(key, n_flavor)]*2*np.pi for angle in range(n_angles)] for energy in range(n_energies)]
+            self._fluxes[ key ] = [[ data[energy+angle*n_energies][get_index(key, n_flavor)] for angle in range(n_angles)] for energy in range(n_energies)]
     
     # define a few access functions to protect the important stuff 
     # the "@property" tag makes it so these are accessed like attributes, not functions! 
@@ -661,7 +661,7 @@ class Data:
                 x1 = self._energies[lower_boundary]
                 slope = (y2-y1)/(x2-x1)
 
-                flux_value += (energy*slope + y2 -x2*slope)*self._ang_width[angle_bin]
+                flux_value += (energy*slope + y2 -x2*slope)*self._ang_width[angle_bin]*2*np.pi
             return(flux_value)
         else:   
         #bilinear_interp(p0, p1, p2, q11, q12, q21, q22):
