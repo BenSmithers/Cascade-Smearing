@@ -20,6 +20,8 @@ from cascade.sensitivity.systematic_unc import ice_grad_0, ice_grad_1
 
 from cascade.sensitivity.generate_all_integrated_fluxes import make_meta_flux
 
+from cascade.sensitivity.load_expectation import load as loade
+
 from math import sqrt, pi, exp, log
 from math import lgamma
 twopi = sqrt(2/pi)
@@ -68,44 +70,48 @@ class _generic_LLHMachine:
         self._configure()
 
     def set_expectation(self, f_expect, scale_to_n_years=None):
-        self.f_name = f_expect
+        """
+        Changes all the preconfigured expectations, but doesn't change the systematic sources of error 
+        That'd be a bit too computationally expensive 
+        """
+        if isinstance(f_expect, str):
+            self.f_name = f_expect
 
-        f = open(self.f_name, 'rb')
-        self.expectation = pickle.load(f)
-        f.close()
+            f = open(self.f_name, 'rb')
+            self.expectation = pickle.load(f)
+            f.close()
+        elif isinstance(f_expect, dict):
+            self.expectation = f_expect
+        else:
+            raise TypeError("Don't know what to do with a {}".format(type(f_expect)))
         
+        err = self.expectation["event_rate"]
         # distinctly add up the plus/minus errors in quadrature 
         if scale_to_n_years is not None:
             if not isinstance(scale_to_n_years, (int, float)):
                 raise TypeError("Expected {} or {}, got {}".format(int, float, type(scale_to_n_years)))
 
-            err = self.expectation["stat_err"]*self.expectation["stat_err"]
             if self.use_mc:
                 err = err*scale_to_n_years/8.
-                self.expectation*=scale_to_n_years/8.
+                self.expectation["event_rate"]*=scale_to_n_years/8.
             else:
                 err = err*scale_to_n_years/10. 
-                self.expectation*=scale_to_n_years/10.
-            err = sqrt(err)
+                self.expectation["event_rate"]*=scale_to_n_years/10.
 
-        else:
-            err = self.expectation["stat_err"]
-
+        err = np.sqrt(err)
         self._net_error_m_stat = err
         self._net_error_p_stat = err
 
 
     def _configure(self, scale_to_n_years=None):
-        self.set_expectation(self.f_nane, scale_to_n_years)
+        self.set_expectation(self.f_name, scale_to_n_years)
         
         if self._use_systematics:
             #showplot(self.expectation, self.astr_norm_shift, "Astro Norm")
             self.astr_gamma_shift = astro_shift_unc(use_mc=self.use_mc)
             #showplot(self.expectation, self.astr_gamma_shift, "Astro Gamma")
 
-            self.cr_norm_shift = cr_perturb(dnorm=0.05, use_mc = self.use_mc)
             self.cr_gamma_shift = cr_perturb(dgamma=0.012, use_mc = self.use_mc)
-            #showplot(self.expectation, self.cr_norm_shift, "CR Norm")
             #showplot(self.expectation, self.cr_gamma_shift, "CR Gamma")
 
             self.ice_grad_0 = ice_grad_0(self.expectation)
@@ -114,12 +120,15 @@ class _generic_LLHMachine:
             #showplot(self.expectation, self.ice_grad_1, "Icegrad 1")
 
             self._net_error_m_sys = self.astr_gamma_shift[0]**2
-            self._net_error_m_sys = self._net_error_m  + self.cr_gamma_shift[0]**2 + self.ice_grad_0[0]**2 + self.ice_grad_1[0]**2
-            self._net_error_m_sys = np.sqrt(self._net_error_m)
+            self._net_error_m_sys = self._net_error_m_sys  + self.cr_gamma_shift[0]**2 + self.ice_grad_0[0]**2 + self.ice_grad_1[0]**2
+            self._net_error_m_sys = np.sqrt(self._net_error_m_sys)
 
             self._net_error_p_sys = self.astr_gamma_shift[1]**2
-            self._net_error_p_sys = self._net_error_p  + self.cr_gamma_shift[1]**2 + self.ice_grad_0[1]**2 + self.ice_grad_1[1]**2
-            self._net_error_p_sys = np.sqrt(self._net_error_p)
+            self._net_error_p_sys = self._net_error_p_sys  + self.cr_gamma_shift[1]**2 + self.ice_grad_0[1]**2 + self.ice_grad_1[1]**2
+            self._net_error_p_sys = np.sqrt(self._net_error_p_sys)
+        else:
+            self._net_error_m_sys = np.zeros(shape=np.shape(self._net_error_m_stat))
+            self._net_error_p_sys = np.zeros(shape=np.shape(self._net_error_p_stat))
  
     @property
     def _net_error_p(self):
@@ -171,7 +180,7 @@ class _generic_LLHMachine:
         if our_expected==0.0:
             return 0.0
 
-        if bflux<expected:
+        if bflux<our_expected:
             sigma = np.sqrt(our_expected + sum(self._net_error_m_sys[i_e]**2))
         else:
             sigma = np.sqrt(our_expected + sum(self._net_error_p_sys[i_e]**2))
@@ -230,7 +239,7 @@ class LLHMachine(_generic_LLHMachine):
 
 class LLHMachine_Data(_generic_LLHMachine):
     def __init__(self):
-        self.f_name = os.path.join(config["datapath"],"/expected_fluxes_reco/", "data_likelihoods.dat")
+        self.f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux.dat", expectation)
         self.use_mc = False
         _generic_LLHMachine.__init__(self, SterileParams(), True, flatten=True)
 
@@ -270,6 +279,9 @@ if __name__=="__main__":
     parser.add_argument("-f", "--flatten", required=False, dest="flatten",
                         type=str, default="False",
                         help="Flatten along the cos-theta axis")
+    parser.add_argument("--compare", dest="compare",
+                        type=str, default="False",
+                        help="Load the data file and get actual results?")
     args = parser.parse_args()
     use_mc = str(args.is_mc).lower()=='true'
     th14 = args.th14
@@ -281,7 +293,16 @@ if __name__=="__main__":
         is_linear = str(args.is_linear).lower()=='true'
     else:
         is_linear = not use_mc
-    flatten = str(args.flatten).lower=="true" 
+    flatten = str(args.flatten).lower()=="true" 
+    compare = str(args.compare).lower()=="true"
+    
+    true_data = {}
+    if compare:
+        flatten = True
+        use_mc = False
+        true_data["e_edges"]= np.logspace(2,7,29)
+        true_data["event_rate"] = loade()
+
     expectation = SterileParams(theta03=th14, theta13=th24, theta23=th34, msq2=deltam)
 
     print("{}sing MC fluxes".format("U" if use_mc else "Not u"))
@@ -291,7 +312,10 @@ if __name__=="__main__":
     print("{}lattening".format("F" if flatten else "Not f"))
 
     # we will now build up an llh machine, and build up all the likelihood values 
-    likelihooder = LLHMachine_from_mc(expectation, use_syst) if use_mc else LLHMachine(expectation,use_syst)
+    if compare:
+        likelihooder = LLHMachine_Data()
+    else:
+        likelihooder = LLHMachine_from_mc(expectation, use_syst) if use_mc else LLHMachine(expectation,use_syst)
     print("Built Likelihooder")
 
     # We can either scan over all the files found, or just hard-code in the ones...
@@ -315,40 +339,53 @@ if __name__=="__main__":
     likelihoods = [[0,0,0,0.0] for i in range(len(msqs)*len(theta24s)*len(theta34s))]
     chi2 = np.zeros(shape=(len(theta24s), len(theta34s), len(msqs)))
 
+    central_chi = 0.0
+
     f_name_init = "expected_flux_from_mc.dat" if use_mc else "expected_flux.dat"
-    f = open(gen_filename(config["datapath"]+"/expected_fluxes_reco/", f_name_init, expectation),'rb')
-    central_chi = -2*likelihooder.get_llh(pickle.load(f))
-    f.close()
+    if not compare:
+        f = open(gen_filename(config["datapath"]+"/expected_fluxes_reco/", f_name_init, expectation),'rb')
+        central_chi = -2*likelihooder.get_llh(pickle.load(f))
+        f.close()
+    else:
+        likelihooder.set_expectation(true_data)
+        central_chi = -2*likelihooder.get_llh(true_data)
 
     skipped = 0
     found = 0
     for th24 in range(len(theta24s)):
         for th34 in range(len(theta34s)):
             for msq in range(len(msqs)):
-                pam = SterileParams(theta13=theta24s[th24], theta23=theta34s[th34], msq2=msqs[msq])
 
+                pam = SterileParams(theta13=theta24s[th24], theta23=theta34s[th34], msq2=msqs[msq])
                 f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", f_name_init, pam)
+                
                 index = th24 + th34*len(theta24s) + msq*len(theta24s)*len(theta34s)
                 if (skipped+found)%2000==0:
                     print("Skipped {}, Found {}".format(skipped, found))
 
+                # this was implemented when only half of the fluxes were done running.
                 if not os.path.exists(f_name):
                     skipped+=1 
                     likelihoods[index][3] = 0.0
                     chi2[th24][th34][msq] = 1e8 #arbitrarily big...
                 else:
-                    f = open(f_name, 'rb')
-                    try:
-                        flux = pickle.load(f)
-                    except EOFError:
-                        likelihoods[index][3] = 0.0
-                        chi2[th24][th34][msq] = 1e8 #arbitrarily big...
-                        continue
                     found += 1
+                    if compare: #here, we have a data file with the measurement. So we use the available fluxes as an expectation 
+                        likelihooder.set_expectation(f_name, 2.0)
+                        llh = likelihooder.get_llh(true_data)
+                    else:
+                        f = open(f_name, 'rb')
+                        try:
+                            flux = pickle.load(f)
+                        except EOFError:
+                            likelihoods[index][3] = 0.0
+                            chi2[th24][th34][msq] = 1e8 #arbitrarily big...
+                            continue
 
-                    f.close()
 
-                    llh = likelihooder.get_llh(flux)
+                        f.close()
+                        llh = likelihooder.get_llh(flux)
+
                     likelihoods[index][3] = exp(llh)
                     chi2[th24][th34][msq] = -2*llh-central_chi
                    
@@ -366,9 +403,11 @@ if __name__=="__main__":
         sorted_likelihoods[i][3] = sorted_likelihoods[i][3]/total_likelihood
 
     # make a bunch of cummulative probabilities 
+    running_total = 0.0
     c_prob = np.zeros(shape=(len(theta24s), len(theta34s), len(msqs)))
     for entry in sorted_likelihoods:
-        c_prob[entry[0]][entry[1]][entry[2]] = entry[3]
+        running_total = running_total + entry[3]
+        c_prob[entry[0]][entry[1]][entry[2]] = running_total
      
     
 
@@ -380,9 +419,15 @@ if __name__=="__main__":
                 "c_prob":c_prob,
                 "chi2s":chi2
             }
-    suffix = "_from_mc" if use_mc else ""
+
+    if not compare:
+        suffix = "_from_mc" if use_mc else ""
+        suffix += "_flat" if flatten else ""
+    else:
+        suffix = "_compare"
     suffix += "" if use_syst else "_nosys"
-    suffix += "" if flatten else "_flat"
+
+
     filename = gen_filename(config["datapath"]+"/expectations/", "cummulative_probs"+suffix+".dat", expectation)
     print("Writing Sensitivity File to {}".format(filename))
     f = open(filename,'wb')
