@@ -17,6 +17,7 @@ energy_bins = 121
 import numpy as np # the zeros function
 
 from math import pi, acos, log10 # simple math things 
+from math import asin, sin
 import os # filename and datapath stuff 
 
 from cascade.utils import gen_filename, SterileParams
@@ -88,10 +89,14 @@ def get_initial_state(energies, zeniths, n_nu, kwargs):
                 primary_model = (crf.HillasGaisser2012, 'H3a'),
                 theta_deg = 0.
                 )
+
+        r_e = 6.378e6 # meters
+        ic_depth = 1.5e3 # meters 
         mag = 0. # power energy is raised to and then used to scale the flux
         for angle_bin in range(angular_bins):
-            # now we do the thingy for the 
-            angle_deg = 180. - (acos(zeniths[angle_bin])*180./pi)
+            # get the MCEq angle from the icecube zenith angle 
+            angle_deg = asin(sin(pi-acos(zeniths[angle_bin]))*(r_e-ic_depth)/r_e)
+            angle_deg = angle_deg*180./pi
             if angle_deg > 180.:
                 angle_deg = 180.
 
@@ -161,12 +166,12 @@ def raw_flux(params, kwargs={}):
         if not isinstance(forced_filename, str):
             raise TypeError("Forced filename should be {}, or {}".format(str, None))
   
-    print("Generating Flux at {}")
+    print("Propagating Neutrinos at {}".format(params))
     n_nu = 4 
     Emin = 1.*un.GeV
     Emax = 10.*un.PeV
     cos_zenith_min = -0.999
-    cos_zenith_max = 0.
+    cos_zenith_max = 0.2
 
     use_earth_interactions = True
 

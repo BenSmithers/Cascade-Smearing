@@ -527,11 +527,10 @@ class Data:
         Creates a "flux" dictionary for each type of neutrino and interaction. This is in units of N/s/GeV/cm2/sr
         """
         location = os.path.join(config["datapath"], filename)
-        print("Extracting Data from {}".format(location))
+        print("Loading Neutrino Flux from {}".format(location))
         data = np.loadtxt(location, dtype=float, comments='#',delimiter=' ')
         n_energies = 701
-        n_angles = 100
-        self.livetime = 1.0 
+        n_angles = 101
         GeV=1e9
         if not (len(data)==n_energies*n_angles):
             raise ValueError("Datafile length error? {}!={}".format(len(data), n_energies*n_angles))
@@ -615,7 +614,7 @@ class Data:
                 raise TypeError("Expected {}, not {}".format(float, type(angle)))
         else:
             integrate = True
-            
+            raise NotImplementedError("This shouldn't be used. It is inaccurate")
 
 
         # check if it's outside the extents
@@ -661,6 +660,7 @@ class Data:
                 x1 = self._energies[lower_boundary]
                 slope = (y2-y1)/(x2-x1)
 
+                # TODO: this is missing the factor of sin(theta) in the jacobian 
                 flux_value += (energy*slope + y2 -x2*slope)*self._ang_width[angle_bin]*2*np.pi
             return(flux_value)
         else:   
