@@ -107,7 +107,13 @@ def quickload_full(filename):
 m2_to_cm2 = 100*100
 
 def build_flux_sad(*dataobjs):
-    file_dir = os.path.join(config["datapath"], "charm_search_supplemental", "effective areas")
+    # we have a cobalt location and a regular location
+    cobalt = os.environ.get("_CONDOR_SCRATCH_DIR")
+    if cobalt==None or cobalt=="" or cobalt==".":
+        file_dir = os.path.join(config["datapath"], "charm_search_supplemental", "effective areas")
+    else:
+        file_dir = os.path.join(cobalt, "data")
+
     flavors = ["e", "mu", "tau"]
     interactions=["cc", "nc"]
    

@@ -50,7 +50,7 @@ def make_meta_flux(params, do_mc = False, smeary=False):
 
 if __name__=="__main__":
 
-    msqs = np.logspace(-2,2,40)
+    msqs = np.concatenate(( np.array([0]), np.logspace(-2,2,40) ))
     do_mc = False
 
     import sys
@@ -73,10 +73,10 @@ if __name__=="__main__":
             raise ValueError("Unrecognized option {}".format(switchy))
         for msq in subset:
             pm = SterileParams(theta13=th24, theta23=th34, msq2=msq)
-            make_meta_flux(pm, do_mc)
+            make_meta_flux(pm, do_mc,smeary=True)
 
     else:
         for msq in msqs:
             pm = SterileParams(theta13=th24, theta23=th34, msq2=msq)
-            make_meta_flux(pm, do_mc)
+            make_meta_flux(pm, do_mc, smeary=True)
 
