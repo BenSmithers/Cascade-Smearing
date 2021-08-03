@@ -66,8 +66,11 @@ class _generic_LLHMachine:
         self._use_systematics=use_syst
         self._flatten = flatten
         if not os.path.exists(self.f_name):
+            print("Generating binned event rate at {}".format(expectation))
             make_meta_flux(expectation, self.use_mc)
         self._configure()
+        
+        print("Likelihood machine built with expectation at {}")
 
     def set_expectation(self, f_expect, scale_to_n_years=None):
         """
@@ -310,6 +313,7 @@ if __name__=="__main__":
     print("Using {} distribution of param points".format("linear" if is_linear else "logarithmic"))
     print("{}sing systematics".format("U" if use_syst else "Not u"))
     print("{}lattening".format("F" if flatten else "Not f"))
+    print("{}oing the comparison to the data".format("D" if compare else "Not d"))
 
     # we will now build up an llh machine, and build up all the likelihood values 
     if compare:
@@ -380,6 +384,7 @@ if __name__=="__main__":
                         except EOFError:
                             likelihoods[index][3] = 0.0
                             chi2[th24][th34][msq] = 1e8 #arbitrarily big...
+                            print("Error reading file {}".format(f_name))
                             continue
 
 

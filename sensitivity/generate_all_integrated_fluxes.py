@@ -1,5 +1,5 @@
 from cascade.sensitivity.astro_flux_generator import generate_astr_flux
-from cascade.sensitivity.eff_area_reader import build_flux 
+from cascade.sensitivity.eff_area_reader import build_flux, build_flux_sad 
 from cascade.sensitivity.make_from_mc import build_mc_flux 
 
 from cascade.utils import SterileParams, gen_filename, config
@@ -12,10 +12,12 @@ import pickle
 from time import time, localtime
 import os
 
-def make_meta_flux(params, do_mc = False):
+def make_meta_flux(params, do_mc = False, smeary=False):
+    """
+    This makes and saves 
+    """
     # look for the atmospheric fluxes. These should all be pre-generated 
     start = time() 
-    print("Loading Fluxes at {}".format(params))
     kwargs = {}
     kwargs["as_data"]=True
     atmo_data = raw_flux(params,kwargs=kwargs)
@@ -26,10 +28,14 @@ def make_meta_flux(params, do_mc = False):
     if do_mc:
         full_flux = build_mc_flux(atmo_data, astr_data)
     else:
-        full_flux = build_flux(atmo_data, astr_data) #dict 
+        if smeary:
+            full_flux = build_flux_sad(atmo_data, astr_data) #dict 
+        else:
+            full_flux = build_flux(atmo_data, astr_data) #dict 
     middle = time()
     # save the object
     suffix = "_from_mc" if do_mc else ""
+    suffix += "_smeared" if smeary else ""
     new_filename = gen_filename(config["datapath"]+ "/expected_fluxes_reco/", "expected_flux"+suffix+".dat", params)
     f = open(new_filename ,'wb')
     pickle.dump(full_flux, f, -1)
@@ -39,7 +45,7 @@ def make_meta_flux(params, do_mc = False):
     print("Flux Sim took {:.1f} seconds".format(middle-start))
     print("Saving took {:.3f} seconds".format(end-middle))
 
-
+    return full_flux
     
 
 if __name__=="__main__":

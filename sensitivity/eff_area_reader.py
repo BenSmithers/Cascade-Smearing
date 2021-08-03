@@ -3,7 +3,7 @@ import os
 from cascade.utils import Data, config
 from scipy.integrate import dblquad
 
-from math import pi 
+from math import pi, cos, sin
 
 def get_deets():
     filename = os.path.join(config["datapath"], "charm_search_supplemental/effective_area.nu_e.txt")
@@ -95,7 +95,7 @@ def quickload_full(filename):
                 for i_cth_r in range(n_cth_r):
                     true_i = i_e_t + n_true_e*(i_cth_t + n_cth_true*(i_e_d + n_dep_e*i_cth_r))
                     
-                    ldata[i_e_t][i_e_d][i_cth_t][i_cth_r] = data[true_i][8]
+                    ldata[i_e_t][i_e_d][i_cth_t][i_cth_r] += data[true_i][8]
     return  { 
             "e_reco":e_depo,
             "e_true":e_true,
@@ -110,55 +110,66 @@ def build_flux_sad(*dataobjs):
     file_dir = os.path.join(config["datapath"], "charm_search_supplemental", "effective areas")
     flavors = ["e", "mu", "tau"]
     interactions=["cc", "nc"]
+   
+    n_true_e = 100
+    n_cth_true = 10
+    n_dep_e = 20
+    n_cth_r = 2
     
-    casc_flux = np.zeros(shape=(20, 2)) 
+    casc_flux = np.zeros(shape=(n_dep_e,n_cth_r)) 
     print("Integrating Flux over bins") 
 
     def metaflux(energy, angle, key):
         net_f = 0.0
         for dobj in dataobjs:
-            net_f += dobj.get_flux((1e9)*energy, key, angle=np.cos(angle))*2*pi*np.sin(angle)
-        return net_f
+            net_f = net_f + dobj.get_flux((1e9)*energy, key, use_overflow=False, angle=cos(angle))
+        return net_f*2*pi*sin(angle)
     
     for flavor in flavors:
         for interaction in interactions:
             for barness in ["","_bar"]:
-                comb_flav = flavor+barness
-                filename = "effective_area.per_bin.nu_{}.{}.cascade.txt".format(comb_flav, interaction)
-                area_data= quickload_full(os.path.join(file_dir, filename))
-                
-                flux=area_data["data"]
-                e_reco = area_data["e_reco"]
-                e_true = area_data["e_true"]
-                cth_true = area_data["cth_true"]
-                cth_reco = area_data["cth_reco"]
-                true_ang = np.arccos(cth_true)
+                for topo in ["cascade"]: # optionally add in the tracks!
+                    comb_flav = flavor+barness
+                    filename = "effective_area.per_bin.nu_{}.{}.{}.txt".format(comb_flav, interaction,topo)
+                    area_data= quickload_full(os.path.join(file_dir, filename))
+                    
+                    eff_area=area_data["data"]
+                    e_reco = area_data["e_reco"]
+                    e_true = area_data["e_true"]
+                    cth_true = area_data["cth_true"]
+                    cth_reco = area_data["cth_reco"]
+                    true_ang = np.arccos(cth_true)
 
-                curr = interaction.upper()
-                flav=flavor[0].upper() + flavor[1:].lower()
-                nu="nu" if barness=="" else "nuBar"
-                key = "_".join([flav, nu, curr])
+                    curr = interaction.upper()
+                    flav=flavor[0].upper() + flavor[1:].lower()
+                    nu="nu" if barness=="" else "nuBar"
+                    key = "_".join([flav, nu, curr])
+                    print("On key {}, fname {}".format(key, filename))
 
-                if flav=="Mu" and curr.lower()=="cc":
-                    continue
-                for i_e_d in range(len(e_reco)-1):
-                    for i_e_t in range(len(e_true)-1):
-                        for i_cth_t in range(len(cth_true)-1):
-                            for i_cth_r in range(len(cth_reco)-1):
-                                flux_integrated = dblquad(lambda energy, angle: metaflux(energy, angle, key), a=true_ang[i_cth_t+1], b=true_ang[i_cth_t], gfun=e_true[i_e_t], hfun=e_true[i_e_t+1])[0]
-                                
-                                casc_flux[i_e_d][i_cth_r] += flux[i_e_t][i_e_d][i_cth_t][i_cth_r]*m2_to_cm2*flux_integrated
-        livetime_ratio = 1.0
-        seconds_up = livetime_ratio*10*3600*24*365
-        casc_flux = casc_flux*seconds_up
-        casc_err = np.sqrt(casc_flux)
+                    for i_e_t in range(n_true_e):
+                        for i_cth_t in range(n_cth_true):
+                            # integrate the flux over incoming energy and angles 
+                            #flux_integrated = dblquad(lambda energy, angle: metaflux(energy, angle, key), a=cth_true[i_cth_t], b=cth_true[i_cth_t+1], gfun=e_true[i_e_t], hfun=e_true[i_e_t+1])[0]
 
-        return {
-                "e_edges":e_reco,
-                "a_edges":cth_reco,
-                "event_rate":casc_flux,
-                "stat_err":casc_err
-               }
+                            flux_integrated = dblquad(lambda energy, angle: metaflux(energy, angle, key), a=true_ang[i_cth_t+1], b=true_ang[i_cth_t], gfun=e_true[i_e_t], hfun=e_true[i_e_t+1])[0]
+
+                            for i_e_d in range(n_dep_e):
+                                for i_cth_r in range(n_cth_r):                             
+                                    # should be in units of [s^-1] now
+                                    casc_flux[i_e_d][i_cth_r] = casc_flux[i_e_d][i_cth_r] + eff_area[i_e_t][i_e_d][i_cth_t][i_cth_r]*m2_to_cm2*flux_integrated
+
+
+    livetime_ratio = 1.0
+    seconds_up = livetime_ratio*10.*3600.*24.*365
+    casc_flux = casc_flux*seconds_up
+    casc_err = np.sqrt(casc_flux)
+
+    return {
+            "e_edges":e_reco,
+            "a_edges":cth_reco,
+            "event_rate":casc_flux,
+            "stat_err":casc_err
+           }
 
 def build_flux(*dataobjs):
     file_dir = os.path.join(config["datapath"], "charm_search_supplemental/")
@@ -174,8 +185,8 @@ def build_flux(*dataobjs):
         net_f = 0.0
         for dobj in dataobjs:
             # the Data objects already 
-            net_f += dobj.get_flux((1e9)*energy, key, angle=np.cos(angle))*np.sin(angle)
-        return net_f
+            net_f = net_f + dobj.get_flux((1e9)*energy, key, angle=np.cos(angle))
+        return net_f*2*pi #*np.sin(angle)
     
 
 
@@ -199,11 +210,11 @@ def build_flux(*dataobjs):
                     continue
                 for i_e in range(len(casc_flux)):
                     for i_cth in range(len(casc_flux[i_e])):
-                        if np.cos(angles[i_cth])>0.2:
+                        if cos(angles[i_cth])>0.0:
                             continue
                         
-                        flux_integrated = dblquad( lambda energy, angle: metaflux(energy, angle, key), a=angles[i_cth+1], b=angles[i_cth],gfun=energies[i_e], hfun=energies[i_e+1] )[0]
-                        
+                        flux_integrated = dblquad( lambda energy, angle: metaflux(energy, angle, key), a=angles[i_cth+1], b=angles[i_cth],gfun=energies[i_e], hfun=energies[i_e+1] )[0] # double counting cc/nc
+                         
                         
                         casc_flux[i_e][i_cth] += area_data["data"][i_e][i_cth]*m2_to_cm2*flux_integrated
                         casc_err[i_e][i_cth] += (area_data["err"][i_e][i_cth]*m2_to_cm2*flux_integrated)**2
