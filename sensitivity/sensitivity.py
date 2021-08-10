@@ -56,7 +56,16 @@ def showplot(exp, thing, title):
     plt.show()
 
 class _generic_LLHMachine:
-    def __init__(self, expectation=SterileParams(), use_syst=True, flatten=False):
+    """
+    This is the main driver for doing the LLH sensitivity scans 
+        - expectation: the flux we expect at a given SterileParameter point 
+        - flux: what flux is measured 
+
+    The expectation should be configured (this is done in construction) during construction by specifying a SterileParameter point 
+
+    Later, you can then re-configure it to a new expectation by sending in a filename or expectation dict 
+    """
+    def __init__(self, expectation=SterileParams(), use_syst=True, flatten=False, smearmode=False):
         if not isinstance(expectation, SterileParams):
             raise TypeError("Expected {}, got {}".format(SterileParams, type(expectation)))
         if not isinstance(use_syst, bool):
@@ -65,9 +74,10 @@ class _generic_LLHMachine:
             raise TypeError("Expected {}, got {}".format(bool, type(flatten)))
         self._use_systematics=use_syst
         self._flatten = flatten
+        self._smearmode = smearmode
         if not os.path.exists(self.f_name):
             print("Generating binned event rate at {}".format(expectation))
-            make_meta_flux(expectation, self.use_mc)
+            make_meta_flux(expectation, self.use_mc, smearmode)
         self._configure()
         
         print("Likelihood machine built with expectation at {}")
@@ -111,10 +121,10 @@ class _generic_LLHMachine:
         
         if self._use_systematics:
             #showplot(self.expectation, self.astr_norm_shift, "Astro Norm")
-            self.astr_gamma_shift = astro_shift_unc(use_mc=self.use_mc)
+            self.astr_gamma_shift = astro_shift_unc(use_mc=self.use_mc, smearmode=self._smearmode)
             #showplot(self.expectation, self.astr_gamma_shift, "Astro Gamma")
 
-            self.cr_gamma_shift = cr_perturb(dgamma=0.012, use_mc = self.use_mc)
+            self.cr_gamma_shift = cr_perturb(dgamma=0.012, use_mc = self.use_mc, smearmode=self._smearmode)
             #showplot(self.expectation, self.cr_gamma_shift, "CR Gamma")
 
             self.ice_grad_0 = ice_grad_0(self.expectation)
@@ -167,7 +177,7 @@ class _generic_LLHMachine:
         """
         llh = 0.0
         for i_e in range(len(self.expectation["e_edges"])-1):
-            if self._flatten:
+            if self._flatten or self._smearmode:
                 llh += self._eval_llh_bin_flat(i_e, norm*sum(flux["event_rate"][i_e]))
             else:
                 for i_cth in range(len(self.expectation["a_edges"])-1):
@@ -178,15 +188,24 @@ class _generic_LLHMachine:
         """
         Same as before, but we're flattening along the angular bins
         """
-        our_expected = sum(self.expectation["event_rate"][i_e])
+        if self._smearmode:
+            our_expected = self.expectation["event_rate"][i_e][0] # don't use the down-going bin! 
+        else:
+            our_expected = sum(self.expectation["event_rate"][i_e])
 
         if our_expected==0.0:
             return 0.0
 
-        if bflux<our_expected:
-            sigma = np.sqrt(our_expected + sum(self._net_error_m_sys[i_e]**2))
+        if self._smearmode:
+            if bflux<our_expected:
+                sigma = np.sqrt(our_expected + self._net_error_m_sys[i_e][0]**2)
+            else:
+                sigma = np.sqrt(our_expected + self._net_error_p_sys[i_e][0]**2)
         else:
-            sigma = np.sqrt(our_expected + sum(self._net_error_p_sys[i_e]**2))
+            if bflux<our_expected:
+                sigma = np.sqrt(our_expected + sum(self._net_error_m_sys[i_e]**2))
+            else:
+                sigma = np.sqrt(our_expected + sum(self._net_error_p_sys[i_e]**2))
 
         if sigma<0:
             raise ValueError("Found negative sigma {}".format(sigma))
@@ -235,16 +254,17 @@ class LLHMachine_from_mc(_generic_LLHMachine):
         _generic_LLHMachine.__init__(self, expectation, use_syst, flatten)
 
 class LLHMachine(_generic_LLHMachine):
-    def __init__(self, expectation=SterileParams(), use_syst=True, flatten=False):
-        self.f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux.dat", expectation)
+    def __init__(self, expectation=SterileParams(), use_syst=True, flatten=False, smearmode=False):
+        suffix = "_smeared" if smearmode else ""
+        self.f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux{}.dat".format(suffix), expectation)
         self.use_mc = False
-        _generic_LLHMachine.__init__(self, expectation, use_syst, flatten)
+        _generic_LLHMachine.__init__(self, expectation, use_syst, flatten, smearmode)
 
 class LLHMachine_Data(_generic_LLHMachine):
     def __init__(self):
-        self.f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux.dat", expectation)
+        self.f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux.dat", SterileParams())
         self.use_mc = False
-        _generic_LLHMachine.__init__(self, SterileParams(), True, flatten=True)
+        _generic_LLHMachine.__init__(self, SterileParams(), use_syst=True, flatten=True)
 
 
 
@@ -282,15 +302,19 @@ if __name__=="__main__":
     parser.add_argument("-f", "--flatten", required=False, dest="flatten",
                         type=str, default="False",
                         help="Flatten along the cos-theta axis")
-    parser.add_argument("--compare", dest="compare",
+    parser.add_argument("--smear", required=False, dest="smear",
                         type=str, default="False",
-                        help="Load the data file and get actual results?")
+                            help="Are we doing the smearing this time?")
+    parser.add_argument("--compare", dest="compare",
+                            type=str, default="False",
+                            help="Load the data file and get actual results?")
     args = parser.parse_args()
     use_mc = str(args.is_mc).lower()=='true'
     th14 = args.th14
     th24 = args.th24
     th34 = args.th34
     deltam = args.deltam
+    smear = str(args.smear).lower()=='true'
     use_syst = str(args.use_syst).lower()=="true"
     if args.is_linear!="":
         is_linear = str(args.is_linear).lower()=='true'
@@ -305,9 +329,13 @@ if __name__=="__main__":
         use_mc = False
         true_data["e_edges"]= np.logspace(2,7,29)
         true_data["event_rate"] = loade()
+    
+    if smear:
+        flatten = True
+        use_mc = False
 
     expectation = SterileParams(theta03=th14, theta13=th24, theta23=th34, msq2=deltam)
-
+    print("{}mearing".format("S" if smear else "Not s"))
     print("{}sing MC fluxes".format("U" if use_mc else "Not u"))
     print("Using expectation {}".format(expectation))
     print("Using {} distribution of param points".format("linear" if is_linear else "logarithmic"))
@@ -317,9 +345,13 @@ if __name__=="__main__":
 
     # we will now build up an llh machine, and build up all the likelihood values 
     if compare:
+        print("Here in the compary bit")
         likelihooder = LLHMachine_Data()
     else:
-        likelihooder = LLHMachine_from_mc(expectation, use_syst) if use_mc else LLHMachine(expectation,use_syst)
+        if smear:
+            likelihooder = LLHMachine(expectation, use_syst, flatten, smear)
+        else:
+            likelihooder = LLHMachine_from_mc(expectation, use_syst) if use_mc else LLHMachine(expectation,use_syst)
     print("Built Likelihooder")
 
     # We can either scan over all the files found, or just hard-code in the ones...
@@ -332,6 +364,8 @@ if __name__=="__main__":
         else:
             n_p = 100 if use_mc else 90 # I don't know why I did this...
             min_s = -3 if use_mc else -2.5
+            if smear:
+                min_s = -3
             if use_mc:
                 theta34s = [0]
             else:
@@ -339,13 +373,23 @@ if __name__=="__main__":
             msqs = np.logspace(-2,2,40)
             theta24s = np.arcsin(np.sqrt(np.logspace(min_s,0, n_p)))/2
 
+            if smear:
+                def add_zero(arr):
+                    return np.concatenate(( np.array([0]), arr))
+
+                theta34s = add_zero(theta34s)
+                theta24s = add_zero(theta24s)
+                msqs = add_zero(msqs)
+
 
     likelihoods = [[0,0,0,0.0] for i in range(len(msqs)*len(theta24s)*len(theta34s))]
     chi2 = np.zeros(shape=(len(theta24s), len(theta34s), len(msqs)))
 
     central_chi = 0.0
-
-    f_name_init = "expected_flux_from_mc.dat" if use_mc else "expected_flux.dat"
+    if smear:
+        f_name_init = "expected_flux_smeared.dat"
+    else:
+        f_name_init = "expected_flux_from_mc.dat" if use_mc else "expected_flux.dat"
     if not compare:
         f = open(gen_filename(config["datapath"]+"/expected_fluxes_reco/", f_name_init, expectation),'rb')
         central_chi = -2*likelihooder.get_llh(pickle.load(f))
@@ -374,8 +418,15 @@ if __name__=="__main__":
                     chi2[th24][th34][msq] = 1e8 #arbitrarily big...
                 else:
                     found += 1
-                    if compare: #here, we have a data file with the measurement. So we use the available fluxes as an expectation 
-                        likelihooder.set_expectation(f_name, 2.0)
+                    if compare: #here, we have a data file with the measurement. So we use the available fluxes as an expectation
+                        try:
+                            likelihooder.set_expectation(f_name, 641./365)
+                        except EOFError:
+                            likelihoods[index][3] = 0.0
+                            chi2[th24][th34][msq] = 1e8 #arbitrarily big...
+                            print("Error reading file {}".format(f_name))
+                            continue
+
                         llh = likelihooder.get_llh(true_data)
                     else:
                         f = open(f_name, 'rb')
@@ -414,7 +465,8 @@ if __name__=="__main__":
         running_total = running_total + entry[3]
         c_prob[entry[0]][entry[1]][entry[2]] = running_total
      
-    
+    if compare:
+        chi2 = chi2 - np.min(chi2)
 
     likelihood_dict = {
                 "theta24s":theta24s,
@@ -430,6 +482,11 @@ if __name__=="__main__":
         suffix += "_flat" if flatten else ""
     else:
         suffix = "_compare"
+        if not is_linear:
+            suffix+="_nolog"
+
+    suffix+= "_smear" if smear else ""
+
     suffix += "" if use_syst else "_nosys"
 
 
