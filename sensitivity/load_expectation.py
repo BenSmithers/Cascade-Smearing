@@ -29,7 +29,9 @@ def load(debug=False, e_edges = np.logspace(2,9,29)):
     n_tracks = 0
     n_cascades = 0
 
-    e_edges = np.logspace(2,8,21)
+    e_edges = np.logspace(2,7,29)
+    #e_edges = np.logspace(2,8,21)
+
     occupation = np.zeros(shape=(len(e_edges)-1, 2))
     # one bin in cth 
     for event in data:
@@ -40,7 +42,7 @@ def load(debug=False, e_edges = np.logspace(2,9,29)):
             n_cascades += 1
         # we have the direction the particles came from stored. 
         # Not the direction they are going! 
-        cth = cos((pi/2) - float(event[7])*pi/180 )
+        cth = cos((pi/2) + float(event[7])*pi/180 )
         energy = float(event[3])*1e3 # TeV->GeV 
         if cth<0.2:
             n_below+=1
@@ -49,7 +51,7 @@ def load(debug=False, e_edges = np.logspace(2,9,29)):
             occupation[i_bin][0]+=1
         else:
             n_above+=1
-            occupation[i_bin][1]+=1
+#            occupation[i_bin][1]+=1
     print("Found {} tracks, {} cascades; {} below".format(n_tracks, n_cascades, n_below))
     if debug:
         return occupation
