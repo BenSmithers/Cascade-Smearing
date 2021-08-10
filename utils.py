@@ -1,4 +1,4 @@
-from math import sqrt, log10, pi
+from math import sqrt, log10, pi, exp
 
 import os
 import numpy as np
@@ -7,6 +7,10 @@ import sys
 import json # config file 
 import pickle 
 from glob import glob # grabs all the files! 
+from numbers import Number
+from scipy.integrate import quad
+
+sqtwo = 1/sqrt(2*pi)
 
 """
 Ben Smithers
@@ -39,6 +43,26 @@ def pathmaker(path):
             if not os.path.exists(working):
                 os.mkdir(working)
 
+def make_bin_probs(cdf, bin_edges):
+    """
+    We find the binned likelihoods based on a binned gaussian distribution. 
+
+    As in, if we sample some quantity with a gaussian distribution centered at MEAN with a width SIGMA,
+    return the odds it will be measured in each of the bins defined by BIN_EDGES
+    """
+    
+
+    if not isinstance(bin_edges, (list, tuple, np.ndarray)):
+        raise TypeError()
+    if len(bin_edges)<2:
+        raise ValueError()
+
+    occupation = np.zeros(len(bin_edges)-1)
+    
+    for i in range(len(occupation)):
+        occupation[i] = quad(cdf, a=bin_edges[i], b=bin_edges[i+1])[0]
+    
+    return occupation
 
 def backup(filename):
     """
@@ -579,7 +603,7 @@ class Data:
     def fluxes(self):
         return(self._fluxes) 
 
-    def get_keys(self):
+    def get_keys(self, just_casc = False, just_tracks=False):
         """
         Returns a list of all the keys in the dictionary of fluxes 
         """
@@ -587,6 +611,10 @@ class Data:
         for flav in self.flavors:
             for neut in self.neuts:
                 for curr in self.currents:
+                    if just_casc and (flav.lower()=="mu" and curr.lower()=="cc"):
+                        continue
+                    elif just_tracks and not (flav.lower()=="mu" and curr.lower()=="cc"):
+                        continue
                     key = flav+'_'+neut + '_'+curr
                     keys.append(key)
         return(keys)
