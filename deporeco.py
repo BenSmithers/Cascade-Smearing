@@ -1,4 +1,4 @@
-from math import exp, sqrt, pi, log, acos, log10, sinh, sin
+from math import exp, sqrt, pi, log, acos, log10, sinh, sin, cos
 import numpy as np
 import os
 from cascade.utils import bhist, get_loc, get_closest, config
@@ -171,10 +171,9 @@ class KappaGrabba(Calculable):
     This object calculates the smearing factor "kappa" for a bunch of possible angular errors, then saves them in a data file 
     """
     def __init__(self):
-        self.numb = 100
+        self.numb = 1000
 
-        self.rad_range = np.linspace(5*pi/180., pi/2,self.numb)
-        self.czen_range = np.cos(self.rad_range)
+        self.czen_range = np.linspace(-0.99,0.99,self.numb)
 
         Calculable.__init__(self)
         
@@ -187,18 +186,18 @@ class KappaGrabba(Calculable):
         Should only be called once ever. This calculates all the kappa values! 
         """
         print("Generating Kappas for Angular uncertainty")
-        kappas = np.zeros(shape=np.shape(self.rad_range))
+        kappas = np.zeros(shape=np.shape(self.czen_range))
 
-        for i_czenith in range(len(self.czen_range)):
-            czenith = self.czen_range[i_czenith]
+        for i_ang in range(len(self.czen_range)):
+            czenith =  self.czen_range[i_ang]
             def funct(kappa):
                 if kappa<=0:
-                    return(100000)
+                    return(1e6)
                 else:
                     return (exp(kappa) - exp(kappa*czenith))/(2*sinh(kappa)) - 0.5
             
             soln = opt.root(funct, np.array([10.]))
-            kappas[i_czenith] = soln.x[0]
+            kappas[i_ang] = soln.x[0]
 
         return(kappas)
 
@@ -208,16 +207,9 @@ class KappaGrabba(Calculable):
         """
         if not isinstance(rad_error, (int, float)):
             raise TypeError("Receied invalid datatype for rad error: {}".format(type(rad_error)))
-        try:
-            value = get_closest(rad_error, self.rad_range, self.obj)
-            return(value)
-        except ValueError: # angle too far a way 
-            if rad_error <= (5*pi/180.):
-                return(max(self.obj))
-            elif rad_error>=(pi/2):
-                return(min(self.obj))
-            else:
-                raise Exception("Not sure how to work with {}".format(rad_error))
+        
+        value = get_closest(cos(rad_error), self.czen_range, self.obj)
+        return(value)
 
 kappaCalc = KappaGrabba()
 
