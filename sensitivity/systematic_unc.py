@@ -14,7 +14,7 @@ from cascade.utils import SterileParams
 from cascade.raw_fluxes import raw_flux
 
 from cascade.sensitivity.astro_flux_generator import generate_astr_flux
-from cascade.sensitivity.eff_area_reader import build_flux
+from cascade.sensitivity.eff_area_reader import build_flux, build_flux_sad
 from cascade.sensitivity.make_from_mc import build_mc_flux
 
 import pickle 
@@ -94,7 +94,7 @@ def _ice_grad(data_dict, grad_no):
 
     return _flipper( data_dict["event_rate"] , (m_pert, p_pert))
 
-def cr_perturb(dgamma = 0.0, dnorm=0.0, use_mc = False):
+def cr_perturb(dgamma = 0.0, dnorm=0.0, use_mc = False, smearmode=False):
     """
     Calculates the expected cosmic ray spectrum, then returns the expected gains/losses in each bin by perturbing the overall spectram index (dgamma) and normalization (dnorm) down/up 
 
@@ -111,9 +111,14 @@ def cr_perturb(dgamma = 0.0, dnorm=0.0, use_mc = False):
     
     filename = os.path.join(perturb_folder, "cr_central.dat")
     null = SterileParams()
-    if not os.path.exists(filename):
+    if smearmode:
+        flux_func = build_flux_sad
+    else:
+        flux_func = build_mc_flux if use_mc else build_flux
+
+    if True: #not os.path.exists(filename):
         kwargs = {'as_data':True}
-        flux_data = build_mc_flux(raw_flux(null, kwargs)) if use_mc else build_flux(raw_flux(null, kwargs))
+        flux_data = flux_func(raw_flux(null, kwargs))
         pickle_save(flux_data, filename)
     else:
         flux_data = pickle_load(filename)
@@ -142,7 +147,7 @@ def cr_perturb(dgamma = 0.0, dnorm=0.0, use_mc = False):
 
 
 
-def astro_norm_unc(use_mc = False):
+def astro_norm_unc(use_mc = False, smearmode=False):
     """
     Calculates the expected astrophysical neutrino spectrum, then returns the expected gains/losses in each bin by perturbing the overall spectram index (dgamma) and normalization (dnorm) down/up 
 
@@ -157,7 +162,7 @@ def astro_norm_unc(use_mc = False):
 
 #    unperturbed = generate_astr_flux(null)
 
-    prefix = "astr_perturb" + ("_frommc" if use_mc else "")
+    prefix = "astr_perturb" + ("_frommc" if use_mc else "") +("_smear" if smearmode else "")
 
     # for each of these... 
     #    generate the flux
@@ -165,7 +170,10 @@ def astro_norm_unc(use_mc = False):
     #    parse it through the effective area integrator
     # yay now we have fluxes in reconstruction space! 
     
-    flux_func = build_mc_flux if use_mc else build_flux
+    if smearmode:
+        flux_func = build_flux_sad
+    else:
+        flux_func = build_mc_flux if use_mc else build_flux
 
     filename = os.path.join(perturb_folder, prefix+ "_central.dat")
     if os.path.exists(filename):
@@ -191,7 +199,7 @@ def astro_norm_unc(use_mc = False):
     return _flipper( central["event_rate"], (norm_minus["event_rate"], norm_plus["event_rate"]))
 #    return(norm_minus["event_rate"]-central["event_rate"], norm_plus["event_rate"]-central["event_rate"])
 
-def astro_shift_unc(use_mc=False):
+def astro_shift_unc(use_mc=False, smearmode=False):
     null = SterileParams()
 
     norm_p = 0.21
@@ -199,9 +207,11 @@ def astro_shift_unc(use_mc=False):
 
 #    unperturbed = generate_astr_flux(null)
 
-    prefix = "astr_perturb" + ("_frommc" if use_mc else "")
+    prefix = "astr_perturb" + ("_frommc" if use_mc else "") + ("_smear" if smearmode else "")
 
     flux_func = build_mc_flux if use_mc else build_flux
+    if smearmode:
+        flux_func = build_flux_sad
 
     # for each of these... 
     #    generate the flux
