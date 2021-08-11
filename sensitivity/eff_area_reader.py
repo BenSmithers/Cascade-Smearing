@@ -1,9 +1,10 @@
 import numpy as np
 import os
+import sys
 from cascade.utils import Data, config, get_closest, make_bin_probs
 from scipy.integrate import dblquad
 from scipy.special import i0 #modified bessel function of the first kind 
-from math import pi, cos, sin, sinh, exp
+from math import pi, cos, sin, sinh, exp, acos
 from cascade.deporeco import kappaCalc, get_ang_error
 
 def get_deets():
@@ -146,7 +147,7 @@ def build_flux_sad(*dataobjs, good_angles = False):
     zero_point_two = acos(0.2) # precalculated so we don't do this every time in the loop
 
     if good_angles:
-        casc_fluc = np.zeros(shape=(n_dep_e,n_cth_r))
+        casc_flux = np.zeros(shape=(n_dep_e,n_cth_true))
     else:
         casc_flux = np.zeros(shape=(n_dep_e,n_cth_r)) 
     print("Integrating Flux over bins") 
@@ -193,30 +194,47 @@ def build_flux_sad(*dataobjs, good_angles = False):
 
                             # integrate the flux over incoming energy and angles 
                             flux_integrated = dblquad(lambda energy, angle: metaflux(energy, angle, key), a=true_ang[i_cth_t+1], b=true_ang[i_cth_t], gfun=e_true[i_e_t], hfun=e_true[i_e_t+1])[0]
+                            if flux_integrated==0.0:
+                                continue
                             # we'll scale this with the effective area later 
 
                             # and we need this bin center for splitting up the effective areas into multiple bins 
                             true_center = 0.5*(true_ang[i_cth_t]+true_ang[i_cth_t+1])
                             for i_e_d in range(n_dep_e):
-                                if good_angles:
-                                    # if we're emulating a better angular resolution, first determine the reconstruction probabilities 
-                                    reco_bin_probs = make_bin_probs(lambda ang: get_cth_error(e_center, true_center, ang), new_cth_edges)
+                                for i_cth_r in range(n_cth_r):
+                                    area = eff_area[i_e_t][i_e_d][i_cth_t][i_cth_r]
+                                    if area==0.0:
+                                        continue
 
-                                    # then split the effective areas, according to the above effiency, into multiple bins 
-                                    for i_cth_r in range(n_cth_true):
-                                        center = 0.5*(new_cth_edges[i_cth_r] + new_cth_edges[i_cth_r+1])
-                                        if center<zero_point_two:
-                                            area = eff_area[i_e_t][i_e_d][i_cth_t][0]
+                                    # for the "good angles" we split big bins into sub-bins
+                                    #   up-going into six bins, down into four bins (each of width 0.2 costheta)
+                                    if good_angles:
+                                        if i_cth_r==0:
+                                            shift = 0
+                                            new_bins = new_cth_edges[0:7]
+                                        elif i_cth_r==1:
+                                            shift = 6
+                                            new_bins = new_cth_edges[6:]
                                         else:
-                                            area = eff_area[i_e_t][i_e_d][i_cth_t][1]
-
-                                        casc_flux[i_e_d][i_cth_r] = casc_flux[i_e_d][i_cth_r] + area*m2_to_cm2*flux_integrated*reco_bin_probs[i_cth_r]
-                                else:
-                                    for i_cth_r in range(n_cth_r):
-                                        # normal iteration. Just use the basic effective area 
+                                            raise ValueError("The reco bins changed in a way that'll require some restructuring :(")
+                                       
+                                        # we split the bins up according to our reconstruction efficiency 
+                                        reco_bin_probs = make_bin_probs(lambda ang: get_cth_error(e_center, true_center, ang), new_bins, normalize=True)
+                                        if not abs(1.0-sum(reco_bin_probs))<1e-10:
+                                            raise ValueError("Something wrong {}".format(reco_bin_probs))
+                                        # then split the effective areas, according to the above effiency, into multiple bins
+                                        count_check = 0.0
+                                        for i_cth_reee in range(len(reco_bin_probs)):
+                                            index = shift + i_cth_reee
+                                            count_check +=reco_bin_probs[i_cth_reee]
+                                            casc_flux[i_e_d][index] = casc_flux[i_e_d][index] + area*m2_to_cm2*flux_integrated*reco_bin_probs[i_cth_reee]
+                                        if abs(count_check-1)>(1e-10):
+                                            raise ValueError("sum: {}, index is {}, i_cth_reee is {}".format(count_check, index, i_cth_reee))
+                                    else:
+                                        # don't split it up
 
                                         # should be in units of [s^-1] now
-                                        casc_flux[i_e_d][i_cth_r] = casc_flux[i_e_d][i_cth_r] + eff_area[i_e_t][i_e_d][i_cth_t][i_cth_r]*m2_to_cm2*flux_integrated
+                                        casc_flux[i_e_d][i_cth_r] = casc_flux[i_e_d][i_cth_r] + area*m2_to_cm2*flux_integrated
 
 
     livetime_ratio = 1.0

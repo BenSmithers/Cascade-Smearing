@@ -43,7 +43,7 @@ def pathmaker(path):
             if not os.path.exists(working):
                 os.mkdir(working)
 
-def make_bin_probs(cdf, bin_edges):
+def make_bin_probs(cdf, bin_edges, normalize=False):
     """
     We find the binned likelihoods based on a binned gaussian distribution. 
 
@@ -61,8 +61,12 @@ def make_bin_probs(cdf, bin_edges):
     
     for i in range(len(occupation)):
         occupation[i] = quad(cdf, a=bin_edges[i], b=bin_edges[i+1])[0]
-    
-    return occupation
+     
+    if normalize:
+   #     occupation = np.abs(occupation)
+        return occupation/sum(occupation)
+    else:
+        return occupation
 
 def backup(filename):
     """

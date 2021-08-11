@@ -12,7 +12,7 @@ import pickle
 from time import time, localtime
 import os
 
-def make_meta_flux(params, do_mc = False, smeary=False):
+def make_meta_flux(params, do_mc = False, smeary=False, good_angles=False):
     """
     This makes and saves 
     """
@@ -29,14 +29,17 @@ def make_meta_flux(params, do_mc = False, smeary=False):
         full_flux = build_mc_flux(atmo_data, astr_data)
     else:
         if smeary:
-            full_flux = build_flux_sad(atmo_data, astr_data) #dict 
+            full_flux = build_flux_sad(atmo_data, astr_data, good_angles=good_angles) #dict 
         else:
             full_flux = build_flux(atmo_data, astr_data) #dict 
     middle = time()
     # save the object
     suffix = "_from_mc" if do_mc else ""
     suffix += "_smeared" if smeary else ""
+    if smeary:
+        suffix+="well" if good_angles else ""
     new_filename = gen_filename(config["datapath"]+ "/expected_fluxes_reco/", "expected_flux"+suffix+".dat", params)
+    print("Saving to {}".format(new_filename))
     f = open(new_filename ,'wb')
     pickle.dump(full_flux, f, -1)
     f.close()
