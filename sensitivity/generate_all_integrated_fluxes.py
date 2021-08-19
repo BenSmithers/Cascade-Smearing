@@ -53,7 +53,8 @@ def make_meta_flux(params, do_mc = False, smeary=False, good_angles=False):
 
 if __name__=="__main__":
 
-    msqs = np.concatenate(( np.array([0]), np.logspace(-2,2,40) ))
+    n_m = 40
+    msqs = np.concatenate(( np.array([0]), np.logspace(-2,2,n_m) ))
     do_mc = False
 
     import sys
@@ -66,6 +67,7 @@ if __name__=="__main__":
     For some reason a few of these took a lot longer to execute. So now, if we get a 0 we do the first half,
         if we get a 1 we do the second half. Easy peasy lemon squeezy 
     """
+
     if len(sys.argv)==4:
         switchy = int(sys.argv[3])
         if switchy==0:
@@ -76,10 +78,10 @@ if __name__=="__main__":
             raise ValueError("Unrecognized option {}".format(switchy))
         for msq in subset:
             pm = SterileParams(theta13=th24, theta23=th34, msq2=msq)
-            make_meta_flux(pm, do_mc,smeary=True)
+            make_meta_flux(pm, do_mc,smeary=True, good_angles=True)
 
     else:
         for msq in msqs:
             pm = SterileParams(theta13=th24, theta23=th34, msq2=msq)
-            make_meta_flux(pm, do_mc, smeary=True)
+            make_meta_flux(pm, do_mc, smeary=True, good_angles=True)
 
