@@ -65,7 +65,7 @@ class _generic_LLHMachine:
 
     Later, you can then re-configure it to a new expectation by sending in a filename or expectation dict 
     """
-    def __init__(self, expectation=SterileParams(), use_syst=True, flatten=False, smearmode=False):
+    def __init__(self, expectation=SterileParams(), use_syst=True, flatten=False, smearmode=False, special_mode=False):
         if not isinstance(expectation, SterileParams):
             raise TypeError("Expected {}, got {}".format(SterileParams, type(expectation)))
         if not isinstance(use_syst, bool):
@@ -78,9 +78,20 @@ class _generic_LLHMachine:
         if not os.path.exists(self.f_name):
             print("Generating binned event rate at {}".format(expectation))
             make_meta_flux(expectation, self.use_mc, smearmode)
+
+        if special_mode:
+            print("Likelihooder made in special mode!")
+        # the angle edges weren't saved right for some of the expected rates
+        # so we manually put it in
+        # but we also only want to go over (-1 -> 0.2) since we don't account for the backgrounds that would appear at south-sky angles 
+        self._special = special_mode
+        self.a_edges = np.linspace(-1,1,11) #[:7]
+    
+        self._lt_scale = 1.0 #2.0
+        self._stat_scale = sqrt(self._lt_scale)
         self._configure()
         
-        print("Likelihood machine built with expectation at {}")
+        print("Likelihood machine built with expectation at {}".format(self.f_name))
 
     def set_expectation(self, f_expect, scale_to_n_years=None):
         """
@@ -114,17 +125,17 @@ class _generic_LLHMachine:
         err = np.sqrt(err)
         self._net_error_m_stat = err
         self._net_error_p_stat = err
-
+        
 
     def _configure(self, scale_to_n_years=None):
         self.set_expectation(self.f_name, scale_to_n_years)
         
         if self._use_systematics:
             #showplot(self.expectation, self.astr_norm_shift, "Astro Norm")
-            self.astr_gamma_shift = astro_shift_unc(use_mc=self.use_mc, smearmode=self._smearmode)
+            self.astr_gamma_shift = astro_shift_unc(use_mc=self.use_mc, smearmode=self._smearmode, special=self._special)
             #showplot(self.expectation, self.astr_gamma_shift, "Astro Gamma")
 
-            self.cr_gamma_shift = cr_perturb(dgamma=0.012, use_mc = self.use_mc, smearmode=self._smearmode)
+            self.cr_gamma_shift = cr_perturb(dgamma=0.012, use_mc = self.use_mc, smearmode=self._smearmode, special=self._special)
             #showplot(self.expectation, self.cr_gamma_shift, "CR Gamma")
 
             self.ice_grad_0 = ice_grad_0(self.expectation)
@@ -145,11 +156,11 @@ class _generic_LLHMachine:
  
     @property
     def _net_error_p(self):
-        return np.sqrt(self._net_error_p_stat**2 + self._net_error_p_sys**2)
+        return np.sqrt((self._stat_scale*self._net_error_p_stat)**2 + self._net_error_p_sys**2)
 
     @property
     def _net_error_m(self):
-        return np.sqrt(self._net_error_m_stat**2 + self._net_error_m_sys**2)
+        return np.sqrt((self._stat_scale*self._net_error_m_stat)**2 + self._net_error_m_sys**2)
 
 
     def get_chi2(self, flux):
@@ -176,22 +187,28 @@ class _generic_LLHMachine:
         Overall normalization is fixed in this one
         """
         llh = 0.0
+        if self._special:
+            aedges = self.a_edges
+        else:
+            aedges = self.expectation["a_edges"]
+
         for i_e in range(len(self.expectation["e_edges"])-1):
             if self._flatten or self._smearmode:
                 llh += self._eval_llh_bin_flat(i_e, norm*sum(flux["event_rate"][i_e]))
             else:
-                for i_cth in range(len(self.expectation["a_edges"])-1):
+                for i_cth in range(len(aedges)-1):
                     llh += self._eval_llh_bin(i_cth, i_e, norm*flux["event_rate"][i_e][i_cth])
         return llh
 
-    def _eval_llh_bin_flat(self, i_e, bflux):
+    def _eval_llh_bin_flat(self, i_e, _bflux):
         """
         Same as before, but we're flattening along the angular bins
         """
+        bflux = _bflux*self._lt_scale
         if self._smearmode:
-            our_expected = self.expectation["event_rate"][i_e][0] # don't use the down-going bin! 
+            our_expected = self._lt_scale*self.expectation["event_rate"][i_e][0] # don't use the down-going bin! 
         else:
-            our_expected = sum(self.expectation["event_rate"][i_e])
+            our_expected = self._lt_scale*sum(self.expectation["event_rate"][i_e])
 
         if our_expected==0.0:
             return 0.0
@@ -214,12 +231,13 @@ class _generic_LLHMachine:
 
         return -0.5*(bflux - our_expected)*(bflux - our_expected)/(sigma*sigma)
 
-    def _eval_llh_bin(self, i_cth, i_e, bflux):
+    def _eval_llh_bin(self, i_cth, i_e, _bflux):
 
         """
         We assume an asymmetric gaussian distribution
         """
-        expected = self.expectation["event_rate"][i_e][i_cth]
+        bflux = self._lt_scale*_bflux
+        expected = self._lt_scale*self.expectation["event_rate"][i_e][i_cth]
 
         #cutting this out until I find a better asymmetric likelihood function
         if bflux < expected:
@@ -254,11 +272,13 @@ class LLHMachine_from_mc(_generic_LLHMachine):
         _generic_LLHMachine.__init__(self, expectation, use_syst, flatten)
 
 class LLHMachine(_generic_LLHMachine):
-    def __init__(self, expectation=SterileParams(), use_syst=True, flatten=False, smearmode=False):
+    def __init__(self, expectation=SterileParams(), use_syst=True, flatten=False, smearmode=False, special=False):
         suffix = "_smeared" if smearmode else ""
+        suffix = "_smearedwell" if special else ""
+
         self.f_name = gen_filename(config["datapath"] +"/expected_fluxes_reco/", "expected_flux{}.dat".format(suffix), expectation)
         self.use_mc = False
-        _generic_LLHMachine.__init__(self, expectation, use_syst, flatten, smearmode)
+        _generic_LLHMachine.__init__(self, expectation, use_syst, flatten, smearmode, special)
 
 class LLHMachine_Data(_generic_LLHMachine):
     def __init__(self):
@@ -334,6 +354,11 @@ if __name__=="__main__":
         flatten = True
         use_mc = False
 
+    special = True
+    if special:
+        flatten = False
+        use_mc = False
+
     expectation = SterileParams(theta03=th14, theta13=th24, theta23=th34, msq2=deltam)
     print("{}mearing".format("S" if smear else "Not s"))
     print("{}sing MC fluxes".format("U" if use_mc else "Not u"))
@@ -342,14 +367,16 @@ if __name__=="__main__":
     print("{}sing systematics".format("U" if use_syst else "Not u"))
     print("{}lattening".format("F" if flatten else "Not f"))
     print("{}oing the comparison to the data".format("D" if compare else "Not d"))
+    if special:
+        print("In special mode!")
 
     # we will now build up an llh machine, and build up all the likelihood values 
     if compare:
         print("Here in the compary bit")
         likelihooder = LLHMachine_Data()
     else:
-        if smear:
-            likelihooder = LLHMachine(expectation, use_syst, flatten, smear)
+        if smear or special:
+            likelihooder = LLHMachine(expectation, use_syst, flatten, smear, special)
         else:
             likelihooder = LLHMachine_from_mc(expectation, use_syst) if use_mc else LLHMachine(expectation,use_syst)
     print("Built Likelihooder")
@@ -364,7 +391,7 @@ if __name__=="__main__":
         else:
             n_p = 100 if use_mc else 90 # I don't know why I did this...
             min_s = -3 if use_mc else -2.5
-            if smear:
+            if smear or special:
                 min_s = -3
             if use_mc:
                 theta34s = [0]
@@ -373,7 +400,7 @@ if __name__=="__main__":
             msqs = np.logspace(-2,2,40)
             theta24s = np.arcsin(np.sqrt(np.logspace(min_s,0, n_p)))/2
 
-            if smear:
+            if smear or special:
                 def add_zero(arr):
                     return np.concatenate(( np.array([0]), arr))
 
@@ -386,10 +413,14 @@ if __name__=="__main__":
     chi2 = np.zeros(shape=(len(theta24s), len(theta34s), len(msqs)))
 
     central_chi = 0.0
-    if smear:
-        f_name_init = "expected_flux_smeared.dat"
+
+    if special:
+        f_name_init = "expected_flux_smearedwell.dat"
     else:
-        f_name_init = "expected_flux_from_mc.dat" if use_mc else "expected_flux.dat"
+        if smear:
+            f_name_init = "expected_flux_smeared.dat"
+        else:
+            f_name_init = "expected_flux_from_mc.dat" if use_mc else "expected_flux.dat"
     if not compare:
         f = open(gen_filename(config["datapath"]+"/expected_fluxes_reco/", f_name_init, expectation),'rb')
         central_chi = -2*likelihooder.get_llh(pickle.load(f))
@@ -486,11 +517,11 @@ if __name__=="__main__":
             suffix+="_nolog"
 
     suffix+= "_smear" if smear else ""
-
+    suffix+="_special" if special else ""
     suffix += "" if use_syst else "_nosys"
 
 
-    filename = gen_filename(config["datapath"]+"/expectations/", "cummulative_probs"+suffix+".dat", expectation)
+    filename = gen_filename(config["datapath"]+"/expectations/", "scaled_cummulative_probs"+suffix+".dat", expectation)
     print("Writing Sensitivity File to {}".format(filename))
     f = open(filename,'wb')
     pickle.dump(likelihood_dict, f, -1)
