@@ -53,8 +53,11 @@ def make_meta_flux(params, do_mc = False, smeary=False, good_angles=False):
 
 if __name__=="__main__":
 
-    n_m = 40
+    n_m = 1
     msqs = np.concatenate(( np.array([0]), np.logspace(-2,2,n_m) ))
+
+    if n_m==1:
+        msqs=msqs[:1]
 
     import sys
 
