@@ -10,5 +10,5 @@ source ~/.bashrc
 
 GOLEM
 # export HDF5_USE_FILE_LOCKING=false 
-python3 /home/bsmithers/software_dev/cascade/sensitivity/generate_fluxes_from_mc.py $@
+python3 /home/bsmithers/software_dev/cascade/sensitivity/generate_all_integrated_fluxes.py $@
 rm -r ${_CONDOR_SCRATCH_DIR}/data/

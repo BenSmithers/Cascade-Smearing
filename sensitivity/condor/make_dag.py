@@ -25,7 +25,7 @@ obj = open(filename, "wt")
 counter = 0
 for theat23 in theta23s:
     for theat13 in theta13s:
-        obj.write("JOB  susflux{:06d}  genflux{}.submit\n".format(counter, "_from_mc" if is_mc else ""))
+        obj.write("JOB  susflux{:06d}  genflux{}.submit\n".format(counter, "_frommc" if is_mc else ""))
         counter+=1
 
 counter = 0
