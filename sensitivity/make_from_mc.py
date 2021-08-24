@@ -4,7 +4,7 @@ import numpy as np
 
 from cascade.utils import config
 from cascade.utils import get_loc
-from cascade.sensitivity.eff_area_reader import quickload
+from cascade.sensitivity.eff_area_reader import quickload_full
 
 def parseline(line):
     """
@@ -22,9 +22,11 @@ def parseline(line):
 
 
 
-def build_mc_flux(*dataobjs):
+def build_mc_flux(*dataobjs, livetime=10):
     """
     Takes some Data objects and uses the MC we have to build up expectation arrays 
+
+    the optional livetime arg scales the expectation to to that number of years of uptime 
     """
     cobalt = os.environ.get("_CONDOR_SCRATCH_DIR")
     filename = "NuFSGenMC_nominal.dat"
@@ -39,12 +41,12 @@ def build_mc_flux(*dataobjs):
             net_f = net_f + dobj.get_flux((1e9)*energy, key, angle=angle)
         return net_f
 
-    filename = "effective_area.nu_mu.txt"
-    area_data = quickload(os.path.join(os.path.join(config["datapath"], "charm_search_supplemental/"), filename))
+    filename = "effective_area.per_bin.nu_mu.cc.track.txt"
+    area_data = quickload_full(os.path.join(os.path.join(config["datapath"], "charm_search_supplemental","effective areas/"), filename))
 
     e_edges = area_data["e_reco"]
-    a_edges = area_data["cos_th"]
-    net_flux = np.zeros(shape=(28,10))
+    a_edges = area_data["cth_true"]
+    net_flux = np.zeros(shape=(len(e_edges)-1,len(a_edges)-1))
 
 
     f = open(file_dir,'rt')
@@ -76,7 +78,7 @@ def build_mc_flux(*dataobjs):
         i_a = get_loc(parsed[2], a_edges)[0]
 
         # let's let this event add tothe total in this bin!         
-        net_flux[i_e][i_a] = net_flux[i_e][i_a] + 8*parsed[5]*flux_here
+        net_flux[i_e][i_a] = net_flux[i_e][i_a] + livetime*(365./343.7)*parsed[5]*flux_here
         
     return {
             "e_edges": e_edges,
