@@ -156,6 +156,22 @@ class doLLH(generalLLH):
                 raise ValueError("Cannot fix norm to a negative value")
             self._fixing_norm = True
 
+    def load_file(self, params):
+        """
+        Load the corresponding file in! return the event rate
+        """
+        fn = gen_filename(data_folder, self._filenames, params) 
+        if not os.path.exists(fn):
+            raise IOError("Couldn't find file {}".format(fn))
+        f = open(fn, 'rb')
+        try:
+            data = pickle.load(f)
+        except IOError:
+            print("Error Loading File {}".format(fn))
+            raise IOError("Error loading file, but not skipping these")
+        f.close()
+        return data
+
     def get_llh(self, params):
         """
         Calculates the LLH for the provided set of parameters
@@ -165,24 +181,14 @@ class doLLH(generalLLH):
 
         # Load the file in. If there's an issue, check if we care
         # If we're skipping problematic files 
-
-        fn = gen_filename(data_folder, self._filenames, params) 
-        if not os.path.exists(fn):
+        try:
+            data = self.load_file(params)
+        except IOError as e:
             if self._skip_missing:
                 return 1e8
             else:
-                raise IOError("Couldn't find file {}".format(fn))
-        f = open(fn, 'rb')
-        try:
-            data = pickle.load(f)
-        except IOError:
-            if  self._skip_missing:
-                print("Error Loading File {}".format(fn))
-                return 1e8
-            else:
-                raise IOError("Error loading file, but not skipping these")
-        
-        f.close()
+                raise IOError(e)
+
 
         if self._fixing_norm:
             return self.eval_llh_norm(data["event_rate"], self._fix_norm)
@@ -249,11 +255,13 @@ class doLLH(generalLLH):
     def options(self):
         return self._options
 
-class combinedLLH(generalLLH):
+class JointLLH(generalLLH):
     """
     Use multiple different doLLH's to get a combined llh 
 
     So, if you have two different fluxes, make one of these and it'll do all the combining itself 
+
+    It uses the first one to set an overall normalization too! 
     """
     def __init__(self, *args):
         for arg in args:
@@ -263,8 +271,12 @@ class combinedLLH(generalLLH):
         self.doLLHs = list(args)
 
     def get_llh(self, params):
-        llh = 0.0
-        for LLHobj in self.doLLHs:
+        llh = self.doLLHs[0].get_llh(params)
+        data = self.doLLHs[0].load_file(params)
+        norm = self.doLLHs[0].minimize(data["event_rate"])
+        llh = self.doLLHs[0].eval_llh_norm(data["event_rate"], norm)
+
+        for LLHobj in self.doLLHs[1:]:
             llh += LLHobj(params)
 
 class Scanner:
