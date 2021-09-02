@@ -29,9 +29,13 @@ class generalLLH:
 
 class doLLH(generalLLH):
     """
-    Calculates likelihoods.
+    Calculates likelihoods.We pass it a central likelihood we use to develop the uncertainties 
 
-    We pass it a central likelihood we use to develop the uncertainties 
+    There are a couple things you'll find useful 
+        minimize - pass it a flux and it'll tell you the normalization that minimizes the delta-LLH
+        load_file - pass it some params and it'll give you the actual flux dictionary
+        get_llh - pass it some params, and it'll return the delta-llh based off the central expectation 
+        eval_llh_norm - pass it a flux and a normalization, and it'll tell you the delta-llh 
     """
     def __init__(self,filenames, central_exp=SterileParams(), options={}):
         self._is_mc = False
@@ -271,13 +275,18 @@ class JointLLH(generalLLH):
         self.doLLHs = list(args)
 
     def get_llh(self, params):
-        llh = self.doLLHs[0].get_llh(params)
+        """
+        Gets the normalization from the first one, then use that to do the others 
+        """
         data = self.doLLHs[0].load_file(params)
         norm = self.doLLHs[0].minimize(data["event_rate"])
         llh = self.doLLHs[0].eval_llh_norm(data["event_rate"], norm)
 
         for LLHobj in self.doLLHs[1:]:
-            llh += LLHobj(params)
+            data = LLHobj.load_file(params)
+            llh += LLHobj.eval_llh_norm(data["event_rate"], norm)
+
+        return llh
 
 class Scanner:
     """
@@ -321,6 +330,7 @@ class Scanner:
         counter = 0
         pcent_i = 0
         pcents = np.concatenate((np.linspace(0,95,20), np.linspace(96,100,5)))
+
 
         how_long = "might take a while" if n_todo>20000 else "should be quick"
         print("Starting the scan! This "+how_long)

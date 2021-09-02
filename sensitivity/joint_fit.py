@@ -35,12 +35,15 @@ if False:
 
 true_fudge = np.load("full_fudge.npy")
 
+systematics = True
 
 options ={
     "fudge": true_fudge,
+    "use_syst": systematics
 }
 mc_options = {
-    "is_mc" : True
+    "is_mc" : True,
+    "use_syst":systematics
 }
 
 llhood = doLLH("expected_flux_smearedwell.dat",central_exp=central, options=options)
