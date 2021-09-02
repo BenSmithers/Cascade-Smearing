@@ -47,10 +47,12 @@ def astro_initial_state(energies, zeniths, n_nu, kwargs):
 
     for i_e in range(e_bins):
         flux = get_flux(energies[i_e])
+        if flux<0:
+            raise ValueError("Somehow got negative flux... {}".format(flux))
         for flavor in range(n_nu):
             for i_a in range(a_bins):
                 for neut_type in range(2):
-                    inistate[i_a][i_e][neut_type][flavor] += flux*kwargs["flavor_ratio"][flavor]
+                    inistate[i_a][i_e][neut_type][flavor] += flux*(kwargs["flavor_ratio"][flavor])
     return inistate 
 
 def generate_astr_flux(params, **kwargs):

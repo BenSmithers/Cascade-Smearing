@@ -126,6 +126,8 @@ def get_initial_state(energies, zeniths, n_nu, kwargs):
                         # (account for the difference in units between mceq and nusquids! )
                         inistate[angle_bin][energy_bin][neut_type][flavor] = get_closest(energies[energy_bin]/un.GeV, flux['e_grid'], flux[flav_key])
         
+        if np.min(inistate)<0:
+            raise ValueError("Found negative value in the input from MCEq {}".format(np.min(inistate)))
         # save it now
         f = open(path, 'wb')
         pickle.dump(inistate, f, -1)
@@ -199,13 +201,15 @@ def raw_flux(params, kwargs={}):
     nus_atm.Set_TauRegeneration(True)
 
     #settting some zenith angle stuff 
-    nus_atm.Set_rel_error(1.0e-6)
-    nus_atm.Set_abs_error(1.0e-6)
+    nus_atm.Set_rel_error(1.0e-10)
+    nus_atm.Set_abs_error(1.0e-10)
     #nus_atm.Set_GSL_step(gsl_odeiv2_step_rk4)
     nus_atm.Set_GSL_step(nsq.GSL_STEP_FUNCTIONS.GSL_STEP_RK4)
     
     # we load in the initial state. Generating or Loading from a file 
     inistate = state_setter(energies, zeniths, n_nu, kwargs)
+    if np.min(inistate)<0:
+        raise ValueError("Found negative value in inistate: {}".format(np.min(inistate)))
     nus_atm.Set_initial_state(inistate, nsq.Basis.flavor)
     
     # we turn off the progress bar for jobs run on the cobalts 
@@ -243,6 +247,7 @@ def raw_flux(params, kwargs={}):
     angle = cos_zenith_min
     energy = int_min_e
     obj.write("# log10(energy) cos(zenith) flux_nuE flux_nuMu flux_nuTau flux_nuEBar flux_nuMuBar flux_nuTauBar\n")
+    this_value = 0.0
     while angle<cos_zenith_max:
         energy = int_min_e
         while energy<int_max_e:
@@ -250,9 +255,15 @@ def raw_flux(params, kwargs={}):
             obj.write("{} {}".format(energy, angle))
             reg_energy = pow(10., energy)
             for flavor in range(n_nu):
-                obj.write(" {}".format(nus_atm.EvalFlavor(flavor, angle, reg_energy, 0)))
+                this_value = nus_atm.EvalFlavor(flavor, angle, reg_energy, 0)
+                if this_value<0:
+                    this_value=0.0
+                obj.write(" {}".format(this_value))
             for flavor in range(n_nu):
-                obj.write(" {}".format(nus_atm.EvalFlavor(flavor, angle, reg_energy, 1)))
+                this_value = nus_atm.EvalFlavor(flavor, angle, reg_energy, 1)
+                if this_value<0:
+                    this_value=0.0
+                obj.write(" {}".format(this_value))
 
             energy += (int_max_e-int_min_e)/int_en
             obj.write("\n")

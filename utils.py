@@ -591,6 +591,9 @@ class Data:
             # you may notice that NC and CC are treated as having separate fluxes, when really it'sthe same flux 
             #       this is for the most part okay since the interactions are rare enough that the fluxes are unchanged 
             self._fluxes[ key ] = [[ data[energy+angle*n_energies][get_index(key, n_flavor)] for angle in range(n_angles)] for energy in range(n_energies)]
+
+            if np.min(self._fluxes[key])<0:
+                raise ValueError("Tried loading a flux with a negative value {}".format(np.min(self._fluxes[key])))
     
     # define a few access functions to protect the important stuff 
     # the "@property" tag makes it so these are accessed like attributes, not functions! 
@@ -648,6 +651,8 @@ class Data:
             integrate = True
             raise NotImplementedError("This shouldn't be used. It is inaccurate")
 
+        if use_overflow:
+            raise NotImplementedError()
 
         # check if it's outside the extents
         if (energy < self._energies[0] and self.growing) or (energy > self._energies[0] and not self.growing):
@@ -704,7 +709,10 @@ class Data:
             q21 = self._fluxes[key][upper_boundary][ang_lower]
             q12 = self._fluxes[key][lower_boundary][ang_upper]
             q22 = self._fluxes[key][upper_boundary][ang_upper]
-            return(bilinear_interp(p0,p1,p2,q11,q12,q21,q22))
+            value =bilinear_interp(p0,p1,p2,q11,q12,q21,q22) 
+            #if value<0:
+            #    raise ValueError("Somehow have negative flux value {}".format(value))
+            return value
 
     def get_err(self, energy, key, angle):
         """
