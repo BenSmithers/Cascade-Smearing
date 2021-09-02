@@ -20,8 +20,48 @@ from cascade.sensitivity.make_from_mc import build_mc_flux
 import pickle 
 import os
 from math import log10
+from enum import Enum
 
 perturb_folder = os.path.join(config["datapath"], "perturbed_rates")
+
+class Syst(Enum):
+    icegrad0 = 1
+    icegrad1 = 2
+    astrogam = 3
+    crgam = 4
+
+def unc_wrapper(central:dict, which:Syst, options:dict):
+    """
+    A wrapper function for accessing all the sources of systematic uncertainty
+        which - an enum (defined above) entry specifying which unc
+        options - a dicitonary of flux options 
+    """
+    special = True
+    smearmode = False
+
+    cr_dgamma = 0.012
+    shift_p = 0.19
+
+    if "is_mc" in options:
+        is_mc = options["is_mc"]
+    else:
+        is_mc = False
+    if "cr_dgamma" in options:
+        cr_dgamma = options["cr_dgamma"]
+    if "astro_dgamma" in options:
+        shift_p = options["astro_dgamma"]
+
+    if which==Syst.icegrad0 or which==Syst.icegrad1:
+        if which==Syst.icegrad0:
+            return ice_grad_0(central)
+        else:
+            return ice_grad_1(central)
+    elif which==Syst.astrogam:
+        return astro_shift_unc(use_mc=is_mc, smearmode=smearmode, special=special, shift_p=shift_p)
+    elif which==Syst.crgam:
+        return cr_perturb(dgamma = cr_dgamma, use_mc = is_mc, smearmode=smearmode, special=special)
+    else:
+        raise NotImplementedError("Unimplemented systematic: {}".format(which))
 
 
 def pickle_save(obj, filename):
@@ -209,11 +249,10 @@ def astro_norm_unc(use_mc = False, smearmode=False,special=False):
     return _flipper( central["event_rate"], (norm_minus["event_rate"], norm_plus["event_rate"]))
 #    return(norm_minus["event_rate"]-central["event_rate"], norm_plus["event_rate"]-central["event_rate"])
 
-def astro_shift_unc(use_mc=False, smearmode=False, special=False):
+def astro_shift_unc(use_mc=False, smearmode=False, special=False, shift_p=0.19):
     null = SterileParams()
 
     norm_p = 0.21
-    shift_p = 0.19
 
 #    unperturbed = generate_astr_flux(null)
 
