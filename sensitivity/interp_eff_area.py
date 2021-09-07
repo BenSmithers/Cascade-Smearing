@@ -15,6 +15,7 @@ from math import pi, sqrt, log10, inf
 from numpy.core.defchararray import not_equal
 
 from scipy.optimize import curve_fit
+from scipy.integrate import dblquad
 
 from cascade.utils import SterileParams, get_loc
 from cascade.raw_fluxes import raw_flux
@@ -168,19 +169,72 @@ class AreaFit:
         i_ang = get_loc(cth, self.a_edges)[0]
         return self.fits[flavor][i_ang](energy)*1e4 #m2 to cm2
 
+master_fit = AreaFit(False)
+
+def get_expectation(*args):
+    flavors = ["e", "mu", "tau"]
+
+    n_e = 20
+    n_a = 10
+    e_bins = np.logspace(2,8,n_e+1)
+    a_bins = np.linspace(-1,1,n_a+1)
+    events = np.zeros(shape=(n_e, n_a))
+
+    def metaflux(energy, angle, flav):
+        """
+        This little function sums the contributions for each flux making up this combined flux 
+        """
+        nus = ["nu", "nuBar"]
+        this_flav = flav[0].upper() + flav[1:].lower()
+        keys = ["_".join([this_flav, nu, "NC"]) for nu in nus]
+        net_f = 0.0
+        # we take the average contribution from nu and nubar
+        for dobj in range(len(args)):
+            for key in keys:
+                ff = master_fit(energy, angle, flav)
+                if ff<0:
+                    raise ValueError("Area fit {}".format(ff))
+                flux = 0.5*args[dobj].get_flux((1e9)*energy, key, use_overflow=False, angle=angle)
+                if flux <0:
+                    print("Flux is {} in {} flux".format(flux, "atmo" if dobj==0 else "astro"))
+                net_f = net_f + flux*ff
+        return net_f*2*pi
+
+    for i_a in range(n_a):
+        for i_e in range(n_e):
+            for flav in flavors:
+                integral = dblquad(lambda energy, angle:metaflux(energy, angle, flav), a=a_bins[i_a], b=a_bins[i_a+1], gfun=e_bins[i_e], hfun=e_bins[i_e+1])[0]
+                if integral<0:
+                    print("{} {} {}".format(i_e, i_a, flav))
+                    raise ValueError("Negative value in integral: {}".format(integral))
+
+                events[i_e][i_a] += integral
+
+    livetime_ratio = 1.0
+    seconds_up = livetime_ratio*10.*3600.*24.*365
+    casc_flux = events*seconds_up
+    casc_err = np.sqrt(casc_flux)
+
+    return {
+            "e_edges":e_bins,
+            "a_edges":a_bins,
+            "event_rate":casc_flux,
+            "stat_err":casc_err
+           }
+
 if __name__=="__main__":
     import matplotlib
     matplotlib.use('Qt5Agg')
     from matplotlib import pyplot as plt
     plt.style.use("/home/benito/software/cascade/cascade/cascade.mplstyle")
-    from scipy.integrate import dblquad
+    
 
     from cascade.utils import get_color
     import pickle
 
-    flavors = ["e", "mu", "tau"]
+    
     do_fudge = True
-    master_fit = AreaFit(not do_fudge)
+    
     if do_fudge:
         core_b = -0.98
         mantle_b= -0.83
@@ -194,43 +248,12 @@ if __name__=="__main__":
         astr_data = generate_astr_flux(null, as_data=True)
         n_e = 20
         n_a = 10
-        e_bins = np.logspace(2,8,n_e+1)
-        a_bins = np.linspace(-1,1,n_a+1)
-        events = np.zeros(shape=(n_e, n_a))
 
-        time = 3600.*24*365*10
+        raw_data = generate_for_flux(atmo_data, astr_data)
 
-        def funcy(energy, angle, flav):
-            """
-            This little function sums the contributions for each flux making up this combined flux 
-            """
-            nus = ["nu", "nuBar"]
-            this_flav = flav[0].upper() + flav[1:].lower()
-            keys = ["_".join([this_flav, nu, "NC"]) for nu in nus]
-            net_f = 0.0
-            # we take the average contribution from nu and nubar
-            dobjs = (atmo_data, astr_data)
-            for dobj in range(len(dobjs)):
-                for key in keys:
-                    ff = master_fit(energy, angle, flav)
-                    if ff<0:
-                        raise ValueError("Area fit {}".format(ff))
-                    flux = 0.5*dobjs[dobj].get_flux((1e9)*energy, key, use_overflow=False, angle=angle)
-                    if flux <0:
-                        print("Flux is {} in {} flux".format(flux, "atmo" if dobj==0 else "astro"))
-                    net_f = net_f + flux*ff
-            return net_f*2*pi
-
-        print("Doing those integrals now")
-        for i_a in range(n_a):
-            for i_e in range(n_e):
-                for flav in flavors:
-                    integral = dblquad(lambda energy, angle:funcy(energy, angle, flav), a=a_bins[i_a], b=a_bins[i_a+1], gfun=e_bins[i_e], hfun=e_bins[i_e+1])[0]*time
-                    if integral<0:
-                        print("{} {} {}".format(i_e, i_a, flav))
-                        raise ValueError("Negative value in integral: {}".format(integral))
-
-                    events[i_e][i_a] += integral
+        e_bins = raw_data["e_edges"]
+        a_bins = raw_data["a_edges"]
+        events = raw_data["event_rate"]
 
         plt.pcolormesh(a_bins, e_bins, events)
         plt.xlim([-1,0.2])

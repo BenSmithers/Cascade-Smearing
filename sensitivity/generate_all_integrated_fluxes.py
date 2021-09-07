@@ -1,10 +1,13 @@
 from cascade.sensitivity.astro_flux_generator import generate_astr_flux
-from cascade.sensitivity.eff_area_reader import build_flux, build_flux_sad 
+from cascade.sensitivity.eff_area_reader import build_flux 
 from cascade.sensitivity.make_from_mc import build_mc_flux 
+from cascade.sensitivity.interp_eff_area import get_expectation
 
 from cascade.utils import SterileParams, gen_filename, config
 from cascade.utils import Data
 from cascade.raw_fluxes import raw_flux
+
+
 
 import numpy as np
 
@@ -12,7 +15,7 @@ import pickle
 from time import time, localtime
 import os
 
-def make_meta_flux(params, do_mc = False, smeary=False, good_angles=False):
+def make_meta_flux(params, do_mc = False):
     """
     This makes and saves 
     """
@@ -28,17 +31,11 @@ def make_meta_flux(params, do_mc = False, smeary=False, good_angles=False):
     if do_mc:
         full_flux = build_mc_flux(atmo_data, astr_data)
     else:
-        if smeary:
-            full_flux = build_flux_sad(atmo_data, astr_data, good_angles=good_angles) #dict 
-        else:
-            full_flux = build_flux(atmo_data, astr_data) #dict 
+        full_flux = get_expectation(atmo_data, astr_data) #dict 
     middle = time()
     # save the object
-    suffix = "_from_mc" if do_mc else ""
-    suffix += "_smeared" if smeary else ""
-    if smeary:
-        suffix+="well" if good_angles else ""
-    new_filename = gen_filename(config["datapath"]+ "/expected_fluxes_reco/", "expected_flux"+suffix+".dat", params)
+
+    new_filename = gen_filename(config["datapath"]+ "/expected_fluxes_reco/", "best_expected_flux.dat", params)
     print("Saving to {}".format(new_filename))
     f = open(new_filename ,'wb')
     pickle.dump(full_flux, f, -1)
@@ -70,5 +67,5 @@ if __name__=="__main__":
 
     for msq in msqs:
         pm = SterileParams(theta13=th24, theta23=th34, msq2=msq)
-        make_meta_flux(pm, do_mc=mc_mode, smeary=True, good_angles=True)
+        make_meta_flux(pm, do_mc=mc_mode)
 
