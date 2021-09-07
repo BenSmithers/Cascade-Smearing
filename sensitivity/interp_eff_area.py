@@ -11,7 +11,7 @@ So, we can then _call_ this object with some bin edges, and it'll return the new
 
 import os 
 import numpy as np
-from math import pi, sqrt, log10
+from math import pi, sqrt, log10, inf
 from numpy.core.defchararray import not_equal
 
 from scipy.optimize import curve_fit
@@ -28,7 +28,12 @@ def poly_3(x,*args):
     """
     if not len(args)>=4:
         raise ValueError("Didn't get enough args... {}".format(len(args)))
-    return args[0] + args[1]*x + args[2]*x*x  #+ args[3]*x*x*x 
+    return args[0] + args[1]*x + args[2]*x*x*x*x  #+ args[3]*x*x*x
+
+def sad_hat(x,*args):
+    if not len(args)>=4:
+        raise ValueError("Didn't get enough args... {}".format(len(args)))
+    return args[0]*np.log(args[3]*(x-1))/(args[1]*(x-1))
 
 def poly_3_prime(x, *args):
     """
@@ -53,13 +58,13 @@ def poly_3_gauss(x,*args):
     if not len(args)>=6:
         raise ValueError("Didn't get enough args... {}".format(len(args)))
     
-    return args[5]*(twop/args[4])*np.exp(-0.5*(x-mean)*(x-mean)/(args[4]*args[4])) + poly_3(x,*args)
+    return args[5]*(twop/args[4])*np.exp(-0.5*(x-mean)*(x-mean)/(args[4]*args[4])) + sad_hat(x,*args)
 
 def poly_3_gauss_prime(x,*args):
     """
     Returns the derivative of the poly_3_gauss function
     """
-    args[5]*(twop/args[4])*np.exp(-0.5*(x-mean)*(x-mean)/(args[4]*args[4]))*(x-mean)/(args[4]*args[4]) + poly_3_prime(x,*args)
+    return args[5]*(twop/args[4])*np.exp(-0.5*(x-mean)*(x-mean)/(args[4]*args[4]))*(x-mean)/(args[4]*args[4]) + poly_3_prime(x,*args)
 
 file_dir = os.path.join(os.path.dirname(__file__), "new_areas")
 
@@ -76,14 +81,27 @@ class Fit:
 
         self.energies = np.log10(data_raw[0])
         self.values = np.log10(data_raw[1])
-
-        if self.flavor=="e":
-            self._fit_f = poly_3_gauss
-            params = (0, 0.5, -1, 0.0, 0.05, 1.5)
+        if False:
+            if self.flavor=="e":
+                self._fit_f = poly_3_gauss
+                params = (0, 0.5, -1, 0.0, 0.05, 1.5)
+            else:
+                self._fit_f = poly_3
+                params = (0, 0.5, -1, 1)
         else:
-            self._fit_f = poly_3
-            params = (0, 0.5, -1, 1)
-        self.popt, self.pcov = curve_fit(self._fit_f, self.energies, self.values, params, maxfev=6000)
+            if True: #self.flavor=="e":
+                self._fit_f = poly_3_gauss
+                params = (2, 1.5, 1.5, 2.0, 0.5, 1.5)
+                bounds_l = (-inf, -inf,-inf,-inf,-inf,-inf)
+                bounds_u = (inf, 3, 3, inf, inf, inf)
+            else:
+                self._fit_f = sad_hat
+                params = (2, 1.5, 1.5, 2.0)
+                bounds = [(-inf, inf) for i in params]
+                bounds_l = (-inf, -inf,-inf,-inf)
+                bounds_u = (inf, 1.7, 1.7, inf)
+        
+        self.popt, self.pcov = curve_fit(self._fit_f, self.energies, self.values, params, maxfev=7000)
 
     def __call__(self, energy):
         """
@@ -109,7 +127,7 @@ class AreaFit:
 
     Then you can get the effective area at arbitrary energy by making a call to this object! 
     """
-    def __init__(self):
+    def __init__(self, debugMode=False):
         """
         
         """
@@ -125,9 +143,23 @@ class AreaFit:
                 angle_str = "{:.1f}_{:.1f}".format(self.a_edges[i], self.a_edges[i+1])
                 filename = os.path.join(sub, "cz_"+angle_str+".csv")
                 
-                data_raw = np.transpose(np.loadtxt(filename, delimiter=","))
+                data_raw = sorted(np.loadtxt(filename, delimiter=","), key=lambda x: x[0])
+                data_raw = np.transpose(data_raw)
                 
                 self.fits[flav].append(Fit(data_raw, flav))
+
+                if debugMode:
+                    dbx = np.logspace(2,8,2000)
+                    dby = self.fits[flav][-1](dbx)
+                    plt.plot(dbx,dby, label="fit")
+                    plt.plot(data_raw[0], data_raw[1], label="data")
+                    plt.xscale('log')
+                    plt.legend()
+                    plt.yscale('log')
+                    plt.ylim([1e-4, 5e2])
+                    plt.title("{}, {}".format(flav.upper(), angle_str))
+                    plt.show()
+                    
 
     def __call__(self, energy:float, cth:float, flavor:str):
         if flavor!="e" and flavor!="mu" and flavor!="tau":
@@ -147,9 +179,8 @@ if __name__=="__main__":
     import pickle
 
     flavors = ["e", "mu", "tau"]
-    master_fit = AreaFit()
-
     do_fudge = True
+    master_fit = AreaFit(not do_fudge)
     if do_fudge:
         core_b = -0.98
         mantle_b= -0.83
@@ -202,15 +233,19 @@ if __name__=="__main__":
                     events[i_e][i_a] += integral
 
         plt.pcolormesh(a_bins, e_bins, events)
-        #plt.xlim([-1,0.2])
-        #plt.ylim([1e2,1e6])
+        plt.xlim([-1,0.2])
+        plt.ylim([1e2,1e6])
         plt.yscale('log')
         plt.vlines(core_b,ymin=1e2, ymax=10**6, colors="white", ls="-")
         plt.text(core_b+0.02, 1.5e2, "Inner/Outer Core Bdr",fontsize="x-small",rotation='vertical',color='white')
         plt.vlines(mantle_b,ymin=1e2, ymax=10**6, colors="white", ls="--")
         plt.text(mantle_b+0.02, 1.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='white')
         for i_e in range(n_e):
+            if e_bins[i_e]>1e6:
+                continue
             for i_a in range(n_a):
+                if a_bins[i_a]>0.2:
+                    continue
                 plt.text(a_bins[i_a]+0.05,e_bins[i_e], "{:.1f}".format(events[i_e][i_a]), fontsize='x-small', color='white')
 
         cbar= plt.colorbar()
@@ -224,19 +259,33 @@ if __name__=="__main__":
         f.close()
         rate = data["event_rate"]
 
+        # do the actual rate stuff now 
+        hertz = np.array([ sum(e_e) for e_e in events])/(10*365*24*3600)
+        e_center = 0.5*(e_bins[1:] + e_bins[:-1])
+        plt.bar(e_bins[:-1], hertz, width=e_bins[1:]-e_bins[:-1], align='edge')
+        plt.xscale('log')
+        plt.yscale('log')
+        plt.xlim([1e2,1e7])
+        plt.ylim([5e-10, 5e-4])
+        plt.show()
+
 
         np.save("full_fudge",events/rate)
 
         plt.pcolormesh(a_bins, e_bins, events/rate)
-        #plt.xlim([-1,0.2])
-       # plt.ylim([1e2,1e6])
+        plt.xlim([-1,0.2])
+        plt.ylim([1e2,1e6])
         plt.yscale('log')
         plt.vlines(core_b,ymin=1e2, ymax=10**6, colors="white", ls="-")
         plt.text(core_b+0.02, 1.5e2, "Inner/Outer Core Bdr",fontsize="x-small",rotation='vertical',color='white')
         plt.vlines(mantle_b,ymin=1e2, ymax=10**6, colors="white", ls="--")
         plt.text(mantle_b+0.02, 1.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='white')
         for i_e in range(n_e):
+            if e_bins[i_e]>=1e6:
+                continue
             for i_a in range(n_a):
+                if a_bins[i_a]>=0.2:
+                    continue
                 plt.text(a_bins[i_a]+0.1,e_bins[i_e], "{:.1f}".format(events[i_e][i_a]/rate[i_e][i_a]), fontsize='x-small', color='white')
 
         cbar= plt.colorbar()
