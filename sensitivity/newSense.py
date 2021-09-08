@@ -45,6 +45,7 @@ class doLLH(generalLLH):
         self._use_syst = True
         self._fix_norm = -1
         self._fixing_norm = False
+        self._use_sideband_err = False
         if not isinstance(filenames, str):
             raise TypeError("Filename should be {}, not {}".format(str, type(filenames)))
         self._filenames = filenames
@@ -104,8 +105,17 @@ class doLLH(generalLLH):
 
         self._expectation = exp
         err = np.sqrt(exp)
-        self._net_error_m_stat = err
-        self._net_error_p_stat = err
+        # the first four bins have an extra 5% error placed on them because we use that fit
+        scaling = np.zeros(shape=(len(self._expectation),1))
+        for i in range(4):
+            scaling[i][0] = 0.05
+
+        if self._use_sideband_err:
+            self._net_error_m_stat = err*np.sqrt( 1+ err*(scaling**2) )
+            self._net_error_p_stat = err*np.sqrt( 1+ err*(scaling**2) )
+        else:
+            self._net_error_m_stat = err
+            self._net_error_p_stat = err
 
     def _parse_options(self, options):
         """
@@ -115,7 +125,7 @@ class doLLH(generalLLH):
           - upgoing, only look at those with cos(theta)<0.2 if True
           - fudge_factor: scales the statistics by a fudge factor: either a number-like or a np.ndarray with the same shape as the expectation 
         """
-        known = ["is_mc", "flatten", "upgoing", "skip_missing", "use_syst", "fix_norm", "fudge"]
+        known = ["is_mc", "flatten", "upgoing", "skip_missing", "use_syst", "fix_norm", "fudge", "use_sideband_err"]
 
         for key in options.keys():
             if key not in known:
@@ -133,6 +143,7 @@ class doLLH(generalLLH):
         self._skip_missing = self._skip_missing if read(3,bool) is None else read(3,bool)
         self._use_syst     =self._use_syst if read(4, bool) is None else read(4, bool)
         self._fix_norm     =self._fix_norm if read(5,float) is None else read(5,float)
+        self._use_sideband_err = self._use_sideband_err if read(6, bool) is None else read(6, bool)
         
         # the fudge needs special handling
         self._fudge_factor = 1.0
