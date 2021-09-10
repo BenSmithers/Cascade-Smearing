@@ -9,17 +9,14 @@ Then, we calculate the derivatives of these functions - this is easy since they'
 So, we can then _call_ this object with some bin edges, and it'll return the new effective areas. Neato! 
 """
 
-import os 
+import os
+from math import inf, log10, pi, sqrt
+
 import numpy as np
-from math import pi, sqrt, log10, inf
-from numpy.core.defchararray import not_equal
-
-from scipy.optimize import curve_fit
-from scipy.integrate import dblquad
-
-from cascade.utils import SterileParams, get_loc
 from cascade.raw_fluxes import raw_flux
 from cascade.sensitivity.astro_flux_generator import generate_astr_flux
+from cascade.utils import SterileParams, get_loc
+from scipy.optimize import curve_fit
 
 twop = 1/sqrt(2*pi)
 
@@ -180,6 +177,11 @@ def get_expectation(*args):
     a_bins = np.linspace(-1,1,n_a+1)
     events = np.zeros(shape=(n_e, n_a))
 
+    electron = np.zeros(shape=(n_e, n_a))
+    muon = np.zeros(shape=(n_e, n_a))
+    tau = np.zeros(shape=(n_e, n_a))
+
+
     def metaflux(energy, angle, flav):
         """
         This little function sums the contributions for each flux making up this combined flux 
@@ -200,15 +202,22 @@ def get_expectation(*args):
                 net_f = net_f + flux*ff
         return net_f*2*pi
 
-    for i_a in range(n_a):
-        for i_e in range(n_e):
-            for flav in flavors:
+    for flav in flavors:
+        for i_a in range(n_a):
+            for i_e in range(n_e):
+
                 integral = dblquad(lambda energy, angle:metaflux(energy, angle, flav), a=a_bins[i_a], b=a_bins[i_a+1], gfun=e_bins[i_e], hfun=e_bins[i_e+1])[0]
                 if integral<0:
                     print("{} {} {}".format(i_e, i_a, flav))
                     raise ValueError("Negative value in integral: {}".format(integral))
 
                 events[i_e][i_a] += integral
+                if flav=="e":
+                    electron[i_e][i_a] += integral
+                elif flav=="mu":
+                    muon[i_e][i_a]+= integral
+                else:
+                    tau[i_e][i_a]+=integral
 
     livetime_ratio = 1.0
     seconds_up = livetime_ratio*10.*3600.*24.*365
@@ -219,7 +228,10 @@ def get_expectation(*args):
             "e_edges":e_bins,
             "a_edges":a_bins,
             "event_rate":casc_flux,
-            "stat_err":casc_err
+            "stat_err":casc_err,
+            "electron":electron*seconds_up,
+            "muon":muon*seconds_up,
+            "tau":tau*seconds_up
            }
 
 if __name__=="__main__":
@@ -229,11 +241,13 @@ if __name__=="__main__":
     plt.style.use("/home/benito/software/cascade/cascade/cascade.mplstyle")
     
 
-    from cascade.utils import get_color
     import pickle
+
+    from cascade.utils import get_color
 
     
     do_fudge = True
+    flavors = ["e", "mu", "tau"]
     
     if do_fudge:
         core_b = -0.98
@@ -242,6 +256,7 @@ if __name__=="__main__":
 
         # let's see how the new predicted event rate looks! 
         null = SterileParams()
+        not_null= SterileParams(theta13=0.1609, theta23=0.2249, msq2=4.47)
         kwargs = {}
         kwargs["as_data"]=True
         atmo_data = raw_flux(null,kwargs=kwargs)
@@ -249,7 +264,7 @@ if __name__=="__main__":
         n_e = 20
         n_a = 10
 
-        raw_data = generate_for_flux(atmo_data, astr_data)
+        raw_data = get_expectation(atmo_data, astr_data)
 
         e_bins = raw_data["e_edges"]
         a_bins = raw_data["a_edges"]
@@ -281,15 +296,31 @@ if __name__=="__main__":
         data = pickle.load(f)
         f.close()
         rate = data["event_rate"]
+        
+        e = raw_data["electron"]
+        mu = raw_data["muon"]
+        tau = raw_data["tau"]
 
         # do the actual rate stuff now 
         hertz = np.array([ sum(e_e) for e_e in events])/(10*365*24*3600)
+        hertz_e = np.array([ sum(e_e) for e_e in e])/(10*365*24*3600)
+        hertz_mu = np.array([ sum(e_e) for e_e in mu])/(10*365*24*3600)
+        hertz_tau = np.array([ sum(e_e) for e_e in tau])/(10*365*24*3600)
+
+
         e_center = 0.5*(e_bins[1:] + e_bins[:-1])
-        plt.bar(e_bins[:-1], hertz, width=e_bins[1:]-e_bins[:-1], align='edge')
+        plt.plot(e_bins[:-1], hertz, drawstyle='steps',color="k", label="total")
+        plt.plot(e_bins[:-1], hertz_e, drawstyle='steps', label=r"$\nu_e$")
+        plt.plot(e_bins[:-1], hertz_mu, drawstyle='steps', label=r"$\nu_\mu$")
+        plt.plot(e_bins[:-1], hertz_tau, drawstyle='steps', label=r"$\nu_\tau$")
+
         plt.xscale('log')
+        plt.ylabel("Rate [Hz]")
+        plt.xlabel(r"$E_{reco}$ [GeV]")
         plt.yscale('log')
         plt.xlim([1e2,1e7])
         plt.ylim([5e-10, 5e-4])
+        plt.legend()
         plt.show()
 
 
