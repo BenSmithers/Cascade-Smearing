@@ -17,6 +17,7 @@ from cascade.raw_fluxes import raw_flux
 from cascade.sensitivity.astro_flux_generator import generate_astr_flux
 from cascade.utils import SterileParams, get_loc
 from scipy.optimize import curve_fit
+from scipy.integrate import dblquad
 
 twop = 1/sqrt(2*pi)
 
