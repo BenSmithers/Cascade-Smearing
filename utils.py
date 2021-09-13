@@ -277,7 +277,25 @@ def gen_filename(dirname, filename, params, subfolder=True):
     return new_path
 
 
+def enumerate_failures(dirname, filename):
+    """
+    This function provides a list of the parameter points missing, assuming the normal spread of points 
+    """
+    theta24s = np.concatenate( ([0], np.logspace(-3,0,90)) )
+    theta34s = np.concatenate( ([0], np.logspace(-3,0,90)) )
+    msqs = np.concatenate( ([0], np.logspace(-2,2,40)) )
 
+    pams = []
+
+    for i24 in theta24s:
+        for i34 in theta34s:
+            for msq in msqs:
+                pam = SterileParams(theta13=i24, theta23=i34, msq2=msq)
+
+                fn = gen_filename(dirname, filename, pam)
+                if not os.path.exists(fn):
+                    pams.append(pam)
+    return pams
 
 def get_index( key, n_flavor=3 ):
     '''
