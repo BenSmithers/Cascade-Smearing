@@ -147,6 +147,7 @@ class doLLH(generalLLH):
         
         # the fudge needs special handling
         self._fudge_factor = 1.0
+        self._fudge_unc = 1.0
         if  known[6] in options:
             if isinstance(options[known[6]], Number):
                 self._fudge_factor = float(options[known[6]])
@@ -200,6 +201,7 @@ class doLLH(generalLLH):
             data = self.load_file(params)
         except IOError as e:
             if self._skip_missing:
+                print("Skipping {}".format(params))
                 return 1e8
             else:
                 raise IOError(e)
