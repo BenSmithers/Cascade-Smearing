@@ -271,6 +271,9 @@ class doLLH(generalLLH):
     @property
     def options(self):
         return self._options
+    @property
+    def skip_missing(self):
+        return self._skip_missing
 
 class JointLLH(generalLLH):
     """
@@ -286,27 +289,54 @@ class JointLLH(generalLLH):
                 raise TypeError()
 
         self.doLLHs = list(args)
+        self._meta_skip = all( entry.skip_missing for entry in self.doLLHs )
+        self._options=[part.options for part in self.doLLHs]
+        self._skipped = 0
+        self._done = 0
 
     def get_llh(self, params):
         """
         Gets the normalization from the first one, then use that to do the others 
         """
-        data = self.doLLHs[0].load_file(params)
+        try:
+            data = self.doLLHs[0].load_file(params)
+        except IOError:
+            if self._meta_skip:
+                self._skipped += 1
+                if self._skipped%1000 == 0:
+                    print("Skipped {}, found {}".format(self._skipped, self._done))
+                return 1e8
+            else:
+                raise IOError("Didn't find first file at {}".format(params))
         norm = self.doLLHs[0].minimize(data["event_rate"])
         llh = self.doLLHs[0].eval_llh_norm(data["event_rate"], norm)
 
         for LLHobj in self.doLLHs[1:]:
-            data = LLHobj.load_file(params)
+            try:
+                data = LLHobj.load_file(params)
+            except IOError:
+                if self._meta_skip:
+                    self._skipped += 1
+                    if self._skipped%1000 == 0:
+                        print("Skipped {}, found {}".format(self._skipped, self._done))
+                    return 1e8
+                else:
+                    raise IOError("Didn't find subsequent at {}".format(params))
             llh += LLHobj.eval_llh_norm(data["event_rate"], norm)
 
+        self._done += 1
         return llh
+    
+    @property
+    def options(self):
+        return self._options
 
 class Scanner:
     """
     Pass a likelihood calculator and lists of sterile nu parameters
     This can then scan the expectations and return all the LLHs to you!
     """
-    def __init__(self, llHooder : generalLLH, theta24s, theta34s, msqs):
+    def __init__(self, llHooder : generalLLH, theta24s, theta34s, msqs, th14_mode=False):
         """
         Store the information, get ready to scan 
         """
@@ -319,6 +349,7 @@ class Scanner:
         if not isinstance(msqs, (np.ndarray, list, tuple)):
             raise TypeError()
 
+        self.th14_mode = th14_mode
         self.theta24s = theta24s
         self.theta34s = theta34s
         self.msqs = msqs
@@ -356,9 +387,15 @@ class Scanner:
                         print("...{}%".format(pcents[pcent_i]))
                         pcent_i+=1 
 
-                    pam = SterileParams(theta13 = self.theta24s[i24],
-                                        theta23 = self.theta34s[i34],
-                                        msq2 = self.msqs[jm])
+                    if self.th14_mode:
+                        pam = SterileParams(theta03 = self.theta24s[i24],
+                                            theta13 = 0.3826,
+                                            theta23 = self.theta34s[i34],
+                                            msq2 = self.msqs[jm])
+                    else:
+                        pam = SterileParams(theta13 = self.theta24s[i24],
+                                            theta23 = self.theta34s[i34],
+                                            msq2 = self.msqs[jm])
 
                     if self._compare:
                         # if we _expect_ the sterile point, what's the llh of measuring what we measure?
