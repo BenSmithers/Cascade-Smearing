@@ -7,11 +7,11 @@ font.size: 16
 font.family: serif
 font.serif: Computer Modern, Latin Modern Roman, Bitstream Vera Serif
 font.sans-serif    : Computer Modern Sans serif, Helvetica, Avant Garde
-#text.usetex: True
+text.usetex: True
 axes.linewidth: 1.0
 #font.weight: False
 
-#mathtext.fontset: custom
+mathtext.fontset: custom
 mathtext.bf: False
 
 axes.prop_cycle: cycler('color', ['29A2C6','FF6D31','73B66B','EF597B', '333333', 'FFCB18'])
