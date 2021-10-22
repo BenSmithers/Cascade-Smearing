@@ -13,6 +13,7 @@ from math import sqrt
 from scipy.optimize import minimize
 
 from cascade.utils import SterileParams, gen_filename, config
+from cascade.deporeco import DataReco
 
 
 from cascade.sensitivity.systematic_unc import unc_wrapper, Syst
@@ -46,6 +47,7 @@ class doLLH(generalLLH):
         self._fix_norm = -1
         self._fixing_norm = False
         self._use_sideband_err = False
+        self._smear = False
         if not isinstance(filenames, str):
             raise TypeError("Filename should be {}, not {}".format(str, type(filenames)))
         self._filenames = filenames
@@ -55,6 +57,19 @@ class doLLH(generalLLH):
 
         self._parse_options(options)
         self._options = options
+        if self._smear:
+            # get the edges
+            fn = gen_filename(data_folder, self._filenames, central_exp)
+            obj = open(fn, 'rb')
+            data = pickle.load(obj)
+            obj.close()
+
+            self._e_edges = data["e_edges"]
+            n_e = len(self._e_edges)-1
+            self._a_edges = data["a_edges"]
+            n_a = len(self._a_edges)-1
+            self._reco_obj = DataReco(self._e_edges*(1e9), self._a_edges, self._e_edges*(1e9), self._a_edges)
+            self._reco_tensor = [[[[ self._reco_obj.get_energy_reco_odds(l,j)*self._reco_obj.get_czenith_reco_odds(k,i,l) for i in range(n_a)] for j in range(n_e)] for k in range(n_a)] for l in range(n_e)]
         
         
         
@@ -124,8 +139,14 @@ class doLLH(generalLLH):
 
           - upgoing, only look at those with cos(theta)<0.2 if True
           - fudge_factor: scales the statistics by a fudge factor: either a number-like or a np.ndarray with the same shape as the expectation 
+          - upgoing: I think this changes the binning used? 
+          - skip_missing: if a file is missing, skip it and don't throw an exception. Sets the LLH to a very big number 
+          - fix_norm: fix the normalization to a provided float 
+          - fudge: a fudge factor you can apply to a whole flux. The dimensions need to match
+          - use_sideband_err: apply an extra uncertainty to some of the boundaries 
+          - smear: load in the DataReco object and smear the fluxes for emulating the reconstruction 
         """
-        known = ["is_mc", "flatten", "upgoing", "skip_missing", "use_syst", "fix_norm", "fudge", "use_sideband_err"]
+        known = ["is_mc", "flatten", "upgoing", "skip_missing", "use_syst", "fix_norm", "fudge", "use_sideband_err", "smear"]
 
         for key in options.keys():
             if key not in known:
@@ -144,7 +165,8 @@ class doLLH(generalLLH):
         self._use_syst     =self._use_syst if read(4, bool) is None else read(4, bool)
         self._fix_norm     =self._fix_norm if read(5,float) is None else read(5,float)
         self._use_sideband_err = self._use_sideband_err if read(6, bool) is None else read(6, bool)
-        
+        self._smear = self._fix_norm if read(7,bool) is None else read(7,bool)
+
         # the fudge needs special handling
         self._fudge_factor = 1.0
         self._fudge_unc = 1.0
@@ -202,15 +224,19 @@ class doLLH(generalLLH):
         except IOError as e:
             if self._skip_missing:
                 print("Skipping {}".format(params))
-                return 1e8
+                return -1e8
             else:
                 raise IOError(e)
 
+        if self._smear:
+            smeared = np.einsum('ij,ijkl',data["event_rate"], self._reco_tensor )
+        else:
+            smeared = data["event_rate"]
 
         if self._fixing_norm:
-            return self.eval_llh_norm(data["event_rate"], self._fix_norm)
+            return self.eval_llh_norm(smeared, self._fix_norm)
         else:
-            return self.eval_llh_norm(data["event_rate"], self.minimize(data["event_rate"]))
+            return self.eval_llh_norm(smeared, self.minimize(smeared))
 
     def minimize(self, evt_rate):
         """
@@ -227,6 +253,7 @@ class doLLH(generalLLH):
 
         We evaluate the llh with the normalization fixed
         """
+
         llh = 0.0
         for i_e in range(len(this_flux)):
             if self._flatten:
@@ -294,6 +321,19 @@ class JointLLH(generalLLH):
         self._skipped = 0
         self._done = 0
 
+        # get the edges
+        fn = gen_filename(data_folder, self.doLLHs[-1]._filenames, SterileParams()) #just use the null for this, we're only looking at the bin edges 
+        obj = open(fn, 'rb')
+        data = pickle.load(obj)
+        obj.close()
+
+        self._e_edges = data["e_edges"]
+        n_e = len(self._e_edges)-1
+        self._a_edges = data["a_edges"]
+        n_a = len(self._a_edges)-1
+        self._reco_obj = DataReco(self._e_edges*(1e9), self._a_edges, self._e_edges*(1e9), self._a_edges)
+        self._reco_tensor = [[[[ self._reco_obj.get_energy_reco_odds(l,j)*self._reco_obj.get_czenith_reco_odds(k,i,l) for i in range(n_a)] for j in range(n_e)] for k in range(n_a)] for l in range(n_e)]
+
     def get_llh(self, params):
         """
         Gets the normalization from the first one, then use that to do the others 
@@ -305,24 +345,30 @@ class JointLLH(generalLLH):
                 self._skipped += 1
                 if self._skipped%1000 == 0:
                     print("Skipped {}, found {}".format(self._skipped, self._done))
-                return 1e8
+                return -1e8
             else:
                 raise IOError("Didn't find first file at {}".format(params))
+
         norm = self.doLLHs[0].minimize(data["event_rate"])
         llh = self.doLLHs[0].eval_llh_norm(data["event_rate"], norm)
 
         for LLHobj in self.doLLHs[1:]:
             try:
-                data = LLHobj.load_file(params)
+                newdata = LLHobj.load_file(params)
             except IOError:
                 if self._meta_skip:
                     self._skipped += 1
                     if self._skipped%1000 == 0:
                         print("Skipped {}, found {}".format(self._skipped, self._done))
-                    return 1e8
+                    return -1e8
                 else:
                     raise IOError("Didn't find subsequent at {}".format(params))
-            llh += LLHobj.eval_llh_norm(data["event_rate"], norm)
+            if LLHobj._smear:
+                smeared = np.einsum('ij,ijkl', newdata["event_rate"], self._reco_tensor)
+            else:
+                smeared = newdata["event_rate"]
+
+            llh += LLHobj.eval_llh_norm(smeared, norm)
 
         self._done += 1
         return llh
@@ -389,7 +435,7 @@ class Scanner:
 
                     if self.th14_mode:
                         pam = SterileParams(theta03 = self.theta24s[i24],
-                                            theta13 = 0.3826,
+                                            theta13 = 0.1609,
                                             theta23 = self.theta34s[i34],
                                             msq2 = self.msqs[jm])
                     else:

@@ -4,7 +4,7 @@ import os
 from cascade.utils import bhist, get_loc, get_closest, config
 from cascade.utils import Calculable, sci
 
-
+from scipy.special import i0
 import pickle
 import scipy.optimize as opt
 import sys 
@@ -228,24 +228,19 @@ def get_odds_angle( reco, true, energy_depo ):
     if not isinstance(energy_depo, (int, float)):
         raise TypeError("Energy of type {}, not {}".format(type(energy_depo), float))
     
-    error = kappaCalc.eval(get_ang_error( energy_depo )*deg)
-    dreco = acos(reco)/deg
-    dtrue = acos(true)/deg
+
+
+    kappa = kappaCalc.eval(get_ang_error( energy_depo )*pi/180)
+    reco_angle = acos(reco)
+    true_angle = acos(true)
 
     #return (rtwo/error)*exp(-0.5*pow((dreco-dtrue)/error,2))
 
     #this is the bessel part of the kent_pdf
-    value = sqrt(1-reco*reco)*sqrt(1-true*true)
-    mbsf = 1 + pow(value,2)/4 + pow(value,4)/64 # we use the polynomial verion since it should be faster
-    
-    try:
-        prob = error/(2*sinh(error))
-    except OverflowError:
-        print(error)
-        sys.exit()
+    value = i0(kappa*sin(true_angle)*sin(reco_angle))
 
     # Based on Alex's Kent Distribution work 
-    return(prob*exp(error*reco*true)*mbsf)
+    return kappa/(2*sinh(kappa)) * exp(kappa*cos(true_angle)*cos(reco_angle))*value*sin(reco_angle)
 
 def get_odds_angle_deprecated(true, reconstructed, energy_depo):
     """
@@ -272,8 +267,13 @@ def get_odds_energy(deposited, reconstructed):
     if not isinstance(reconstructed, (float,int)):
         raise Exception()
 
+    if deposited<data[0][0]:
+        sigma = data[1][0]*deposited*0.01
+    elif deposited>data[0][-1]:
+        sigma = data[1][-1]*deposited*0.01
+    else:
+        sigma = get_closest( deposited, data[0], data[1])*deposited*0.01
 
-    sigma = get_closest( deposited, data[0], data[1])*deposited*0.01
     
     s2 = np.log(1+ (sigma/deposited)**2)
     mu = np.log((deposited**2)/np.sqrt(deposited**2  + sigma**2))
