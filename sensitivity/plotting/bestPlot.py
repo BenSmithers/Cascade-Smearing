@@ -87,19 +87,24 @@ for t24 in range(len(theta14s)):
 #plt.xscale('log')
 #plt.yscale('log')
 
-plt.xlim([0,0.5])
-plt.ylim([0,0.5])
+asimov = True
+if asimov:
+    plt.xlim([0,0.5])
+else:
+    plt.xlim([0,1.0])
+plt.ylim([0,0.1])
+#plt.yscale('log')
+#plt.ylim([1e-2, 1e0])
 
 #plt.xlabel(r"$\left|U_{\mu 4}\right|^{2}=\sin^{2}\theta_{14}$",size=14)
 #plt.ylabel(r"$\left| U_{\tau 4}\right|^{2}=\sin^{2}\theta_{34}\cdot\cos^{2}\theta_{24}$")
 plt.ylabel(r"$\sin^{2}2\theta_{34}$",size=14)
 plt.xlabel(r"$\sin^{2}2\theta_{14}$",size=14)
 
-
 i_c = 0
-def add_contour(filename, label):
+def add_contour(filename, label, linestyle):
     global i_c
-    new_cmap = shift_cmap("cool", i_c*50./256)
+    new_cmap = shift_cmap("magma", (i_c*80.+50)/256)
 
     f = open(filename, 'rb')
     data = pickle.load(f)
@@ -107,23 +112,79 @@ def add_contour(filename, label):
     this_chi = np.array(data["chi2s"])
     these_chi = np.zeros(shape=(len(theta14s), len(theta34s)))
 
+    
+    def interpval(i, j):
+        x = scale_x[i][i]
+        y = scale_y[j][j]
+        slope = (0.00698232-0.00817524)/(0.184218-0.162226)
+        b = 0.00817524-slope*0.162226
+        if y> slope*x+b:
+            return 1e8
+        else:
+            return 1.0*chis_l[0]
+
+    def other_int(i,j):
+        x = scale_x[i][i]
+        y = scale_y[j][j]
+        p1 = (0.154637, 0.00721796)
+        p2 = (0.163703, 0.00811777)
+        slope = (p2[1]-p1[1])/(p2[0]-p1[0])
+        b = p2[1]-slope*p2[0]
+        if y>(slope*x+b):
+            return 1e8
+        else:
+            return 1.0*chis_l[0]
+
     assert(len(this_chi[0][0]) == 1)
     for t24 in range(len(theta14s)):
         for t34 in range(len(theta34s)):
-            these_chi[t24][t34] = this_chi[t24][t34][0]
+            use = this_chi[t24][t34][0]
+            condition = this_chi[t24][t34][0] > 1e8 
+            if condition:
+                use= None # other_int(t24, t34)
+            these_chi[t24][t34] = use
 
-    ct = plt.contour(scale_x, scale_y, these_chi.transpose(), levels=chis_l, cmap=new_cmap,linestyles='--')
+    ct = plt.contour(scale_x, scale_y, these_chi.transpose(), levels=chis_l, cmap=new_cmap,linestyles=linestyle)
+    
     ct.collections[0].set_label(label)
     i_c += 1
+    return ct
 
 
 
 #ct = plt.contour(scale_x, scale_y, chis.transpose(), levels=chis_l, cmap='cool',linestyles='-')
 #ct2= plt.contour(scale_x, scale_y, chis.transpose(), levels=chis_l, cmap='summer', linestyles='--')
-plt.title("When "+r"$\theta_{24}=0.1609$")
-add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_1_00eV_0.0_0.1609e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$")
-add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_3_30eV_0.0_0.1609e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$")
-add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_4_64eV_0.0_0.1609e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$")
+small = False
+if asimov:
+    add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_1_00eV_smearing_0.0_0.1609e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.1609$", '-')
+    add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_3_30eV_smearing_0.0_0.1609e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.1609$", '-')
+    add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_4_64eV_smearing_0.0_0.1609e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.1609$", '-')
+    i_c = 0
+
+    ct = add_contour("/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_1_00eV_smearing_0.0_0.3826e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.3826$", '--')
+    add_contour("/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_3_30eV_smearing_0.0_0.3826e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.3826$", '--')
+    add_contour("/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_4_64eV_smearing_0.0_0.3826e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.3826$", '--')
+    new_color = list(ct.collections[0].get_color()[0])
+    plt.plot([0.189364, 0.213617], [0.00808428, 0.00686016], ls='--', color=new_color)
+else:
+    add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_1_00eV_smearing_0.3555e0_0.1609e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.1609$", '-')
+    add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_3_30eV_smearing_0.3555e0_0.1609e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.1609$", '-')
+    add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_4_64eV_smearing_0.3555e0_0.1609e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.1609$", '-')
+    i_c = 0
+
+    ct = add_contour("/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_1_00eV_smearing_0.3555e0_0.3826e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.3826$", '--')
+    add_contour("/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_3_30eV_smearing_0.3555e0_0.3826e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.3826$", '--')
+    add_contour("/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_4_64eV_smearing_0.3555e0_0.3826e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.3826$", '--')
+    new_colr = list(ct.collections[0].get_color()[0])
+    #plt.plot([0.154637, 0.161903], [0.00711, 0.00814], ls='--', color=(new_colr[0], new_colr[1], new_colr[2]))
+"""
+/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_1_00eV_smearing_0.3555e0_0.1609e0_0.0_1.0000e0.dat
+/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_3_30eV_0.3555e0_0.3826e0_0.0_3.3000e0.dat
+/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_1_00eV_0.3555e0_0.3826e0_0.0_1.0000e0.dat
+/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_4_64eV_0.3555e0_0.3826e0_0.0_4.6400e0.dat
+/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_1_00eV_0.3555e0_0.1609e0_0.0_1.0000e0.dat
+/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_3_30eV_0.3555e0_0.1609e0_0.0_3.3000e0.dat
+"""
 
 print(np.nanmin(chis))
 mindices = np.nanargmin(chis)
@@ -136,7 +197,10 @@ print(theta14s[x], theta34s[y])
 #ct2.collections[0].set_label(r"4.5eV$^{2}$")
 
 #plt.vlines(x=scaled_minos_24, ymin=0, ymax=scaled_minos_34[-1], color='k')
-plt.legend(loc='upper right')
+if asimov:
+    plt.legend(loc='upper right')
+else:
+    plt.legend(loc='upper left')
 
-plt.savefig("bestPlot_1609.png", dpi=400)
+plt.savefig("bestPlot_{}.png".format("asimov" if asimov else "not_asimov"), dpi=400)
 plt.show()
