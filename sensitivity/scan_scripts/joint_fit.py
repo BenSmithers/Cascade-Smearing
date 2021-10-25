@@ -15,7 +15,12 @@ th14_mode = True
 systematics = True
 if len(sys.argv)<2 and th14_mode:
     raise ValueError()
-central = SterileParams(theta13=0.3826, msq2=float(sys.argv[1]))
+
+#best_th14 = 0.3555
+best_th14 = 0.0
+best_th24 = 0.1609
+#best_th24 = 0.3826
+central = SterileParams(theta03=best_th14, theta13=best_th24, msq2=float(sys.argv[1]))
 
 #central = SterileParams(theta13=0.1652, theta23=0.2293, msq2=4.6416)
 
@@ -48,17 +53,19 @@ if False:
 #true_fudge = np.load("full_fudge.npy")
 
 
+smearing = True
 
 options ={
     "is_mc": False,
     "use_syst": systematics,
-    "skip_missing":True
-
+    "skip_missing":True,
+    "smear":smearing
 }
 mc_options = {
     "is_mc" : True,
     "use_syst":systematics,
-    "skip_missing":True
+    "skip_missing":True,
+    "smear":False
 }
 
 llhood = doLLH("best_expected_flux.dat",central_exp=central, options=options)
@@ -77,7 +84,8 @@ results = test.scan()
 results["central"] = central
 
 new_ev_string = "_".join("{:.2f}".format(y[0]).split("."))
-name = "best_llh_{}eV.dat".format(new_ev_string) if th14_mode else "joint_likelihood.dat"
+smearstring = "_smearing" if smearing else ""
+name = "best_llh_{}eV{}.dat".format(new_ev_string,smearstring) if th14_mode else "joint_likelihood{}.dat".format(smearstring)
 
 write_dir = gen_filename(config["datapath"], name , central)
 print("Wrote to {}".format(write_dir))
