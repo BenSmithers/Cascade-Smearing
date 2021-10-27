@@ -87,19 +87,8 @@ for t24 in range(len(theta14s)):
 #plt.xscale('log')
 #plt.yscale('log')
 
-asimov = True
-if asimov:
-    plt.xlim([0,0.5])
-else:
-    plt.xlim([0,1.0])
-plt.ylim([0,0.1])
-#plt.yscale('log')
-#plt.ylim([1e-2, 1e0])
+asimov = False
 
-#plt.xlabel(r"$\left|U_{\mu 4}\right|^{2}=\sin^{2}\theta_{14}$",size=14)
-#plt.ylabel(r"$\left| U_{\tau 4}\right|^{2}=\sin^{2}\theta_{34}\cdot\cos^{2}\theta_{24}$")
-plt.ylabel(r"$\sin^{2}2\theta_{34}$",size=14)
-plt.xlabel(r"$\sin^{2}2\theta_{14}$",size=14)
 
 i_c = 0
 def add_contour(filename, label, linestyle):
@@ -167,6 +156,9 @@ if asimov:
     new_color = list(ct.collections[0].get_color()[0])
     plt.plot([0.189364, 0.213617], [0.00808428, 0.00686016], ls='--', color=new_color)
 else:
+    #plt.vlines(x=[0.3,0.55], ymin=0, ymax=1.0, colors='black')
+    plt.fill_between([0.3,0.55],0, 1.0,color=(0,0,0,0.1))
+    plt.text(0.625, 0.09,"90\% CL, 2 DOF", fontsize='large')
     add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_1_00eV_smearing_0.3555e0_0.1609e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.1609$", '-')
     add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_3_30eV_smearing_0.3555e0_0.1609e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.1609$", '-')
     add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_4_64eV_smearing_0.3555e0_0.1609e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.1609$", '-')
@@ -185,6 +177,18 @@ else:
 /home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_1_00eV_0.3555e0_0.1609e0_0.0_1.0000e0.dat
 /home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_3_30eV_0.3555e0_0.1609e0_0.0_3.3000e0.dat
 """
+if asimov:
+    plt.xlim([0,0.5])
+else:
+    plt.xlim([0,1.0])
+plt.ylim([0,0.1])
+#plt.yscale('log')
+#plt.ylim([1e-2, 1e0])
+
+#plt.xlabel(r"$\left|U_{\mu 4}\right|^{2}=\sin^{2}\theta_{14}$",size=14)
+#plt.ylabel(r"$\left| U_{\tau 4}\right|^{2}=\sin^{2}\theta_{34}\cdot\cos^{2}\theta_{24}$")
+plt.ylabel(r"$\sin^{2}2\theta_{34}$",size=14)
+plt.xlabel(r"$\sin^{2}2\theta_{14}$",size=14)
 
 print(np.nanmin(chis))
 mindices = np.nanargmin(chis)
@@ -198,9 +202,9 @@ print(theta14s[x], theta34s[y])
 
 #plt.vlines(x=scaled_minos_24, ymin=0, ymax=scaled_minos_34[-1], color='k')
 if asimov:
-    plt.legend(loc='upper right')
+    plt.legend(loc='upper right', fancybox=True, frameon=True, framealpha=1.0,facecolor='white', edgecolor='black')
 else:
-    plt.legend(loc='upper left')
+    plt.legend(loc='upper left', fancybox=True, frameon=True,framealpha=1.0,facecolor='white', edgecolor='black')
 
 plt.savefig("bestPlot_{}.png".format("asimov" if asimov else "not_asimov"), dpi=400)
 plt.show()

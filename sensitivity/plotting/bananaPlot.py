@@ -26,7 +26,7 @@ interp = True
 
 #/home/benito/software/data/cascade/hg_sib/0.0/newSense_result_float_0.0_0.0_0.0_0.0.dat
 # /home/benito/software/data/cascade/hg_sib/0.0/joint_likelihood_nosys_0.0_0.0_0.0_0.0.dat <- no sys
-f = open("/home/benito/software/data/cascade/hg_sib/0.1652e0/joint_likelihood_0.0_0.1652e0_0.2293e0_4.6416e0.dat", 'rb')
+f = open("/home/benito/software/data/cascade/hg_sib/0.1652e0/joint_likelihood_smearing_0.0_0.1652e0_0.2293e0_4.6416e0.dat", 'rb')
 #f = open("/home/benito/software/data/cascade/hg_sib/0.0/joint_likelihood_0.0_0.0_0.0_0.0.dat",'rb')
 #f = open("/home/benito/software/data/cascade/hg_sib/0.0/newSense_result_float_0.0_0.0_0.0_0.0.dat",'rb')
 #f = open("/home/benito/software/data/cascade/hg_sib/0.0/newSense_result_0.0_0.0_0.0_0.0.dat", 'rb')
@@ -126,11 +126,9 @@ for ev in evs:
     #plt.pcolormesh(scale_x,scale_y, chis.transpose(),vmin=0, vmax=10, cmap="PuBu")
     #cbar = plt.colorbar(extend='max')
     
-    plt.xscale('log')
     #plt.title("At {:.2f} eV".format(ev if interp else msqs[which_sliver[0]]) +r"$^{2}$")
 #            plt.yscale('log')
-    plt.ylim([0.00,0.30])
-    plt.xlim([1e-3,0.5])
+
     plt.xlabel(r"$\left|U_{\mu 4}\right|^{2}=\sin^{2}\theta_{24}$",size=14)
     plt.ylabel(r"$\left| U_{\tau 4}\right|^{2}=\sin^{2}\theta_{34}\cdot\cos^{2}\theta_{24}$")
 #            plt.ylabel(r"$\sin^{2}2\theta_{34}$",size=14)
@@ -156,8 +154,11 @@ for ev in evs:
     ct.collections[0].set_label("{}".format(ev) + r"eV$^{2}$")
 
     #plt.vlines(x=scaled_minos_24, ymin=0, ymax=scaled_minos_34[-1], color='k')
-    plt.yscale('log')
-    plt.ylim([3e-3, 5e-1])
+    
+plt.xlim([1e-3,0.5])
+plt.xscale('log')
+plt.yscale('log')
+plt.ylim([3e-3, 5e-1])
 plt.title("90\% CL, 3 DOF")
 plt.legend(loc='upper left')
 plt.savefig("containment.png",dpi=400)

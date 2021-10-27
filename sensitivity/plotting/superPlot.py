@@ -46,7 +46,7 @@ interp = True
 #f = open("/home/benito/software/data/cascade/hg_sib/expectations/0.0/cummulative_probs_nosys_0.0_0.0_0.0_0.0.dat",'rb')\
 
 # use this to just get the edges and stuff 
-f = open("/home/benito/software/data/cascade/hg_sib/0.0/joint_likelihood_0.0_0.0_0.0_0.0.dat",'rb')
+f = open("/home/benito/software/data/cascade/hg_sib/0.0/joint_likelihood_smearing_0.0_0.0_0.0_0.0.dat",'rb')
 obj = pickle.load(f)
 f.close()
 

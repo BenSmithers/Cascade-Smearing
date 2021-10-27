@@ -8,10 +8,12 @@ import numpy as np
 import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
+plt.style.use("/home/benito/software/cascade/cascade/cascade.mplstyle")
 
 
-
-f = open("../cummulative_probs.dat_from_mc",'rb')
+#f = open("../cummulative_probs.dat_from_mc",'rb')
+#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.1609e0/cummulative_probs_from_mc_0.0_0.1609e0_0.0_4.4700e0.dat",'rb')
+f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.0/cummulative_probs_from_mc_0.0_0.0_0.0_0.0.dat",'rb')
 obj = pickle.load(f)
 f.close()
 
@@ -23,7 +25,7 @@ c_prob = obj["c_prob"]
 chi2 = obj["chi2s"]
 
 
-ps = [.10]
+ps = [ 0.10]
 chis = [-2*log(p) for p in ps]
 
 labels = ["90%"]#, "99%"]
@@ -32,7 +34,7 @@ def set_lbls(ct_plot):
     fmt = {}
     for l,s in zip(ct_plot.levels, labels):
         fmt[l] = s
-    plt.clabel(ct_plot, ct_plot.levels, inline=True, fmt=fmt, fontsize=10)
+    plt.clabel(ct_plot, ct_plot.levels, inline=True, fmt=fmt, fontsize=10, inline_spacing=-10)
 
 def si2(values):
     sinsin = np.sin(2*values)
@@ -40,16 +42,17 @@ def si2(values):
 
 print(chis)
 
-print(msqs)
 
 brazil_green = (0.0,156./255,59./255)
 brazil_yellow = (1.0, 223./255, 0.0)
-white = (1,1,1)
+white = (1,1,1,0.0)
 
-cmap = matplotlib.colors.ListedColormap([brazil_green, brazil_yellow, white])
+all_colors = [brazil_green for i in range(23)] + [brazil_yellow for i in range(46-23)] + [white for i in range(100-46)]
+
+cmap = matplotlib.colors.ListedColormap(all_colors)
 cmap.set_over('1.0')
 cmap.set_under('0.75')
-bounds = chis
+bounds = chis  
 norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
 
 

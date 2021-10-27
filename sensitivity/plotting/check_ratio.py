@@ -14,6 +14,8 @@ from math import pi
 
 plt.style.use("/home/benito/software/cascade/cascade/cascade.mplstyle")
 
+# /home/benito/software/data/cascade/hg_sib//expected_fluxes_reco/0.1609e0/best_expected_flux_0.0_0.1609e0_0.2247e0_4.4700e0.dat
+
 # pass the fluxes to the MC reader
 # it bins each of the events weight*flux 
 # so we get an array of N_events in each bin
@@ -26,11 +28,11 @@ def load(param):
     """
     #filename = "null_exp.dat" if null_bool else "ster_exp.dat"
     where = "/home/benito/software/data/cascade/hg_sib/expected_fluxes_reco"
-    
+
     #filename = gen_filename(where, "expected_flux_smeared.dat", param)
-    filename = gen_filename(where, "expected_flux_smearedwell.dat", param)
+    filename = gen_filename(where, "best_expected_flux.dat", param)
     
-    if os.path.exists(filename):
+    if True: #os.path.exists(filename):
         print("Loading {}".format(filename))
         f = open(filename,'rb')
         data = pickle.load(f)
@@ -45,7 +47,7 @@ def load(param):
         return data
 
 
-sp= SterileParams(theta13=0.1641e0, theta23=0.2566e0, msq2=4.6416e0)
+sp= SterileParams(theta13=0.1609e0, theta23=0.2247e0, msq2=4.47e0)
 null_flux_d = load(SterileParams())
 ster_flux_d = load(sp)
 
@@ -63,15 +65,15 @@ print("E bins {}".format(len(e_edges)))
 
 print(e_edges)
 print(a_edges)
-amount = ster_flux/null_flux
+amount = 100*(ster_flux/null_flux)
 
-plt.pcolormesh(a_edges, e_edges, amount,vmin=0.5,vmax=1.5, cmap="coolwarm")
+plt.pcolormesh(a_edges, e_edges, amount,vmin=70,vmax=130, cmap="coolwarm")
 cf = plt.colorbar()
 cf.set_label("Difference [%]")
 #plt.title("Appearance with Bin-Breaking",size=14)
 plt.xlabel(r"$\cos\theta_{z}^{reco}$")
 plt.ylabel(r"$E_{\nu}^{reco}$ [GeV]")
-#plt.xlim([-1,0.2])
+plt.xlim([-1,0.2])
 plt.ylim([1e2, 1e6])
 plt.yscale('log')
 plt.show()
