@@ -1,6 +1,5 @@
 *.png
 *.o
-*.dat
 *.log
 *.err
 *.out
