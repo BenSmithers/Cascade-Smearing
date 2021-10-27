@@ -10,6 +10,5 @@
 __pycache__/*
 
 *.submit
-*.dag
 *.swp
 
