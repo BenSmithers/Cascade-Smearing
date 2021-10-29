@@ -2,50 +2,53 @@
 Make a plot of our event rate at each bin. We will have two pannels! 
 """
 
-#f_name_s = "/home/benito/software/data/cascade/hg_sib/expected_fluxes_reco/0.0/expected_flux_smearedwell_0.0_0.0_0.0_0.0.dat"
-f_name_s = "/home/benito/Downloads/best_expected_flux_0.0_0.0_0.0_0.0.dat"
-f_name_s = "/home/benito/software/data/cascade/hg_sib/expected_fluxes_reco/0.0/expected_flux_from_mc_0.0_0.0_0.0_0.0.dat"
-#f_name_s = "/home/benito/software/data/cascade/hg_sib//expected_fluxes_reco/0.1609e0/best_expected_flux_0.0_0.1609e0_0.2247e0_4.4700e0.dat"
-#f_name_s = "/home/benito/Downloads/best_expected_flux_0.0_0.1581e-1_0.1581e-1_0.0.dat"
-
-f_name = "/home/benito/software/data/cascade/hg_sib/expected_fluxes_reco/0.0/expected_flux_0.0_0.0_0.0_0.0.dat"
-#f_name = "/home/benito/software/data/cascade/hg_sib/expected_fluxes_reco/0.0/expected_flux_from_mc_0.0_0.0_0.0_0.0.dat"
-
 import pickle
 import numpy as np
 from math import pi 
+import os
 
 import matplotlib 
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
-plt.style.use("/home/benito/software/cascade/cascade/cascade.mplstyle")
+plt.style.use(os.path.join(os.path.dirname(__file__), "..", ".." , "cascade.mplstyle"))
 
-from cascade.utils import SterileParams, gen_filename
+from cascade.utils import SterileParams, gen_filename, config
 from cascade.deporeco import DataReco
 
 
 def ldata(fname):
+    print("Loading {}".format(fname))
     f = open(fname, 'rb')
     data = pickle.load(f)
     f.close()
     return data
 
+ratios = False
+
 central_s = SterileParams()
 sterile_s = SterileParams(theta13=0.1652, theta23=0.2293, msq2=4.6416)
-use_params = sterile_s
+use_params = central_s
 
 cascade_name_root = "best_expected_flux.dat"
 track_name_root = "expected_flux_from_mc_smearedwell.dat"
-datadir = "/home/benito/software/data/cascade/hg_sib/expected_fluxes_reco/"
+datadir = os.path.join(config["datapath"], "expected_fluxes_reco")
+# datadir = "/home/benito/software/data/cascade/hg_sib/expected_fluxes_reco/"
 
-cascade_fname = gen_filename(datadir, cascade_name_root, use_params)
-track_fname = gen_filename(datadir, track_name_root, use_params)
+sterile_casc_fname = gen_filename(datadir, cascade_name_root, sterile_s)
+sterile_track_fname = gen_filename(datadir, track_name_root, sterile_s)
 
-data = ldata(f_name)
-data2 = ldata(f_name_s)
+
+cascade_fname = gen_filename(datadir, cascade_name_root, central_s)
+track_fname = gen_filename(datadir, track_name_root, central_s)
+
+#data = ldata(f_name)
+#data2 = ldata(f_name_s)
 
 cascade_datadict = ldata(cascade_fname)
 track_datadict = ldata(track_fname)
+st_cascade_data = ldata(sterile_casc_fname)
+st_track_data = ldata(sterile_track_fname)
+
 
 
 e_edges = cascade_datadict["e_edges"]
@@ -54,9 +57,17 @@ n_a = len(a_edges)-1
 n_e = len(e_edges)-1
 _reco_obj = DataReco(e_edges*(1e9), a_edges, e_edges*(1e9), a_edges)
 _reco_tensor = [[[[ _reco_obj.get_energy_reco_odds(j,l)*_reco_obj.get_czenith_reco_odds(k,i,l) for i in range(n_a)] for j in range(n_e)] for k in range(n_a)] for l in range(n_e)]
-casc_e = np.einsum('ij,klij',cascade_datadict["event_rate"], _reco_tensor)
 
-track_e = track_datadict["event_rate"]
+
+if ratios:
+    ster_casc_e = np.einsum('ij,klij',st_cascade_data["event_rate"], _reco_tensor)
+    cent_casc_e = np.einsum('ij,klij',cascade_datadict["event_rate"], _reco_tensor)
+    casc_e = ster_casc_e/cent_casc_e
+    track_e = st_track_data["event_rate"] / track_datadict["event_rate"]
+
+else:
+    casc_e = np.einsum('ij,klij',cascade_datadict["event_rate"], _reco_tensor)
+    track_e = track_datadict["event_rate"]
 
 core_b = -0.98
 mantle_b= -0.83
@@ -75,57 +86,49 @@ if declination:
     core_b = decd(core_b)
     mantle_b = decd(mantle_b)
 
-fig, axes = plt.subplots(2,2,figsize=(10,6.5),sharey='row', gridspec_kw={'height_ratios':[0.05,1]})
-fig.subplots_adjust(wspace=0.10)
+fig, axes = plt.subplots(1,2,figsize=(12,7)) #, gridspec_kw={'height_ratios':[0.05,1], 'width_ratios':[1,1]})
+fig.subplots_adjust(wspace=0.05)
 # fig.subplots_adjust(bottom=0.15)
-print(np.shape(axes))
 
-pc = axes[1][0].pcolormesh(a_edges, e_edges, track_e, cmap='viridis', norm = matplotlib.colors.LogNorm())
-axes[1][0].vlines(core_b,ymin=1e2, ymax=10**6, colors="white", ls="-")
-axes[1][0].text(core_b+0.02, 1.5e2, "Inner/Outer Core Bdr",fontsize="x-small",rotation='vertical',color='white')
-axes[1][0].vlines(mantle_b,ymin=1e2, ymax=10**6, colors="white", ls="--")
-axes[1][0].text(mantle_b+0.02, 1.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='white')
-fig.colorbar(pc,cax=axes[0][0], orientation='horizontal')
-
-axes[1][0].set_xlabel(r"$\cos\theta_{z}^{reco}$")
-axes[1][0].set_ylabel(r"$E^{reco}$ [GeV]")
-axes[1][0].set_yscale('log')
-axes[1][0].set_ylim([1e2,1e6])
-axes[1][0].set_xlim([-1,0.2])
-
-pc2 = axes[1][1].pcolormesh(a_edges, e_edges, casc_e, cmap='viridis', norm = matplotlib.colors.LogNorm(), vmin=1e-1)
-axes[1][1].vlines(core_b,ymin=1e2, ymax=10**6, colors="white", ls="-")
-axes[1][1].text(core_b+0.02, 1.5e2, "Inner/Outer Core Bdr",fontsize="x-small",rotation='vertical',color='white')
-axes[1][1].vlines(mantle_b,ymin=1e2, ymax=10**6, colors="white", ls="--")
-axes[1][1].text(mantle_b+0.02, 1.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='white')
-fig.colorbar(pc2,cax=axes[0][1], orientation='horizontal')
-
-axes[1][1].set_xlabel(r"$\cos\theta_{z}^{reco}$")
-axes[1][1].set_yscale('log')
-axes[1][1].set_ylim([1e2,1e6])
-axes[1][1].set_xlim([-1,0.2])
-
-plt.show()
-plt.savefig("event_rate_sterile.png",dpi=400)
-"""
-plt.pcolormesh(a_edges, e_edges, evt_r, cmap='viridis', vmin=0, vmax=50000)
-
-plt.vlines(core_b,ymin=1e2, ymax=10**6, colors="white", ls="-")
-plt.text(core_b+0.02, 1.5e2, "Inner/Outer Core Bdr",fontsize="x-small",rotation='vertical',color='white')
-plt.vlines(mantle_b,ymin=1e2, ymax=10**6, colors="white", ls="--")
-plt.text(mantle_b+0.02, 1.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='white')
-cbar = plt.colorbar()
-cbar.set_label("Events")
-if declination:
-    plt.xlabel(r"$\sin\delta^{reco}$")
+# norm = matplotlib.colors.LogNorm()
+if ratios:
+    pc = axes[0].pcolormesh(a_edges, e_edges, track_e, cmap='viridis', vmin=0.75, vmax=1.25 )
 else:
-    plt.xlabel(r"$\cos\theta_{z}^{reco}$")
+    pc = axes[0].pcolormesh(a_edges, e_edges, track_e, cmap='viridis', norm = matplotlib.colors.LogNorm())
+
+axes[0].vlines(core_b,ymin=1e2, ymax=10**6, colors="black", ls="-")
+axes[0].text(core_b+0.02, 5.5e2, "Inner/Outer Core Bdr",fontsize="x-small",rotation='vertical',color='black')
+axes[0].vlines(mantle_b,ymin=1e2, ymax=10**6, colors="black", ls="--")
+axes[0].text(mantle_b+0.02, 5.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='black')
+
+axes[0].set_xlabel(r"$\cos\theta_{z}^{reco}$")
+axes[0].set_ylabel(r"$E^{reco}$ [GeV]")
+axes[0].set_yscale('log')
+axes[0].set_ylim([5e2,1e4])
+axes[0].set_xlim([-1,0.2])
+fig.colorbar(pc, ax=axes[0], orientation='horizontal') #, anchor=(0,0.9), panchor=(0,1))
 
 
-plt.ylabel(r"$E^{reco}$ [GeV]")
-plt.yscale('log')
-plt.ylim([1e2,1e6])
-plt.xlim([-1,0.2])
-plt.savefig("event_rate_plot.png", dpi=400)
+#norm = matplotlib.colors.LogNorm()
+if ratios:
+    pc2 = axes[1].pcolormesh(a_edges, e_edges, casc_e, cmap='viridis', vmin=0.75, vmax=1.25)
+else:
+    pc2 = axes[1].pcolormesh(a_edges, e_edges, casc_e, cmap='viridis', vmin=1e-1, norm = matplotlib.colors.LogNorm())
+
+axes[1].vlines(core_b,ymin=1e2, ymax=10**6, colors="black", ls="-")
+axes[1].text(core_b+0.02, 1.5e2, "Inner/Outer Core Bdr",fontsize="x-small",rotation='vertical',color='black')
+axes[1].vlines(mantle_b,ymin=1e2, ymax=10**6, colors="black", ls="--")
+axes[1].text(mantle_b+0.02, 1.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='black')
+
+axes[1].set_xlabel(r"$\cos\theta_{z}^{reco}$")
+axes[1].set_yscale('log')
+axes[1].set_ylim([1e2,1e6])
+axes[1].set_xlim([-1,0.2])
+fig.colorbar(pc2,ax=axes[1], orientation='horizontal' ) #, anchor=(0.5,0.9), panchor=(0.5,1))
+
+plt.tight_layout()
 plt.show()
-"""
+if ratios:
+    plt.savefig("event_rate_ratios.png",dpi=400)
+else:
+    plt.savefig("event_rate.png",dpi=400)

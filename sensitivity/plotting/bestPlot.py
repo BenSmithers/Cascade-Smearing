@@ -11,27 +11,27 @@ from cascade.utils import shift_cmap
 import pickle
 from math import sqrt, asin
 import numpy as np
-
+import os
 import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 
-plt.style.use("/home/benito/software/cascade/cascade/cascade.mplstyle")
+plt.style.use(os.path.join(os.path.dirname(__file__), "..", ".." , "cascade.mplstyle"))
 
 interp = True
 
 #f = open("../cummulative_probs.dat",'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.0/scaled_cummulative_probsnonorm_special_nosys_0.0_0.0_0.0_0.0.dat",'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.0/scaled_cummulative_probsnonorm_special_0.0_0.0_0.0_0.0.dat",'rb')
+#f = open("/home/bsmithers/software/data/hg_sib//expectations/0.0/scaled_cummulative_probsnonorm_special_nosys_0.0_0.0_0.0_0.0.dat",'rb')
+#f = open("/home/bsmithers/software/data/hg_sib//expectations/0.0/scaled_cummulative_probsnonorm_special_0.0_0.0_0.0_0.0.dat",'rb')
 
-#/home/benito/software/data/cascade/hg_sib/0.0/newSense_result_float_0.0_0.0_0.0_0.0.dat
-# /home/benito/software/data/cascade/hg_sib/0.0/joint_likelihood_nosys_0.0_0.0_0.0_0.0.dat <- no sys
-#f = open("/home/benito/software/data/cascade/hg_sib/0.1652e0/joint_likelihood_0.0_0.1652e0_0.2293e0_4.6416e0.dat", 'rb')
+#/home/bsmithers/software/data/hg_sib/0.0/newSense_result_float_0.0_0.0_0.0_0.0.dat
+# /home/bsmithers/software/data/hg_sib/0.0/joint_likelihood_nosys_0.0_0.0_0.0_0.0.dat <- no sys
+#f = open("/home/bsmithers/software/data/hg_sib/0.1652e0/joint_likelihood_0.0_0.1652e0_0.2293e0_4.6416e0.dat", 'rb')
 
 
-f2 = open("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_4_47eV_0.0_0.1609e0_0.0_4.4700e0.dat",'rb')
-f = open("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_3_30eV_0.0_0.1609e0_0.0_3.3000e0.dat", 'rb')
-# f = open("/home/benito/software/data/cascade/hg_sib/0.1609e0/joint_likelihood_0.0_0.1609e0_0.0_4.4700e0.dat", 'rb')
+f2 = open("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_4_47eV_0.0_0.1609e0_0.0_4.4700e0.dat",'rb')
+f = open("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_3_30eV_0.0_0.1609e0_0.0_3.3000e0.dat", 'rb')
+# f = open("/home/bsmithers/software/data/hg_sib/0.1609e0/joint_likelihood_0.0_0.1609e0_0.0_4.4700e0.dat", 'rb')
 
 obj = pickle.load(f)
 f.close()
@@ -140,42 +140,42 @@ def add_contour(filename, label, linestyle):
     return ct
 
 
-
+plt.figure(figsize=(7,5))
 #ct = plt.contour(scale_x, scale_y, chis.transpose(), levels=chis_l, cmap='cool',linestyles='-')
 #ct2= plt.contour(scale_x, scale_y, chis.transpose(), levels=chis_l, cmap='summer', linestyles='--')
 small = False
 if asimov:
-    add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_1_00eV_smearing_0.0_0.1609e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.1609$", '-')
-    add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_3_30eV_smearing_0.0_0.1609e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.1609$", '-')
-    add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_4_64eV_smearing_0.0_0.1609e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.1609$", '-')
+    add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_1_00eV_smearing_0.0_0.1609e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.1609$", '-')
+    add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_3_30eV_smearing_0.0_0.1609e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.1609$", '-')
+    add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_4_64eV_smearing_0.0_0.1609e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.1609$", '-')
     i_c = 0
 
-    ct = add_contour("/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_1_00eV_smearing_0.0_0.3826e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.3826$", '--')
-    add_contour("/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_3_30eV_smearing_0.0_0.3826e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.3826$", '--')
-    add_contour("/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_4_64eV_smearing_0.0_0.3826e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.3826$", '--')
+    ct = add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_1_00eV_smearing_0.0_0.3826e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.3826$", '--')
+    add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_3_30eV_smearing_0.0_0.3826e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.3826$", '--')
+    add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_4_64eV_smearing_0.0_0.3826e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.3826$", '--')
     new_color = list(ct.collections[0].get_color()[0])
     plt.plot([0.189364, 0.213617], [0.00808428, 0.00686016], ls='--', color=new_color)
 else:
     #plt.vlines(x=[0.3,0.55], ymin=0, ymax=1.0, colors='black')
     plt.fill_between([0.3,0.55],0, 1.0,color=(0,0,0,0.1))
     plt.text(0.625, 0.09,"90\% CL, 2 DOF", fontsize='large')
-    add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_1_00eV_smearing_0.3555e0_0.1609e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.1609$", '-')
-    add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_3_30eV_smearing_0.3555e0_0.1609e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.1609$", '-')
-    add_contour("/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_4_64eV_smearing_0.3555e0_0.1609e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.1609$", '-')
+    add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_1_00eV_smearing_0.3555e0_0.1609e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.1609$", '-')
+    add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_3_30eV_smearing_0.3555e0_0.1609e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.1609$", '-')
+    add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_4_64eV_smearing_0.3555e0_0.1609e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.1609$", '-')
     i_c = 0
 
-    ct = add_contour("/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_1_00eV_smearing_0.3555e0_0.3826e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.3826$", '--')
-    add_contour("/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_3_30eV_smearing_0.3555e0_0.3826e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.3826$", '--')
-    add_contour("/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_4_64eV_smearing_0.3555e0_0.3826e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.3826$", '--')
+    ct = add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_1_00eV_smearing_0.3555e0_0.3826e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.3826$", '--')
+    add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_3_30eV_smearing_0.3555e0_0.3826e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.3826$", '--')
+    add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_4_64eV_smearing_0.3555e0_0.3826e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.3826$", '--')
     new_colr = list(ct.collections[0].get_color()[0])
     #plt.plot([0.154637, 0.161903], [0.00711, 0.00814], ls='--', color=(new_colr[0], new_colr[1], new_colr[2]))
 """
-/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_1_00eV_smearing_0.3555e0_0.1609e0_0.0_1.0000e0.dat
-/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_3_30eV_0.3555e0_0.3826e0_0.0_3.3000e0.dat
-/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_1_00eV_0.3555e0_0.3826e0_0.0_1.0000e0.dat
-/home/benito/software/data/cascade/hg_sib/0.3826e0/best_llh_4_64eV_0.3555e0_0.3826e0_0.0_4.6400e0.dat
-/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_1_00eV_0.3555e0_0.1609e0_0.0_1.0000e0.dat
-/home/benito/software/data/cascade/hg_sib/0.1609e0/best_llh_3_30eV_0.3555e0_0.1609e0_0.0_3.3000e0.dat
+/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_1_00eV_smearing_0.3555e0_0.1609e0_0.0_1.0000e0.dat
+/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_3_30eV_0.3555e0_0.3826e0_0.0_3.3000e0.dat
+/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_1_00eV_0.3555e0_0.3826e0_0.0_1.0000e0.dat
+/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_4_64eV_0.3555e0_0.3826e0_0.0_4.6400e0.dat
+/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_1_00eV_0.3555e0_0.1609e0_0.0_1.0000e0.dat
+/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_3_30eV_0.3555e0_0.1609e0_0.0_3.3000e0.dat
 """
 if asimov:
     plt.xlim([0,0.5])
@@ -206,5 +206,6 @@ if asimov:
 else:
     plt.legend(loc='upper left', fancybox=True, frameon=True,framealpha=1.0,facecolor='white', edgecolor='black')
 
+plt.tight_layout()
 plt.savefig("bestPlot_{}.png".format("asimov" if asimov else "not_asimov"), dpi=400)
 plt.show()

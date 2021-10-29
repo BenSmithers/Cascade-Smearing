@@ -5,7 +5,8 @@ Draw our sensitivity contours and then overlay other experiments' sensitivities
 """
 
 from os import set_inheritable
-from cascade.utils import gen_filename, config
+import os 
+from cascade.utils import SterileParams, gen_filename, config
 from cascade.utils import get_loc, get_closest, get_color
 
 import pickle
@@ -16,7 +17,7 @@ import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 
-plt.style.use("/home/benito/software/cascade/cascade/cascade.mplstyle")
+plt.style.use(os.path.join(os.path.dirname(__file__), "..", ".." , "cascade.mplstyle"))
 
 interp = True
 
@@ -26,25 +27,9 @@ interp = True
 
 #/home/benito/software/data/cascade/hg_sib/0.0/newSense_result_float_0.0_0.0_0.0_0.0.dat
 # /home/benito/software/data/cascade/hg_sib/0.0/joint_likelihood_nosys_0.0_0.0_0.0_0.0.dat <- no sys
-f = open("/home/benito/software/data/cascade/hg_sib/0.1652e0/joint_likelihood_smearing_0.0_0.1652e0_0.2293e0_4.6416e0.dat", 'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib/0.0/joint_likelihood_0.0_0.0_0.0_0.0.dat",'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib/0.0/newSense_result_float_0.0_0.0_0.0_0.0.dat",'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib/0.0/newSense_result_0.0_0.0_0.0_0.0.dat", 'rb')
+fname = gen_filename(config["datapath"], "joint_likelihood_smearing.dat" , SterileParams(theta13=0.1652, theta23=0.2293, msq2=4.6416))
 
-
-#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.1641e0/scaled_cummulative_probs_special_nosys_0.0_0.1641e0_0.2566e0_4.6416e0.dat",'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.0/scaled_cummulative_probs_special_0.0_0.0_0.0_0.0.dat",'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.0/cummulative_probs_special_nosys_0.0_0.0_0.0_0.0.dat",'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.0/cummulative_probs_special_0.0_0.0_0.0_0.0.dat",'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.1609e0/cummulative_probs_flat_smear_0.0_0.1609e0_0.2276e0_4.4700e0.dat",'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.0/cummulative_probs_flat_smear_0.0_0.0_0.0_0.0.dat",'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.1641e0/cummulative_probs_0.0_0.1641e0_0.2566e0_4.6410e0.dat",'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.0/cummulative_probs_flat_0.0_0.0_0.0_0.0.dat",'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.1609e0/cummulative_probs_0.0_0.1609e0_0.2276e0_4.4700e0.dat",'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.0/cummulative_probs_0.0_0.0_0.0_0.0.dat",'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.0/cummulative_probs_compare_0.0_0.0_0.0_0.0.dat",'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.1609e0/cummulative_probs_0.0_0.1609e0_0.0_4.4700e0.dat",'rb')
-#f = open("/home/benito/software/data/cascade/hg_sib/expectations/0.0/cummulative_probs_nosys_0.0_0.0_0.0_0.0.dat",'rb')
+f = open(fname, 'rb')
 obj = pickle.load(f)
 f.close()
 
