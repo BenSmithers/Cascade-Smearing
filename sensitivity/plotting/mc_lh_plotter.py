@@ -4,16 +4,17 @@ from cascade.utils import get_loc
 import pickle
 from math import log, pi, sin
 import numpy as np
+import os
 
 import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
-plt.style.use("/home/benito/software/cascade/cascade/cascade.mplstyle")
+plt.style.use(os.path.join(os.path.dirname(__file__), "..", ".." , "cascade.mplstyle"))
 
 
 #f = open("../cummulative_probs.dat_from_mc",'rb')
 #f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.1609e0/cummulative_probs_from_mc_0.0_0.1609e0_0.0_4.4700e0.dat",'rb')
-f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.0/cummulative_probs_from_mc_0.0_0.0_0.0_0.0.dat",'rb')
+f = open("/home/bsmithers/software/data/hg_sib/expectations/0.0/cummulative_probs_from_mc_0.0_0.0_0.0_0.0.dat",'rb')
 obj = pickle.load(f)
 f.close()
 
@@ -60,19 +61,20 @@ chis = np.zeros(shape=(len(theta24s), len(msqs)))
 for t24 in range(len(theta24s)):
     for msq in range(len(msqs)):
         chis[t24][msq] = chi2[t24][0][msq]
-plt.pcolormesh(si2(theta24s), msqs, chis.transpose(), vmin=0, vmax=10, cmap="PuBu")
-cbar = plt.colorbar(extend='max')
-cbar.set_label(r"-2$\Delta$LLH", size=14)
+#plt.pcolormesh(si2(theta24s), msqs, chis.transpose(), vmin=0, vmax=10, cmap="PuBu")
+#cbar = plt.colorbar(extend='max')
+#cbar.set_label(r"-2$\Delta$LLH", size=14)
 ct = plt.contour(si2(theta24s), msqs, chis.transpose(), levels=[-2*log(0.10)], cmap='Oranges_r')
 plt.xlim([0.001, 1])
 plt.ylim([0.01, 100])
-set_lbls(ct)
+#set_lbls(ct)
 plt.xscale('log')
 plt.yscale('log')
-plt.title(r"90% CL Sensitivity from Tracks", size=14)
+plt.text(2e-3, 3e1, "90\% CL, 2 DOF", color='black', size='x-large')
+# plt.title(r"90% CL Sensitivity from Tracks", size=14)
 #plt.text(2,25, "Smithers Preliminary", color="r",size=14)
-plt.ylabel(r"$\Delta m_{14}^{2}$ [eV$^{2}$]",size=14)
-plt.xlabel(r"$\sin^{2}(2\theta_{24})$",size=14)
+plt.ylabel(r"$\Delta m_{14}^{2}$ [eV$^{2}$]",size=18)
+plt.xlabel(r"$\sin^{2}(2\theta_{24})$",size=18)
 plt.tight_layout()
 plt.savefig("track_sensitivity.png", dpi=400)
 plt.show()

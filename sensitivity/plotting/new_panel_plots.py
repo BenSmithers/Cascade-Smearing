@@ -17,10 +17,12 @@ from matplotlib import pyplot as plt
 import pickle
 plt.style.use(os.path.join(os.path.dirname(__file__), "..", ".." , "cascade.mplstyle"))
 
-#params=SterileParams(theta13=0.1609, theta23=0.0, msq2=4.64)
-params=SterileParams(theta13=0.1609, theta23=0.2245, msq2=4.64)
-params=SterileParams(theta03=0.3555, theta13=0.1609, msq2=3.3)
+params=SterileParams(theta13=0.1609, theta23=0.0, msq2=4.64)
+#params=SterileParams(theta13=0.1609, theta23=0.2245, msq2=4.64)
+#params=SterileParams(theta03=0.3555, theta13=0.1609, msq2=3.3)
 #params= SterileParams()
+
+colorscale = 'PuBu'
 
 def state_setter(energies, zeniths, n_nu, kwargs):
     """
@@ -40,8 +42,6 @@ def state_setter(energies, zeniths, n_nu, kwargs):
             for neut_type in range(2):
                 inistate[i_a][i_e][neut_type][1] = 1.0
     return inistate 
-
-fig, axes = plt.subplots(3,1,figsize=(5,10),sharex=True, gridspec_kw={'height_ratios':[1,1,1.45]})
 
 # either generate the file or load it in! 
 expected_fn = gen_filename(config["datapath"], "unitary_prob.dat", params)
@@ -65,42 +65,78 @@ keys = ["_".join([flav, neut, curr]) for flav in flavors]
 core_b = -0.98
 mantle_b= -0.83
 
-fig.subplots_adjust(hspace=0.)
-
 energies = np.logspace(2, 7, 200)
 angles = np.linspace(-1,0.2, 100)
 
+this_key = "Mu_nuBar_CC"
+flux = [[ final_probs.get_flux(energy*(1e9),this_key, angle=angle) for angle in angles] for energy in energies]
+plt.figure(figsize=(7,5))
+mesh = plt.pcolormesh(angles, energies, flux, cmap=colorscale, vmin=0, vmax=1)
+cbar = plt.colorbar(mesh)
+cbar.set_label(r"$P(\bar{\nu}_{\mu}\to\bar{\nu}_{\mu})$")
+plt.xlim([-1,0.2])
+plt.ylim([1e2,1e6])
+plt.yscale('log')
+plt.ylabel(r"$E_{\nu}^{true}$")
+plt.xlabel(r"$\cos\theta_{z}^{true}$")
+plt.vlines(core_b,ymin=1e2, ymax=10**6, colors="white", ls="-")
+plt.text(core_b+0.02, 1.5e2, "Inner/Outer Core Bdr",fontsize="x-small",rotation='vertical',color='white')
+plt.vlines(mantle_b,ymin=1e2, ymax=10**6, colors="white", ls="--")
+plt.text(mantle_b+0.02, 1.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='white')
+plt.tight_layout()
+plt.savefig("nubar_survival.png", dpi=400)
+plt.show()
+
+
+fig, axes = plt.subplots(3,1,figsize=(5,10),sharex=True, gridspec_kw={'height_ratios':[1,1,1.45]})
+fig.subplots_adjust(hspace=0.1)
+fig.subplots_adjust(left=0.2)
+
 for i in range(len(keys)):
-    if i==0:
-        stylized = r"$\bar{\nu}_{e}$"
-    elif i==1:
-        stylized = r"$\bar{\nu}_{\mu}$"
-    elif i==2:
-        stylized = r"$\bar{\nu}_{\tau}$" 
-    elif i==3:
-        stylized = r"$\bar{\nu}_{s}$"
+    if neut=="nuBar":
+        if i==0:
+            stylized = r"$\bar{\nu}_{e}$"
+        elif i==1:
+            stylized = r"$\bar{\nu}_{\mu}$"
+        elif i==2:
+            stylized = r"$\bar{\nu}_{\tau}$" 
+        elif i==3:
+            stylized = r"$\bar{\nu}_{s}$"
+        else:
+            raise ValueError("What's goin on with this")
     else:
-        raise ValueError("What's goin on with this")
+        if i==0:
+            stylized = r"$\nu_{e}$"
+        elif i==1:
+            stylized = r"$\nu_{\mu}$"
+        elif i==2:
+            stylized = r"$\nu_{\tau}$" 
+        elif i==3:
+            stylized = r"$\nu_{s}$"
+        else:
+            raise ValueError("What's goin on with this")
+    
+
 
     print(r"Doing $P(\nu_{\mu}\to$" + stylized + ")")
 
     axes[i].set_ylabel(r"$E_{\nu}^{true}$")
     axes[i].set_yscale('log')
-    axes[i].set_ylim([1e2,1e7])
+    axes[i].set_ylim([1e2,1e6])
     axes[i].set_xlim([-1,0.2])
     flux = [[ final_probs.get_flux(energy*(1e9), keys[i], angle=angle) for angle in angles] for energy in energies]
 
-    axes[i].text(-0.95, 1e6, stylized, color='white', fontsize='large')
-    pt = axes[i].pcolormesh(angles, energies, flux, cmap='inferno', vmin=0.0, vmax=1.0)
-    axes[i].vlines(core_b,ymin=1e2, ymax=10**6, colors="white", ls="-")
-    axes[i].text(core_b+0.02, 1.5e2, "Inner/Outer Core Bdr",fontsize="x-small",rotation='vertical',color='white')
+    axes[i].text(0.0, 1e5, stylized, color='white' if i==1 else 'black', fontsize='x-large')
+    pt = axes[i].pcolormesh(angles, energies, flux, cmap=colorscale, vmin=0.0, vmax=1.0)
+    #axes[i].vlines(core_b,ymin=1e2, ymax=10**6, colors="white", ls="-")
+    #axes[i].text(core_b+0.02, 1.5e2, "Inner/Outer Core Bdr",fontsize="x-small",rotation='vertical',color='white')
     axes[i].vlines(mantle_b,ymin=1e2, ymax=10**6, colors="white", ls="--")
-    axes[i].text(mantle_b+0.02, 1.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='white')
+    #axes[i].text(mantle_b+0.02, 1.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='white')
 
-cbar = plt.colorbar(pt, orientation = 'horizontal', pad=0.2)
+cbar = plt.colorbar(pt, orientation = 'horizontal', pad=0.22)
 cbar.set_label(r"P($\bar{\nu}_{\mu}\to \bar{\nu}_{\alpha}$ )")
 axes[-1].set_xlabel(r"$\cos\theta_{z}^{true}$")
-plt.tight_layout()
+#plt.tight_layout()
 plt.savefig("survival_odds_{}.png".format(params),dpi=400)
 plt.show()
 
@@ -124,15 +160,17 @@ for i in range(len(keys)):
 
     axes[i].set_ylabel(r"$E_{\nu}^{true}$")
     axes[i].set_yscale('log')
-    axes[i].set_ylim([1e2,1e7])
+    axes[i].set_ylim([1e2,1e6])
     axes[i].set_xlim([-1,0.2])
+    axes[i].set_xlabel(r"$\cos\theta_{z}^{true}$")
+
+    axes[i].text(0., 3e5, stylized, color='black', fontsize='xx-large')
     flux = [[ final_probs.get_flux(energy*(1e9), keys[i], angle=angle) for angle in angles] for energy in energies]
 
-    pt = axes[i].pcolormesh(angles, energies, flux, cmap='inferno', vmin=0.0, vmax=1.0)
+    pt = axes[i].pcolormesh(angles, energies, flux, cmap=colorscale, vmin=0.0, vmax=1.0)
 
 cbar = plt.colorbar(pt)
-cbar.set_label(r"P($\bar{\nu}_{\mu}\to \bar{\nu}_{\alpha}$ )")
-axes[-1].set_xlabel(r"$\cos\theta_{z}^{true}$")
+cbar.set_label(r"P($\nu_{\mu}\to \nu_{tau}$ )")
 plt.tight_layout()
 plt.savefig("tau_odds_{}.png".format(params),dpi=400)
 plt.show()
