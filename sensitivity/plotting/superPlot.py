@@ -50,6 +50,15 @@ f = open("/home/benito/software/data/cascade/hg_sib/0.0/joint_likelihood_smearin
 obj = pickle.load(f)
 f.close()
 
+import sys
+
+if len(sys.argv)>1:
+    # now we grab the eV thingy 
+    ev = float(sys.argv[1])
+else:
+    ev = 1.0
+print("Making plot at {}".format(ev)+r" eV$^{2}$")
+
 theta24s = obj["theta24s"]
 theta34s = obj["theta34s"]
 msqs = obj["msqs"]
@@ -75,7 +84,7 @@ def set_lbls(ct_plot, labels, color):
     move_it += 1
 
 # evs = [1.5,3.3,4.64,10]
-evs = [1.0]
+evs = [10]
 
 
 xs, ys= np.meshgrid( theta24s, theta34s)
@@ -97,7 +106,6 @@ super_k = np.transpose(np.loadtxt("sk.dat", delimiter=","))
 deepcore = np.transpose(np.loadtxt("deepcore.dat", delimiter=","))
 antares = np.transpose(np.loadtxt("antares.dat", delimiter=","))
 
-ev = 1.0
 
 which_sliver = get_loc(ev, msqs)
 print(which_sliver)

@@ -87,7 +87,7 @@ if declination:
     mantle_b = decd(mantle_b)
 
 fig, axes = plt.subplots(1,2,figsize=(12,7)) #, gridspec_kw={'height_ratios':[0.05,1], 'width_ratios':[1,1]})
-fig.subplots_adjust(wspace=0.05)
+fig.subplots_adjust(wspace=0.15)
 # fig.subplots_adjust(bottom=0.15)
 
 # norm = matplotlib.colors.LogNorm()
@@ -96,15 +96,19 @@ if ratios:
 else:
     pc = axes[0].pcolormesh(a_edges, e_edges, track_e, cmap='viridis', norm = matplotlib.colors.LogNorm())
 
-axes[0].vlines(core_b,ymin=1e2, ymax=10**6, colors="black", ls="-")
-axes[0].text(core_b+0.02, 5.5e2, "Inner/Outer Core Bdr",fontsize="x-small",rotation='vertical',color='black')
+    for i_e in range(len(e_edges) -1 ):
+        for i_a in range(len(a_edges) - 1):
+            axes[0].text( 0.5*a_edges[i_a]+0.5*a_edges[i_a+1], e_edges[i_e]*0.9+e_edges[i_e+1]*0.1, "{:.1f}".format(track_e[i_e][i_a]), color="white", fontsize="small", rotation=90)
+
+#axes[0].vlines(core_b,ymin=1e2, ymax=10**6, colors="black", ls="-")
+#axes[0].text(core_b+0.02, 5.5e2, "Inner/Outer Core Bdr",fontsize="x-small",rotation='vertical',color='black')
 axes[0].vlines(mantle_b,ymin=1e2, ymax=10**6, colors="black", ls="--")
 axes[0].text(mantle_b+0.02, 5.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='black')
 
 axes[0].set_xlabel(r"$\cos\theta_{z}^{reco}$")
 axes[0].set_ylabel(r"$E^{reco}$ [GeV]")
 axes[0].set_yscale('log')
-axes[0].set_ylim([5e2,1e4])
+axes[0].set_ylim([4e2,1e4])
 axes[0].set_xlim([-1,0.2])
 fig.colorbar(pc, ax=axes[0], orientation='horizontal') #, anchor=(0,0.9), panchor=(0,1))
 
@@ -114,9 +118,14 @@ if ratios:
     pc2 = axes[1].pcolormesh(a_edges, e_edges, casc_e, cmap='viridis', vmin=0.75, vmax=1.25)
 else:
     pc2 = axes[1].pcolormesh(a_edges, e_edges, casc_e, cmap='viridis', vmin=1e-1, norm = matplotlib.colors.LogNorm())
+    for i_e in range(len(e_edges) -1 ):
+        for i_a in range(len(a_edges) - 1):
+            axes[1].text( 0.8*a_edges[i_a]+0.2*a_edges[i_a+1], e_edges[i_e]*0.8+e_edges[i_e+1]*0.2, "{:.1f}".format(casc_e[i_e][i_a]), color="white", fontsize="small", rotation=0)
 
-axes[1].vlines(core_b,ymin=1e2, ymax=10**6, colors="black", ls="-")
-axes[1].text(core_b+0.02, 1.5e2, "Inner/Outer Core Bdr",fontsize="x-small",rotation='vertical',color='black')
+
+
+#axes[1].vlines(core_b,ymin=1e2, ymax=10**6, colors="black", ls="-")
+#axes[1].text(core_b+0.02, 1.5e2, "Inner/Outer Core Bdr",fontsize="x-small",rotation='vertical',color='black')
 axes[1].vlines(mantle_b,ymin=1e2, ymax=10**6, colors="black", ls="--")
 axes[1].text(mantle_b+0.02, 1.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='black')
 
@@ -126,9 +135,12 @@ axes[1].set_ylim([1e2,1e6])
 axes[1].set_xlim([-1,0.2])
 fig.colorbar(pc2,ax=axes[1], orientation='horizontal' ) #, anchor=(0.5,0.9), panchor=(0.5,1))
 
-plt.tight_layout()
-plt.show()
+#plt.tight_layout()
+
 if ratios:
     plt.savefig("event_rate_ratios.png",dpi=400)
 else:
     plt.savefig("event_rate.png",dpi=400)
+
+
+plt.show()
