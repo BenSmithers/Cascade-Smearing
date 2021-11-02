@@ -86,8 +86,8 @@ if declination:
     core_b = decd(core_b)
     mantle_b = decd(mantle_b)
 
-fig, axes = plt.subplots(1,2,figsize=(12,7)) #, gridspec_kw={'height_ratios':[0.05,1], 'width_ratios':[1,1]})
-fig.subplots_adjust(wspace=0.15)
+fig, axes = plt.subplots(2,1,figsize=(7,12), sharex=True) #, gridspec_kw={'height_ratios':[0.05,1], 'width_ratios':[1,1]})
+fig.subplots_adjust(wspace=0.15, hspace=0.05, left=0.13, right=0.95,top=0.98, bottom=0.075)
 # fig.subplots_adjust(bottom=0.15)
 
 # norm = matplotlib.colors.LogNorm()
@@ -105,12 +105,12 @@ else:
 axes[0].vlines(mantle_b,ymin=1e2, ymax=10**6, colors="black", ls="--")
 axes[0].text(mantle_b+0.02, 5.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='black')
 
-axes[0].set_xlabel(r"$\cos\theta_{z}^{reco}$")
 axes[0].set_ylabel(r"$E^{reco}$ [GeV]")
 axes[0].set_yscale('log')
 axes[0].set_ylim([4e2,1e4])
 axes[0].set_xlim([-1,0.2])
-fig.colorbar(pc, ax=axes[0], orientation='horizontal') #, anchor=(0,0.9), panchor=(0,1))
+cbar = fig.colorbar(pc, ax=axes[0]) #, anchor=(0,0.9), panchor=(0,1))
+cbar.set_label("Events")
 
 
 #norm = matplotlib.colors.LogNorm()
@@ -119,6 +119,8 @@ if ratios:
 else:
     pc2 = axes[1].pcolormesh(a_edges, e_edges, casc_e, cmap='viridis', vmin=1e-1, norm = matplotlib.colors.LogNorm())
     for i_e in range(len(e_edges) -1 ):
+        if e_edges[i_e]>=7e5:
+            continue
         for i_a in range(len(a_edges) - 1):
             axes[1].text( 0.8*a_edges[i_a]+0.2*a_edges[i_a+1], e_edges[i_e]*0.8+e_edges[i_e+1]*0.2, "{:.1f}".format(casc_e[i_e][i_a]), color="white", fontsize="small", rotation=0)
 
@@ -130,11 +132,12 @@ axes[1].vlines(mantle_b,ymin=1e2, ymax=10**6, colors="black", ls="--")
 axes[1].text(mantle_b+0.02, 1.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='black')
 
 axes[1].set_xlabel(r"$\cos\theta_{z}^{reco}$")
+axes[1].set_ylabel(r"$E^{reco}$ [GeV]")
 axes[1].set_yscale('log')
-axes[1].set_ylim([1e2,1e6])
+axes[1].set_ylim([1e2,7e5])
 axes[1].set_xlim([-1,0.2])
-fig.colorbar(pc2,ax=axes[1], orientation='horizontal' ) #, anchor=(0.5,0.9), panchor=(0.5,1))
-
+cbar=fig.colorbar(pc2,ax=axes[1] ) #, anchor=(0.5,0.9), panchor=(0.5,1))
+cbar.set_label("Events")
 #plt.tight_layout()
 
 if ratios:
