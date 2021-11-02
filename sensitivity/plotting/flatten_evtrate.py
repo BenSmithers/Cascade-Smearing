@@ -45,9 +45,9 @@ tensor = [[[[ dataobj.get_energy_reco_odds(j,l)*dataobj.get_czenith_reco_odds(k,
 evt_r = np.einsum('ij,klij', evt_r,tensor)
 s_evt_r = np.einsum('ij,klij', sdata["event_rate"],tensor)
 
-fig, axes = plt.subplots(1,2,sharey=True,figsize=(11,5), gridspec_kw={'width_ratios':[1,1]})
+fig, axes = plt.subplots(2,1,figsize=(7,10))
 fig.subplots_adjust(wspace=0.1)
-fig.subplots_adjust(bottom=0.175)
+fig.subplots_adjust(bottom=0.08, left=0.15, right=0.97, top=0.98)
 
 
 from math import pi
@@ -68,7 +68,7 @@ axes[0].set_xlim([1e3,1e6])
 axes[0].set_xlabel(r"$E_{\nu}$"+" [GeV]")
 axes[0].set_ylabel("Events")
 #axes[0].grid(which='both', alpha=0.5)
-axes[0].set_ylim([5e-1,1800])
+#axes[0].set_ylim([5e-1,1800])
 axes[0].legend()
 
 axes[1].bar( x=declination[:-1], height=binned_in_ang, width=declination[1:]-declination[:-1], align='edge', color=(217/255,152/255,82/255 ), alpha=0.75,label=r"No Sterile")
@@ -76,6 +76,7 @@ axes[1].bar( x=declination[:-1], height=sbinned_in_ang, width=declination[1:]-de
 axes[1].set_xlim([-1.0,0.2])
 #axes[1].set_xlabel(r"$\sin\delta^{reco}$")
 axes[1].set_xlabel(r"$\cos\theta_{z}$")
+axes[1].set_ylabel("Events")
 axes[1].legend()
 #axes[1].grid(which='both', alpha=0.5)
 #plt.tight_layout()
