@@ -87,7 +87,7 @@ test = Scanner(jointllh, theta24s=th24s, theta34s=thetas, msqs=msqs, th14_mode=t
 results = test.scan()
 results["central"] = central
 
-new_ev_string = "_".join("{:.2f}".format(y[0]).split("."))
+new_ev_string = "_".join("{:.2f}".format(msqs[0]).split("."))
 smearstring = "_smearing" if smearing else ""
 name = "best_llh_{}eV{}.dat".format(new_ev_string,smearstring) if th14_mode else "joint_likelihood{}.dat".format(smearstring)
 

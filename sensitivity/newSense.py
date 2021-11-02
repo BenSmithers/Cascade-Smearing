@@ -434,7 +434,7 @@ class Scanner:
         """
         chi2 = np.zeros(shape=(len(self.theta24s),len(self.theta34s), len(self.msqs)))
         
-        n_todo = len(self.theta24s)*len(self.theta34s)*len(self.msqs)
+        n_todo = len(self.theta24s)*len(self.theta34s)*len(self.msqs)*len(self.theta14s)
         counter = 0
         pcent_i = 0
         pcents = np.concatenate((np.linspace(0,95,20), np.linspace(96,100,5)))
