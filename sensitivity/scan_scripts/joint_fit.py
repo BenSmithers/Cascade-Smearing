@@ -11,23 +11,26 @@ from math import asin, sqrt
 from cascade.utils import get_loc, config, gen_filename, SterileParams
 import sys
 print("Running with : {}".format(sys.argv))
-th14_mode = True
+th14_mode = False
 systematics = True
-if len(sys.argv)<2 and th14_mode:
-    raise ValueError()
 
 #best_th14 = 0.3555
-best_th14 = 0.0
-best_th24 = 0.1609
-#best_th24 = 0.3826
-central = SterileParams(theta03=best_th14, theta13=best_th24, msq2=float(sys.argv[1]))
+#best_th14 = 0.0
+#best_th24 = 0.1609
+example_dm2 = 4.47
+best_th24 = 0.3826
+#central = SterileParams()
 
 #central = SterileParams(theta13=0.1652, theta23=0.2293, msq2=4.6416)
 
 #th03 = asin(sqrt(0.42))/2.0
-#central = SterileParams(theta03 = th03, theta13=0.1609, msq2=4.47)
-# central = SterileParams(theta13=0.1609, msq2=4.47)
+th03 = 0.3555
+# central = SterileParams(theta03 = th03, theta13=0.1609, msq2=4.47)
+#central = SterileParams(theta13=0.1609, msq2=4.47)
 
+#central = SterileParams(theta13=0.1652, theta23=0.2293, msq2=4.6416)
+central = SterileParams(theta03=th03, theta13=best_th24, msq2=3.3)
+print("Central point: {}".format(central))
 if False:
     # load fudge
     fudge_file = os.path.join(os.path.dirname("__file__"), "fudge.dat")
@@ -72,13 +75,14 @@ llhood = doLLH("best_expected_flux.dat",central_exp=central, options=options)
 mcllhood = doLLH("expected_flux_from_mc_smearedwell.dat", central_exp=central, options=mc_options)
 jointllh = JointLLH(mcllhood, llhood)
 
-x = np.concatenate(([0], np.arcsin(np.sqrt(np.logspace(-3,0,90)))/2))
+thetas = np.concatenate(([0], np.arcsin(np.sqrt(np.logspace(-3,0,90)))/2))
 if th14_mode:
-
-    y = [float(sys.argv[1])]
+    msqs = [1.0, 3.3, 4.64]
+    th24s = [0.1609, 0.3826]
 else:
-    y = np.concatenate(([0], np.logspace(-2,2,40)))
-test = Scanner(jointllh, x, x, y, th14_mode) 
+    msqs = np.concatenate(([0], np.logspace(-2,2,40)))
+    th24s = thetas
+test = Scanner(jointllh, theta24s=th24s, theta34s=thetas, msqs=msqs, th14_mode=th14_mode, theta14s=thetas) 
 
 results = test.scan()
 results["central"] = central

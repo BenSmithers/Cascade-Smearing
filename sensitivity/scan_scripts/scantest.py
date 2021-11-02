@@ -33,13 +33,15 @@ if False:
         for a_i in range(10):
             full_fudge[e_i][a_i] = fudge[j]
 
-true_fudge = np.load("../full_fudge.npy")
+#true_fudge = np.load("../full_fudge.npy")
 
 # fix_norm
 options ={
+    "is_mc":False,
     "skip_missing":True,
     "use_syst":True,
-    "fix_norm":1.0
+    "smear":True
+
 }
 
 
@@ -51,7 +53,7 @@ test = Scanner(llhood, x, x, y)
 
 results = test.scan()
 
-write_dir = gen_filename(config["datapath"], "newSense_result_fix.dat", central)
+write_dir = gen_filename(config["datapath"], "newSense_result_smear.dat", central)
 print("Wrote to {}".format(write_dir))
 f = open(write_dir, 'wb')
 pickle.dump(results, f, -1)

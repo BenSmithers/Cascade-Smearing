@@ -386,7 +386,7 @@ class Scanner:
     Pass a likelihood calculator and lists of sterile nu parameters
     This can then scan the expectations and return all the LLHs to you!
     """
-    def __init__(self, llHooder : generalLLH, theta24s, theta34s, msqs, th14_mode=False):
+    def __init__(self, llHooder : generalLLH, theta24s, theta34s, msqs, th14_mode=False, theta14s=None):
         """
         Store the information, get ready to scan 
         """
@@ -399,9 +399,23 @@ class Scanner:
         if not isinstance(msqs, (np.ndarray, list, tuple)):
             raise TypeError()
 
+        if th14_mode or (theta14s is not None):
+            if theta14s is None:
+                self.theta14s = theta24s
+                self.theta24s = [0.1609]
+            else:
+                if not isinstance(theta14s, (np.ndarray,list,tuple)):
+                    raise TypeError()
+                self.theta14s = theta14s
+                self.theta24s = theta24s
+        else:
+            self.theta24s = theta24s
+            self.theta14s = [0.0]
+
+
         self.th14_mode = th14_mode
-        self.theta24s = theta24s
         self.theta34s = theta34s
+
         self.msqs = msqs
 
         self._compare = False
@@ -430,45 +444,43 @@ class Scanner:
         print("Starting the scan! This "+how_long)
 
         start = datetime.now()
-        for i24 in range(len(self.theta24s)):
-            for i34 in range(len(self.theta34s)):
-                for jm in range(len(self.msqs)):
-                    counter += 1 
-                    if 100*(counter/n_todo) > pcents[pcent_i]:
-                        print("...{}%".format(pcents[pcent_i]))
-                        pcent_i+=1 
-                        if (not prediction_made) and (pcent_i!=1):
-                            end = datetime.now()
-                            t_total = ((end-start)*n_todo)/counter
-                            print("Estimated time of completion: {}".format(start + t_total))
+        for i14 in range(len(self.theta14s)):
+            for i24 in range(len(self.theta24s)):
+                for i34 in range(len(self.theta34s)):
+                    for jm in range(len(self.msqs)):
+                        counter += 1 
+                        if 100*(counter/n_todo) > pcents[pcent_i]:
+                            print("...{}%".format(pcents[pcent_i]))
+                            pcent_i+=1 
+                            if (not prediction_made) and (pcent_i!=1):
+                                end = datetime.now()
+                                t_total = ((end-start)*n_todo)/counter
+                                print("Estimated time of completion: {}".format(start + t_total))
 
-                            prediction_made = True
+                                prediction_made = True
 
-                    if self.th14_mode:
-                        pam = SterileParams(theta03 = self.theta24s[i24],
-                                            theta13 = 0.1609,
-                                            theta23 = self.theta34s[i34],
-                                            msq2 = self.msqs[jm])
-                    else:
-                        pam = SterileParams(theta13 = self.theta24s[i24],
+                        pam = SterileParams(theta03 = self.theta14s[i14],
+                                            theta13 = self.theta24s[i24],
                                             theta23 = self.theta34s[i34],
                                             msq2 = self.msqs[jm])
 
-                    if self._compare:
-                        # if we _expect_ the sterile point, what's the llh of measuring what we measure?
-                        self.llh._set_central(pam)
-                        llh = self.llh.get_llh(self._central)
-                    else:
-                        # what are the odds of measuring PAM if we expect whatever the llh'er was configured to expect
-                        llh = self.llh.get_llh(pam)
+                        if self._compare:
+                            # if we _expect_ the sterile point, what's the llh of measuring what we measure?
+                            self.llh._set_central(pam)
+                            llh = self.llh.get_llh(self._central)
+                        else:
+                            # what are the odds of measuring PAM if we expect whatever the llh'er was configured to expect
+                            llh = self.llh.get_llh(pam)
 
-                    chi2[i24][i34][jm] = -2*llh
+                        chi2[i24][i34][jm] = -2*llh
         if self._compare:
             chi2 = chi2 - np.min(chi2)
 
         return {
+                "theta14s":self.theta14s,
                 "theta24s":self.theta24s,
                 "theta34s":self.theta34s,
+                "th14_mode":self.th14_mode,
                 "msqs":self.msqs,
                 "chi2s":chi2,
                 "options":self.llh.options
