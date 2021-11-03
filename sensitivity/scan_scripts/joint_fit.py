@@ -11,7 +11,7 @@ from math import asin, sqrt
 from cascade.utils import get_loc, config, gen_filename, SterileParams
 import sys
 print("Running with : {}".format(sys.argv))
-th14_mode = False
+th14_mode = True
 systematics = True
 
 #best_th14 = 0.3555
