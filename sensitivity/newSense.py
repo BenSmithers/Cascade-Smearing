@@ -432,7 +432,10 @@ class Scanner:
         """
         Scan over all the data files. This might take a while! 
         """
-        chi2 = np.zeros(shape=(len(self.theta24s),len(self.theta34s), len(self.msqs)))
+        if len(self.theta14s)==1:
+            chi2 = np.zeros(shape=(len(self.theta24s),len(self.theta34s), len(self.msqs)))
+        else:
+            chi2 = np.zeros(shape=(len(self.theta14s), len(self.theta24s),len(self.theta34s), len(self.msqs)))
         
         n_todo = len(self.theta24s)*len(self.theta34s)*len(self.msqs)*len(self.theta14s)
         counter = 0
@@ -472,7 +475,10 @@ class Scanner:
                             # what are the odds of measuring PAM if we expect whatever the llh'er was configured to expect
                             llh = self.llh.get_llh(pam)
 
-                        chi2[i24][i34][jm] = -2*llh
+                        if len(self.theta14s)==1:
+                            chi2[i24][i34][jm] = -2*llh
+                        else:
+                            chi2[i14][i24][i34][jm] = -2*llh
         if self._compare:
             chi2 = chi2 - np.min(chi2)
 
