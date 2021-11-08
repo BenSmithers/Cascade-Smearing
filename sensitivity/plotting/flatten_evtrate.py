@@ -22,7 +22,7 @@ f_name =  gen_filename(data_folder, fn, SterileParams())
 sterile_fname = gen_filename(data_folder, fn, SterileParams(theta13=0.1652, theta23=0.2293, msq2=4.6416))
 
 #sterile_string = r"$\sin^{2}(2\theta_{24})=0.1, \sin^{2}(2\theta_{34})=0.20, \Delta m_{41}^{2}=4.64$"
-sterile_string = "Steriles"
+sterile_string = r"Sterile Neutrino"
 
 
 def loadit(filename):
@@ -61,23 +61,30 @@ binned_in_ang = np.sum(evt_r, axis=0)
 sbinned_in_e = np.sum(s_evt_r, axis=1)
 sbinned_in_ang = np.sum(s_evt_r, axis=0)
 
-axes[0].bar( x=e_edges[:-1], height=binned_in_e, width=e_edges[1:]-e_edges[:-1], align='edge', color=(217/255,152/255,82/255 ), alpha=0.75,label=r"No Sterile")
-axes[0].bar( x=e_edges[:-1], height=sbinned_in_e, width=e_edges[1:]-e_edges[:-1], align='edge', color=(141/255, 208/255, 214/255), alpha=0.75,label=sterile_string)
+axes[0].bar( x=e_edges[:-1], height=binned_in_e, width=e_edges[1:]-e_edges[:-1], align='edge', color='salmon',alpha=0.45, label=r"No Sterile")
+axes[0].step( x=e_edges[1:], y=binned_in_e, color='salmon')
+axes[0].step( x=e_edges[1:], y=sbinned_in_e, color='black',label=sterile_string)
 axes[0].set_xscale('log')
 axes[0].set_xlim([1e3,1e6])
 axes[0].set_xlabel(r"$E_{\nu}$"+" [GeV]")
 axes[0].set_ylabel("Events")
 #axes[0].grid(which='both', alpha=0.5)
 #axes[0].set_ylim([5e-1,1800])
-axes[0].legend()
+axes[0].legend(prop={'size':18})
 
-axes[1].bar( x=declination[:-1], height=binned_in_ang, width=declination[1:]-declination[:-1], align='edge', color=(217/255,152/255,82/255 ), alpha=0.75,label=r"No Sterile")
-axes[1].bar( x=declination[:-1], height=sbinned_in_ang, width=declination[1:]-declination[:-1], align='edge', color=(141/255, 208/255, 214/255), alpha=0.75,label=sterile_string)
+axes[1].bar( x=declination[:-1], height=binned_in_ang, width=declination[1:]-declination[:-1], align='edge', color='salmon', alpha=0.45, label=r"No Sterile")
+axes[1].step( x=declination[1:], y=binned_in_ang, color='salmon')
+plt.hlines(binned_in_ang[0], -1, declination[1], color='salmon')
+
+axes[1].step( x=declination[1:], y=sbinned_in_ang, color='black', label=sterile_string)
+
+plt.hlines(sbinned_in_ang[0], -1, declination[1], color='black')
 axes[1].set_xlim([-1.0,0.2])
 #axes[1].set_xlabel(r"$\sin\delta^{reco}$")
 axes[1].set_xlabel(r"$\cos\theta_{z}$")
 axes[1].set_ylabel("Events")
-axes[1].legend()
+axes[1].set_ylim([0,1300])
+axes[1].legend(prop={'size':18})
 #axes[1].grid(which='both', alpha=0.5)
 #plt.tight_layout()
 plt.savefig("bothflat.png", dpi=400)
