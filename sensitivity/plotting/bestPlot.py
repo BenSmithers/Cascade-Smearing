@@ -50,6 +50,7 @@ deg = 180./3.1415926
 
 
 ps = [0.10] #, 0.01]
+#chis_l = [3.6] # 3 dof, 1 sigma
 chis_l = [4.605] # 2 degrees of freedom!! 
 #chis_l = [6.251] # 3 degrees of freedom!! 
 
@@ -87,7 +88,7 @@ for t24 in range(len(theta14s)):
 #plt.xscale('log')
 #plt.yscale('log')
 
-asimov = False
+asimov = True
 
 
 i_c = 0
@@ -144,31 +145,97 @@ plt.figure(figsize=(7,5))
 #ct = plt.contour(scale_x, scale_y, chis.transpose(), levels=chis_l, cmap='cool',linestyles='-')
 #ct2= plt.contour(scale_x, scale_y, chis.transpose(), levels=chis_l, cmap='summer', linestyles='--')
 small = False
-if asimov:
-    add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_1_00eV_smearing_0.0_0.1609e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.1609$", '-')
-    add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_3_30eV_smearing_0.0_0.1609e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.1609$", '-')
-    add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_4_64eV_smearing_0.0_0.1609e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.1609$", '-')
-    i_c = 0
+super_new_mode = False
+if super_new_mode:
+    #which = "/home/bsmithers/software/data/hg_sib/0.3826e0/best2_llh_1_00eV_smearing_0.3555e0_0.3826e0_0.0_3.3000e0.dat"
+    which = "/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_1_00eV_smearing_0.3555e0_0.3826e0_0.0_3.3000e0.dat"
+    #which = "/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_1_00eV_smearing_0.3555e0_0.1609e0_0.0_3.3000e0.dat"
+    f = open(which, 'rb')
+    data = pickle.load(f)
+    f.close()
+    this_chi = np.array(data["chi2s"])
+    theta14s = data["theta14s"]
+    theta24s = data["theta24s"]
+    theta34s = data["theta34s"]
+    msqs = data["msqs"]
 
-    ct = add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_1_00eV_smearing_0.0_0.3826e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.3826$", '--')
-    add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_3_30eV_smearing_0.0_0.3826e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.3826$", '--')
-    add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_4_64eV_smearing_0.0_0.3826e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.3826$", '--')
-    new_color = list(ct.collections[0].get_color()[0])
-    plt.plot([0.189364, 0.213617], [0.00808428, 0.00686016], ls='--', color=new_color)
+    xs, ys= np.meshgrid( theta14s, theta34s)
+
+    from math import pi 
+    scale_x = np.sin(2*xs)**2
+    scale_y = np.sin(2*ys)**2
+
+    print(np.shape(this_chi))
+    print("{} th14s, {} th24s, {} th34s, {} msqs".format(len(theta14s), len(theta24s), len(theta34s), len(msqs)))
+
+    count = 0
+    for th24 in range(len(theta24s)):
+        for msq in range(len(msqs)):
+            if th24==0:
+                linestyle = '--'
+            else:
+                linestyle = '-'
+            chis = np.zeros(shape=(len(theta14s), len(theta34s)))
+
+            for i14 in range(len(theta14s)):
+                for i34 in range(len(theta34s)):
+                    chis[i14][i34] = this_chi[i14][th24][i34][msq]
+            print("min: {}".format(np.nanmin(chis)))
+            for i14 in range(len(theta14s)):
+                for i34 in range(len(theta34s)):
+                    value = this_chi[i14][th24][i34][msq]
+                    if value > 1e6 or value<-1e6:
+                        chis[i14][i34] = None
+
+            minloc =np.unravel_index( np.nanargmin(chis), shape=np.shape(chis))
+            #chis = chis - np.nanmin(chis)
+
+            if count==5:
+                plt.pcolormesh(scale_x, scale_y, chis.transpose(), vmin=0, vmax=25, cmap='PuBu')
+            count +=1 
+
+
+            if msqs[msq]==1.0 and theta24s[th24]==0.3826:
+                p1 = (0.853393,0.00693782)
+                p2 = (0.87203,0.00814776)
+                plt.plot( [p1[0], p2[0]], [p1[1],p2[1]], color=get_color(2+msq,5,'magma'),ls='-')
+
+            ct = plt.contour(scale_x, scale_y, chis.transpose() , levels=chis_l,linestyles=linestyle)
+            ct.collections[0].set_color(get_color(2+msq, 5, 'magma'))
+            ct.collections[0].set_label("{:.1f} eV".format(msqs[msq]) + r"$^{2}$, $\theta_{24}=$" + "{:.2f}".format(theta24s[th24]))
+
+            plt.plot(scale_x[minloc[0]][minloc[0]], scale_y[minloc[1]][minloc[1]], marker="*", color=get_color(2+msq,5,'magma'))
+
+
+
+
+
 else:
-    #plt.vlines(x=[0.3,0.55], ymin=0, ymax=1.0, colors='black')
-    plt.fill_between([0.3,0.55],0, 1.0,color=(0,0,0,0.1))
-    plt.text(0.625, 0.09,"90\% CL, 2 DOF", fontsize='large')
-    add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_1_00eV_smearing_0.3555e0_0.1609e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.1609$", '-')
-    add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_3_30eV_smearing_0.3555e0_0.1609e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.1609$", '-')
-    add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_4_64eV_smearing_0.3555e0_0.1609e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.1609$", '-')
-    i_c = 0
+    if asimov:
+        add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_1_00eV_smearing_0.0_0.1609e0_0.0_1.0000e0.dat", r"1.0 eV$^{2}$, $\theta_{24}=0.16$", '-')
+        add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_3_30eV_smearing_0.0_0.1609e0_0.0_3.3000e0.dat", r"3.3 eV$^{2}$, $\theta_{24}=0.16$", '-')
+        add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_4_64eV_smearing_0.0_0.1609e0_0.0_4.6400e0.dat", r"4.64 eV$^{2}$, $\theta_{24}=0.16$", '-')
+        i_c = 0
 
-    ct = add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_1_00eV_smearing_0.3555e0_0.3826e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.3826$", '--')
-    add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_3_30eV_smearing_0.3555e0_0.3826e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.3826$", '--')
-    add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_4_64eV_smearing_0.3555e0_0.3826e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.3826$", '--')
-    new_colr = list(ct.collections[0].get_color()[0])
-    #plt.plot([0.154637, 0.161903], [0.00711, 0.00814], ls='--', color=(new_colr[0], new_colr[1], new_colr[2]))
+        ct = add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_1_00eV_smearing_0.0_0.3826e0_0.0_1.0000e0.dat", r"1.0 eV$^{2}$, $\theta_{24}=0.38$", '--')
+        add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_3_30eV_smearing_0.0_0.3826e0_0.0_3.3000e0.dat", r"3.3 eV$^{2}$, $\theta_{24}=0.38$", '--')
+        add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_4_64eV_smearing_0.0_0.3826e0_0.0_4.6400e0.dat", r"4.64 eV$^{2}$, $\theta_{24}=0.38$", '--')
+        new_color = list(ct.collections[0].get_color()[0])
+        plt.plot([0.189364, 0.213617], [0.00808428, 0.00686016], ls='--', color=new_color)
+
+    else:
+        #plt.vlines(x=[0.3,0.55], ymin=0, ymax=1.0, colors='black')
+        plt.fill_between([0.3,0.55],0, 1.0,color=(0,0,0,0.1))
+        add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_1_00eV_smearing_0.3555e0_0.1609e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.1609$", '-')
+        add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_3_30eV_smearing_0.3555e0_0.1609e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.1609$", '-')
+        add_contour("/home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_4_64eV_smearing_0.3555e0_0.1609e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.1609$", '-')
+        i_c = 0
+
+        ct = add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_1_00eV_smearing_0.3555e0_0.3826e0_0.0_1.0000e0.dat", r"1.0eV$^{2}$, $\theta_{24}=0.3826$", '--')
+        add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_3_30eV_smearing_0.3555e0_0.3826e0_0.0_3.3000e0.dat", r"3.3eV$^{2}$, $\theta_{24}=0.3826$", '--')
+        add_contour("/home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_4_64eV_smearing_0.3555e0_0.3826e0_0.0_4.6400e0.dat", r"4.64eV$^{2}$, $\theta_{24}=0.3826$", '--')
+        new_colr = list(ct.collections[0].get_color()[0])
+        #plt.plot([0.154637, 0.161903], [0.00711, 0.00814], ls='--', color=(new_colr[0], new_colr[1], new_colr[2]))
 """
 /home/bsmithers/software/data/hg_sib/0.1609e0/best_llh_1_00eV_smearing_0.3555e0_0.1609e0_0.0_1.0000e0.dat
 /home/bsmithers/software/data/hg_sib/0.3826e0/best_llh_3_30eV_0.3555e0_0.3826e0_0.0_3.3000e0.dat
@@ -181,7 +248,7 @@ if asimov:
     plt.xlim([0,0.5])
 else:
     plt.xlim([0,1.0])
-plt.ylim([0,0.1])
+plt.ylim([0,0.10])
 #plt.yscale('log')
 #plt.ylim([1e-2, 1e0])
 
@@ -189,6 +256,12 @@ plt.ylim([0,0.1])
 #plt.ylabel(r"$\left| U_{\tau 4}\right|^{2}=\sin^{2}\theta_{34}\cdot\cos^{2}\theta_{24}$")
 plt.ylabel(r"$\sin^{2}2\theta_{34}$",size=14)
 plt.xlabel(r"$\sin^{2}2\theta_{14}$",size=14)
+
+if False:
+    plt.xlim([1e-3, 1])
+    plt.ylim([1e-3, 1])
+    plt.yscale('log')
+    plt.xscale('log')
 
 print(np.nanmin(chis))
 mindices = np.nanargmin(chis)
@@ -202,9 +275,9 @@ print(theta14s[x], theta34s[y])
 
 #plt.vlines(x=scaled_minos_24, ymin=0, ymax=scaled_minos_34[-1], color='k')
 if asimov:
-    plt.legend(loc='upper right', fancybox=True, frameon=True, framealpha=1.0,facecolor='white', edgecolor='black')
+    plt.legend(loc='upper right', ncol=2) #, fancybox=True, frameon=True, framealpha=1.0,facecolor='white', edgecolor='black')
 else:
-    plt.legend(loc='upper left', fancybox=True, frameon=True,framealpha=1.0,facecolor='white', edgecolor='black')
+    plt.legend(loc='upper right', fancybox=True, frameon=True,framealpha=1.0,facecolor='white', edgecolor='black')
 
 plt.tight_layout()
 plt.savefig("bestPlot_{}.png".format("asimov" if asimov else "not_asimov"), dpi=400)

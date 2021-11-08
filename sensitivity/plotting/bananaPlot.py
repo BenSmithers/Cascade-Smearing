@@ -136,15 +136,15 @@ for ev in evs:
     
     #set_lbls(ct, [str(ev)+r"eV$^{2}$"], get_color(color_count, len(evs), "viridis"))
     ct.collections[0].set_color(get_color(color_count, len(evs)+1, "magma"))
-    ct.collections[0].set_label("{}".format(ev) + r"eV$^{2}$")
+    ct.collections[0].set_label("{}".format(ev) + r" eV$^{2}$")
 
     #plt.vlines(x=scaled_minos_24, ymin=0, ymax=scaled_minos_34[-1], color='k')
     
-plt.xlim([1e-3,0.5])
+plt.xlim([5e-3,0.2])
 plt.xscale('log')
 plt.yscale('log')
-plt.ylim([3e-3, 5e-1])
-plt.title("90\% CL, 3 DOF")
-plt.legend(loc='upper left')
+plt.ylim([9e-3, 5e-1])
+plt.tight_layout()
+plt.legend(loc='upper right')
 plt.savefig("containment.png",dpi=400)
 plt.show()

@@ -8,6 +8,7 @@ from os import set_inheritable
 from cascade.utils import gen_filename, config
 from cascade.utils import get_loc, get_closest, get_color
 
+import os
 import pickle
 from math import sqrt, asin
 import numpy as np
@@ -16,7 +17,7 @@ import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 
-plt.style.use("/home/benito/software/cascade/cascade/cascade.mplstyle")
+plt.style.use(os.path.join(os.path.dirname(__file__), "..", ".." , "cascade.mplstyle"))
 
 interp = True
 
@@ -46,7 +47,7 @@ interp = True
 #f = open("/home/benito/software/data/cascade/hg_sib/expectations/0.0/cummulative_probs_nosys_0.0_0.0_0.0_0.0.dat",'rb')\
 
 # use this to just get the edges and stuff 
-f = open("/home/benito/software/data/cascade/hg_sib/0.0/joint_likelihood_smearing_0.0_0.0_0.0_0.0.dat",'rb')
+f = open("/home/bsmithers/software/data/hg_sib/0.0/joint_likelihood_smearing_0.0_0.0_0.0_0.0.dat",'rb')
 obj = pickle.load(f)
 f.close()
 
@@ -69,8 +70,8 @@ deg = 180./3.1415926
 
 
 ps = [0.10] #, 0.01]
-#chis_l = [4.605] # 2 degrees of freedom!! 
-chis_l = [6.251] # 3 degrees of freedom!! 
+chis_l = [4.605] # 2 degrees of freedom!! 
+#chis_l = [6.251] # 3 degrees of freedom!! 
 
 #labels = ["90%"]#, "99%"]
 move_it = 0
@@ -164,9 +165,9 @@ plt.plot(deepcore[0], deepcore[1], color=get_color(2,4,"magma"), label="DeepCore
 #plt.plot(antares[0], antares[1], color=get_color(3,4,"magma"), label="KM3NeT/ORCA NO")
 
 
-ct = add_contour("/home/benito/software/data/cascade/hg_sib/0.0/joint_likelihood_0.0_0.0_0.0_0.0.dat", '--','cool',True)
+ct = add_contour("/home/bsmithers/software/data/hg_sib/0.0/joint_likelihood_0.0_0.0_0.0_0.0.dat", '--','cool',True)
 ct.collections[0].set_label("Joint Fit")
-ct = add_contour("/home/benito/software/data/cascade/hg_sib/0.0/newSense_result_float_0.0_0.0_0.0_0.0.dat", '-','cool',False)
+ct = add_contour("/home/bsmithers/software/data/hg_sib/0.0/newSense_result_float_0.0_0.0_0.0_0.0.dat", '-','cool',False)
 ct.collections[0].set_label("Cascades")
 
 
@@ -178,5 +179,6 @@ plt.yscale('log')
 plt.ylim([3e-3, 5e-1])
 plt.legend(loc='upper right')
 root_name = "superPlot"
+plt.tight_layout()
 plt.savefig("{}_{:.2f}.png".format(root_name, ev if interp else which_sliver[0]),dpi=400)
 plt.show()

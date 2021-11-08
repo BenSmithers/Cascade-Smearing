@@ -143,7 +143,7 @@ class main_window(QMainWindow):
         self.ui = base_gui()
         self.ui.setupUi(self)
 
-        self.folder = "/home/benito/software/data/cascade/hg_sib/expected_fluxes_reco"
+        self.folder = "/home/bsmithers/software/data/hg_sib/expected_fluxes_reco"
         self.filenames = "expected_flux_smearedwell.dat"
 
         # whenever the sliders value change, we update the plots 
