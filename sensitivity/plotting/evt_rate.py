@@ -72,7 +72,7 @@ else:
 core_b = -0.98
 mantle_b= -0.83
 
-
+fontsize=24
 
 declination = False
 def decd(obj):
@@ -86,15 +86,15 @@ if declination:
     core_b = decd(core_b)
     mantle_b = decd(mantle_b)
 
-fig, axes = plt.subplots(2,1,figsize=(7,12), sharex=True) #, gridspec_kw={'height_ratios':[0.05,1], 'width_ratios':[1,1]})
+fig, axes = plt.subplots(2,1,figsize=(7,10), sharex=True) #, gridspec_kw={'height_ratios':[0.05,1], 'width_ratios':[1,1]})
 fig.subplots_adjust(wspace=0.15, hspace=0.05, left=0.13, right=0.95,top=0.98, bottom=0.075)
 # fig.subplots_adjust(bottom=0.15)
 
 # norm = matplotlib.colors.LogNorm()
 if ratios:
-    pc = axes[0].pcolormesh(a_edges, e_edges, track_e, cmap='viridis', vmin=0.75, vmax=1.25 )
+    pc = axes[0].pcolormesh(a_edges, e_edges, track_e, cmap='coolwarm', vmin=0.75, vmax=1.25 )
 else:
-    pc = axes[0].pcolormesh(a_edges, e_edges, track_e, cmap='viridis', norm = matplotlib.colors.LogNorm())
+    pc = axes[0].pcolormesh(a_edges, e_edges, track_e, cmap='PuBu', norm = matplotlib.colors.LogNorm())
 
     for i_e in range(len(e_edges) -1 ):
         for i_a in range(len(a_edges) - 1):
@@ -105,7 +105,7 @@ else:
 axes[0].vlines(mantle_b,ymin=1e2, ymax=10**6, colors="black", ls="--")
 axes[0].text(mantle_b+0.02, 5.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='black')
 
-axes[0].set_ylabel(r"$E^{reco}$ [GeV]")
+axes[0].set_ylabel(r"$E^{reco}$ [GeV]", size=fontsize)
 axes[0].set_yscale('log')
 axes[0].set_ylim([4e2,1e4])
 axes[0].set_xlim([-1,0.2])
@@ -115,9 +115,9 @@ cbar.set_label("Events")
 
 #norm = matplotlib.colors.LogNorm()
 if ratios:
-    pc2 = axes[1].pcolormesh(a_edges, e_edges, casc_e, cmap='viridis', vmin=0.75, vmax=1.25)
+    pc2 = axes[1].pcolormesh(a_edges, e_edges, casc_e, cmap='coolwarm', vmin=0.75, vmax=1.25)
 else:
-    pc2 = axes[1].pcolormesh(a_edges, e_edges, casc_e, cmap='viridis', vmin=1e-1, norm = matplotlib.colors.LogNorm())
+    pc2 = axes[1].pcolormesh(a_edges, e_edges, casc_e, cmap='PuBu', vmin=1e-1, norm = matplotlib.colors.LogNorm())
     for i_e in range(len(e_edges) -1 ):
         if e_edges[i_e]>=7e5:
             continue
@@ -131,8 +131,8 @@ else:
 axes[1].vlines(mantle_b,ymin=1e2, ymax=10**6, colors="black", ls="--")
 axes[1].text(mantle_b+0.02, 1.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='black')
 
-axes[1].set_xlabel(r"$\cos\theta_{z}^{reco}$")
-axes[1].set_ylabel(r"$E^{reco}$ [GeV]")
+axes[1].set_xlabel(r"$\cos\theta_{z}^{reco}$", size=fontsize)
+axes[1].set_ylabel(r"$E^{reco}$ [GeV]", size=fontsize)
 axes[1].set_yscale('log')
 axes[1].set_ylim([1e2,7e5])
 axes[1].set_xlim([-1,0.2])
