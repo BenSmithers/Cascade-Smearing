@@ -150,12 +150,13 @@ def add_contour(filename, ls, cmap='cool', chop=False):
     ct = plt.contour(scale_x, scale_y, final_chi.transpose(), levels=chis_l, cmap=cmap,linestyles=ls)   
     return ct
 
+# plt.figure(figsize=(9.5/1.5,9.34/1.5))
 plt.xscale('log')
 #plt.title("At {:.2f} eV".format(ev if interp else msqs[which_sliver[0]]) +r"$^{2}$")
 #            plt.yscale('log')
 plt.ylim([0.00,0.30])
 plt.xlim([1e-3,0.5])
-plt.xlabel(r"$\left|U_{\mu 4}\right|^{2}=\sin^{2}\theta_{24}$",size=14)
+plt.xlabel(r"$\left|U_{\mu 4}\right|^{2}=\sin^{2}\theta_{24}$")
 plt.ylabel(r"$\left| U_{\tau 4}\right|^{2}=\sin^{2}\theta_{34}\cdot\cos^{2}\theta_{24}$")
 #            plt.ylabel(r"$\sin^{2}2\theta_{34}$",size=14)
 
@@ -164,11 +165,14 @@ plt.plot(super_k[0], super_k[1], color=get_color(1,4,cmap="magma"), label="Super
 plt.plot(deepcore[0], deepcore[1], color=get_color(2,4,"magma"), label="DeepCore")
 #plt.plot(antares[0], antares[1], color=get_color(3,4,"magma"), label="KM3NeT/ORCA NO")
 
+new_color = np.array((255,157,0))/256.
 
 ct = add_contour("/home/bsmithers/software/data/hg_sib/0.0/joint_likelihood_0.0_0.0_0.0_0.0.dat", '--','cool',True)
 ct.collections[0].set_label("Joint Fit")
+ct.collections[0].set_color(new_color)
 ct = add_contour("/home/bsmithers/software/data/hg_sib/0.0/newSense_result_float_0.0_0.0_0.0_0.0.dat", '-','cool',False)
 ct.collections[0].set_label("Cascades")
+ct.collections[0].set_color(new_color)
 
 
 #set_lbls(ct, [str(ev)+r"eV$^{2}$"], get_color(color_count, len(evs), "viridis"))
@@ -180,5 +184,6 @@ plt.ylim([3e-3, 5e-1])
 plt.legend(loc='upper right')
 root_name = "superPlot"
 plt.tight_layout()
+print("Saving... {}".format("{}_{:.2f}.png".format(root_name, ev if interp else which_sliver[0])))
 plt.savefig("{}_{:.2f}.png".format(root_name, ev if interp else which_sliver[0]),dpi=400)
 plt.show()

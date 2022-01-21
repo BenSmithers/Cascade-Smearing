@@ -111,10 +111,10 @@ for ev in evs:
     #plt.pcolormesh(scale_x,scale_y, chis.transpose(),vmin=0, vmax=10, cmap="PuBu")
     #cbar = plt.colorbar(extend='max')
     
-    #plt.title("At {:.2f} eV".format(ev if interp else msqs[which_sliver[0]]) +r"$^{2}$")
+    #plt.title("At {:.2f} eV".format(ev if interp else msqs[which_sliver[0]]) +r"$^{2}$")fs
 #            plt.yscale('log')
 
-    plt.xlabel(r"$\left|U_{\mu 4}\right|^{2}=\sin^{2}\theta_{24}$",size=14)
+    plt.xlabel(r"$\left|U_{\mu 4}\right|^{2}=\sin^{2}\theta_{24}$")
     plt.ylabel(r"$\left| U_{\tau 4}\right|^{2}=\sin^{2}\theta_{34}\cdot\cos^{2}\theta_{24}$")
 #            plt.ylabel(r"$\sin^{2}2\theta_{34}$",size=14)
 

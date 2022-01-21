@@ -254,8 +254,8 @@ plt.ylim([0,0.10])
 
 #plt.xlabel(r"$\left|U_{\mu 4}\right|^{2}=\sin^{2}\theta_{14}$",size=14)
 #plt.ylabel(r"$\left| U_{\tau 4}\right|^{2}=\sin^{2}\theta_{34}\cdot\cos^{2}\theta_{24}$")
-plt.ylabel(r"$\sin^{2}2\theta_{34}$",size=14)
-plt.xlabel(r"$\sin^{2}2\theta_{14}$",size=14)
+plt.ylabel(r"$\sin^{2}2\theta_{34}$")
+plt.xlabel(r"$\sin^{2}2\theta_{14}$")
 
 if False:
     plt.xlim([1e-3, 1])

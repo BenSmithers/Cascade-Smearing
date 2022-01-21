@@ -76,7 +76,7 @@ def add_contour(filename, ls, cmap='cool', chop=False):
     data = pickle.load(f)
     f.close()
     this_chi = np.array(data["chi2s"]) 
-    evs = [0.5, 1.0, 10.0, 1e2]
+    evs = [0.5, 1.0, 3.0, 10.0]
 
     count = 0
     for ev in evs:
@@ -111,7 +111,7 @@ def add_contour(filename, ls, cmap='cool', chop=False):
 plt.xscale('log')
 plt.ylim([0.00,0.30])
 plt.xlim([1e-3,0.7])
-plt.xlabel(r"$\left|U_{\mu 4}\right|^{2}=\sin^{2}\theta_{24}$",size=14)
+plt.xlabel(r"$\left|U_{\mu 4}\right|^{2}=\sin^{2}\theta_{24}$")
 plt.ylabel(r"$\left| U_{\tau 4}\right|^{2}=\sin^{2}\theta_{34}\cdot\cos^{2}\theta_{24}$")
 
 ct = add_contour(root_dir + "/0.0/joint_likelihood_0.0_0.0_0.0_0.0.dat", '--','cool',True)

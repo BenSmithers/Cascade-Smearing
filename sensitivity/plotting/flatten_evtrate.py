@@ -16,6 +16,8 @@ from cascade.deporeco import DataReco
 
 import os 
 
+exist_masses = np.concatenate((np.array([0]), np.logspace(-2,2,40)))
+
 fn = "best_expected_flux.dat"
 data_folder = os.path.join(config["datapath"], "expected_fluxes_reco")
 f_name =  gen_filename(data_folder, fn, SterileParams())
@@ -66,7 +68,7 @@ axes[0].step( x=e_edges[1:], y=binned_in_e, color='salmon')
 axes[0].step( x=e_edges[1:], y=sbinned_in_e, color='black',label=sterile_string)
 axes[0].set_xscale('log')
 axes[0].set_xlim([1e3,1e6])
-axes[0].set_xlabel(r"$E_{\nu}$"+" [GeV]")
+axes[0].set_xlabel(r"$E_{\nu}^{reco}$"+" [GeV]")
 axes[0].set_ylabel("Events")
 #axes[0].grid(which='both', alpha=0.5)
 #axes[0].set_ylim([5e-1,1800])
@@ -81,7 +83,7 @@ axes[1].step( x=declination[1:], y=sbinned_in_ang, color='black', label=sterile_
 plt.hlines(sbinned_in_ang[0], -1, declination[1], color='black')
 axes[1].set_xlim([-1.0,0.2])
 #axes[1].set_xlabel(r"$\sin\delta^{reco}$")
-axes[1].set_xlabel(r"$\cos\theta_{z}$")
+axes[1].set_xlabel(r"$\cos\theta_{z}^{reco}$")
 axes[1].set_ylabel("Events")
 axes[1].set_ylim([0,1300])
 axes[1].legend(prop={'size':18})
