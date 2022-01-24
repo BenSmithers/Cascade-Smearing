@@ -1,4 +1,7 @@
-import nuSQUIDSpy as nsq
+try:
+    import nuSQuIDS as nsq
+except ImportError:
+    import nuSQUIDSpy as nsq
 
 # define a couple utility functions
 def get_flavor( key ):

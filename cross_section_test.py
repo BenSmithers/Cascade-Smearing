@@ -5,7 +5,12 @@ Simple script to facilitate nuSQuIDS DIS cross section sampling
 """
 
 import sys
-import nuSQUIDSpy as nsq
+legacy = False
+try:
+    import nuSQuIDS as nsq
+except ImportError:
+    import nuSQUIDSpy as nsq
+    legacy = True
 import numpy as np # useful for energy ranges
 import time # so we can wait
 import os 
@@ -43,7 +48,10 @@ cobalt = os.environ.get("_CONDOR_SCRATCH_DIR")
 while tries_left > 0:
     try:
         if cobalt==None or cobalt=="" or cobalt==".":
-            xs_obj = nsq.NeutrinoDISCrossSectionsFromTables()
+            if legacy:
+                xs_obj = nsq.NeutrinoDISCrossSectionsFromTables()
+            else:
+                xs_obj = nsq.loadDefaultCrossSections()
         else:
             xs_obj = nsq.NeutrinoDISCrossSectionsFromTables(os.path.join(cobalt, "data/csms_square.h5"))
         break
