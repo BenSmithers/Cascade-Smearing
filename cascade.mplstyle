@@ -1,9 +1,9 @@
 figure.figsize   : 6.5, 5   # figure size in inches
 savefig.dpi      : 600      # figure dots per inch
 
-figure.autolayout: True
+figure.autolayout: False
 
-font.size: 16
+font.size: 18
 font.family: serif
 font.serif: Computer Modern, Latin Modern Roman, Bitstream Vera Serif
 font.sans-serif    : Computer Modern Sans serif, Helvetica, Avant Garde
