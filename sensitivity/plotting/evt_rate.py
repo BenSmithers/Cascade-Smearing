@@ -2,6 +2,7 @@
 Make a plot of our event rate at each bin. We will have two pannels! 
 """
 
+from csv import excel_tab
 import pickle
 import numpy as np
 from math import pi 
@@ -14,7 +15,7 @@ plt.style.use(os.path.join(os.path.dirname(__file__), "..", ".." , "cascade.mpls
 
 from cascade.utils import SterileParams, gen_filename, config
 from cascade.deporeco import DataReco
-
+from cascade.sensitivity.generate_all_integrated_fluxes import make_meta_flux
 
 def ldata(fname):
     print("Loading {}".format(fname))
@@ -26,7 +27,8 @@ def ldata(fname):
 ratios = False
 
 central_s = SterileParams()
-sterile_s = SterileParams(theta13=0.1652, theta23=0.2293, msq2=4.6416)
+#sterile_s = SterileParams(theta13=0.1652, theta23=0.2293, msq2=4.6416)
+sterile_s = SterileParams(theta13=0.1652, theta23=0.2293, msq2=4.5)
 use_params = central_s
 
 cascade_name_root = "best_expected_flux.dat"
@@ -43,11 +45,22 @@ track_fname = gen_filename(datadir, track_name_root, central_s)
 
 #data = ldata(f_name)
 #data2 = ldata(f_name_s)
-
-cascade_datadict = ldata(cascade_fname)
-track_datadict = ldata(track_fname)
-st_cascade_data = ldata(sterile_casc_fname)
-st_track_data = ldata(sterile_track_fname)
+try:
+    cascade_datadict = ldata(cascade_fname)
+except IOError:
+    cascade_datadict = make_meta_flux(central_s)
+try:
+    track_datadict = ldata(track_fname)
+except IOError:
+    track_datadict = make_meta_flux(central_s, True)
+try:
+    st_cascade_data = ldata(sterile_casc_fname)
+except IOError:
+    st_cascade_data = make_meta_flux(sterile_s)
+try:
+    st_track_data = ldata(sterile_track_fname)
+except IOError:
+    st_track_data = make_meta_flux(sterile_s, True)
 
 
 
