@@ -592,7 +592,7 @@ class Data:
 
         location = os.path.join(config["datapath"], filename)
 
-        nus_file = os.path.splittext(filename) ==".hdf5"
+        nus_file = os.path.splitext(filename)[1] ==".hdf5"
         
         # store the flavors, neutrinos, and currents
         self.flavors = flavors
@@ -610,7 +610,7 @@ class Data:
             self._angles = data.GetCosthRange()
 
             for key in self.get_keys():
-                self._fluxes[ key ] = [[ data.EvalFlavor(angle, energy, get_neut(key), get_flavor(key)) for angle in range(n_angles)] for energy in range(n_energies)]
+                self._fluxes[ key ] = [[ data.EvalFlavor(angle, energy, get_neut(key), get_flavor(key)) for angle in self._angles] for energy in self._energies]
         else:
             print("Loading Neutrino Flux from {}".format(location))
             data = np.loadtxt(location, dtype=float, comments='#',delimiter=' ')
