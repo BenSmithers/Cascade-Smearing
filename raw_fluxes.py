@@ -201,8 +201,8 @@ def raw_flux(params, kwargs={}):
     nus_atm.Set_TauRegeneration(True)
 
     #settting some zenith angle stuff 
-    nus_atm.Set_rel_error(1.0e-10)
-    nus_atm.Set_abs_error(1.0e-10)
+    nus_atm.Set_rel_error(1.0e-6)
+    nus_atm.Set_abs_error(1.0e-6)
     #nus_atm.Set_GSL_step(gsl_odeiv2_step_rk4)
     nus_atm.Set_GSL_step(nsq.GSL_STEP_FUNCTIONS.GSL_STEP_RK4)
     
