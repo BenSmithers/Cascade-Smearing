@@ -9,7 +9,10 @@ Super cool though, it only uses MCEQ to make the fluxes at-atmosphere if this ha
 """
 
 # nusquids...
-import nuSQUIDSpy as nsq
+try:
+    import nuSQuIDS as nsq
+except ImportError:
+    import nuSQUIDSpy as nsq
 
 angular_bins = 50
 energy_bins = 121

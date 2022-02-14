@@ -9,10 +9,12 @@ import pickle
 import os
 from numbers import Number
 from math import sqrt
+from datetime import datetime 
 
 from scipy.optimize import minimize
 
 from cascade.utils import SterileParams, gen_filename, config
+from cascade.deporeco import DataReco
 
 
 from cascade.sensitivity.systematic_unc import unc_wrapper, Syst
@@ -46,18 +48,30 @@ class doLLH(generalLLH):
         self._fix_norm = -1
         self._fixing_norm = False
         self._use_sideband_err = False
+        self._smear = False
         if not isinstance(filenames, str):
             raise TypeError("Filename should be {}, not {}".format(str, type(filenames)))
         self._filenames = filenames
 
+        self._parse_options(options)
+        self._options = options
+        if self._smear:
+            # get the edges
+            fn = gen_filename(data_folder, self._filenames, central_exp)
+            obj = open(fn, 'rb')
+            data = pickle.load(obj)
+            obj.close()
+
+            self._e_edges = data["e_edges"]
+            n_e = len(self._e_edges)-1
+            self._a_edges = data["a_edges"]
+            n_a = len(self._a_edges)-1
+            self._reco_obj = DataReco(self._e_edges*(1e9), self._a_edges, self._e_edges*(1e9), self._a_edges)
+            self._reco_tensor = [[[[ self._reco_obj.get_energy_reco_odds(j,l)*self._reco_obj.get_czenith_reco_odds(k,i,l) for i in range(n_a)] for j in range(n_e)] for k in range(n_a)] for l in range(n_e)]
+
         # do the initial configuration 
         self.set_central(central_exp)
 
-        self._parse_options(options)
-        self._options = options
-        
-        
-        
         self._net_error_m_sys = np.zeros(shape=np.shape(self._net_error_m_stat))
         self._net_error_p_sys = np.zeros(shape=np.shape(self._net_error_p_stat))
 
@@ -91,7 +105,9 @@ class doLLH(generalLLH):
         data = pickle.load(f)
         f.close()
         
+
         self._expectation = data['event_rate']
+        
         self.set_central_from_expectation(self._expectation)
 
     def set_central_from_expectation(self, exp):
@@ -103,8 +119,11 @@ class doLLH(generalLLH):
         if not (np.shape(self._expectation)==np.shape(exp)):
             raise ValueError("Expected shape {}, got {}".format(self._expectation, exp))
 
-        self._expectation = exp
-        err = np.sqrt(exp)
+        if self._smear:
+            self._expectation = np.einsum('ij,klij', exp, self._reco_tensor)
+        else:
+            self._expectation = exp
+        err = np.sqrt(self._expectation)
         # the first four bins have an extra 5% error placed on them because we use that fit
         scaling = np.zeros(shape=(len(self._expectation),1))
         for i in range(4):
@@ -124,8 +143,14 @@ class doLLH(generalLLH):
 
           - upgoing, only look at those with cos(theta)<0.2 if True
           - fudge_factor: scales the statistics by a fudge factor: either a number-like or a np.ndarray with the same shape as the expectation 
+          - upgoing: I think this changes the binning used? 
+          - skip_missing: if a file is missing, skip it and don't throw an exception. Sets the LLH to a very big number 
+          - fix_norm: fix the normalization to a provided float 
+          - fudge: a fudge factor you can apply to a whole flux. The dimensions need to match
+          - use_sideband_err: apply an extra uncertainty to some of the boundaries 
+          - smear: load in the DataReco object and smear the fluxes for emulating the reconstruction 
         """
-        known = ["is_mc", "flatten", "upgoing", "skip_missing", "use_syst", "fix_norm", "fudge", "use_sideband_err"]
+        known = ["is_mc", "flatten", "upgoing", "skip_missing", "use_syst", "fix_norm", "fudge", "use_sideband_err", "smear"]
 
         for key in options.keys():
             if key not in known:
@@ -143,10 +168,12 @@ class doLLH(generalLLH):
         self._skip_missing = self._skip_missing if read(3,bool) is None else read(3,bool)
         self._use_syst     =self._use_syst if read(4, bool) is None else read(4, bool)
         self._fix_norm     =self._fix_norm if read(5,float) is None else read(5,float)
-        self._use_sideband_err = self._use_sideband_err if read(6, bool) is None else read(6, bool)
-        
+        self._use_sideband_err = self._use_sideband_err if read(7, bool) is None else read(7, bool)
+        self._smear = self._fix_norm if read(8,bool) is None else read(8,bool)
+
         # the fudge needs special handling
         self._fudge_factor = 1.0
+        self._fudge_unc = 1.0
         if  known[6] in options:
             if isinstance(options[known[6]], Number):
                 self._fudge_factor = float(options[known[6]])
@@ -200,15 +227,20 @@ class doLLH(generalLLH):
             data = self.load_file(params)
         except IOError as e:
             if self._skip_missing:
-                return 1e8
+                print("Skipping {}".format(params))
+                return -1e8
             else:
                 raise IOError(e)
 
+        if self._smear:
+            smeared = np.einsum('ij,klij',data["event_rate"], self._reco_tensor )
+        else:
+            smeared = data["event_rate"]
 
         if self._fixing_norm:
-            return self.eval_llh_norm(data["event_rate"], self._fix_norm)
+            return self.eval_llh_norm(smeared, self._fix_norm)
         else:
-            return self.eval_llh_norm(data["event_rate"], self.minimize(data["event_rate"]))
+            return self.eval_llh_norm(smeared, self.minimize(smeared))
 
     def minimize(self, evt_rate):
         """
@@ -225,6 +257,7 @@ class doLLH(generalLLH):
 
         We evaluate the llh with the normalization fixed
         """
+
         llh = 0.0
         for i_e in range(len(this_flux)):
             if self._flatten:
@@ -269,6 +302,9 @@ class doLLH(generalLLH):
     @property
     def options(self):
         return self._options
+    @property
+    def skip_missing(self):
+        return self._skip_missing
 
 class JointLLH(generalLLH):
     """
@@ -284,27 +320,73 @@ class JointLLH(generalLLH):
                 raise TypeError()
 
         self.doLLHs = list(args)
+        self._meta_skip = all( entry.skip_missing for entry in self.doLLHs )
+        self._options=[part.options for part in self.doLLHs]
+        self._skipped = 0
+        self._done = 0
+
+        # get the edges
+        fn = gen_filename(data_folder, self.doLLHs[-1]._filenames, SterileParams()) #just use the null for this, we're only looking at the bin edges 
+        obj = open(fn, 'rb')
+        data = pickle.load(obj)
+        obj.close()
+
+        self._e_edges = data["e_edges"]
+        n_e = len(self._e_edges)-1
+        self._a_edges = data["a_edges"]
+        n_a = len(self._a_edges)-1
+        self._reco_obj = DataReco(self._e_edges*(1e9), self._a_edges, self._e_edges*(1e9), self._a_edges)
+        self._reco_tensor = [[[[ self._reco_obj.get_energy_reco_odds(j,l)*self._reco_obj.get_czenith_reco_odds(k,i,l) for i in range(n_a)] for j in range(n_e)] for k in range(n_a)] for l in range(n_e)]
 
     def get_llh(self, params):
         """
         Gets the normalization from the first one, then use that to do the others 
         """
-        data = self.doLLHs[0].load_file(params)
+        try:
+            data = self.doLLHs[0].load_file(params)
+        except IOError:
+            if self._meta_skip:
+                self._skipped += 1
+                if self._skipped%1000 == 0:
+                    print("Skipped {}, found {}".format(self._skipped, self._done))
+                return -1e8
+            else:
+                raise IOError("Didn't find first file at {}".format(params))
+
         norm = self.doLLHs[0].minimize(data["event_rate"])
         llh = self.doLLHs[0].eval_llh_norm(data["event_rate"], norm)
 
         for LLHobj in self.doLLHs[1:]:
-            data = LLHobj.load_file(params)
-            llh += LLHobj.eval_llh_norm(data["event_rate"], norm)
+            try:
+                newdata = LLHobj.load_file(params)
+            except IOError:
+                if self._meta_skip:
+                    self._skipped += 1
+                    if self._skipped%1000 == 0:
+                        print("Skipped {}, found {}".format(self._skipped, self._done))
+                    return -1e8
+                else:
+                    raise IOError("Didn't find subsequent at {}".format(params))
+            if LLHobj._smear:
+                smeared = np.einsum('ij,klij', newdata["event_rate"], self._reco_tensor)
+            else:
+                smeared = newdata["event_rate"]
 
+            llh += LLHobj.eval_llh_norm(smeared, norm)
+
+        self._done += 1
         return llh
+    
+    @property
+    def options(self):
+        return self._options
 
 class Scanner:
     """
     Pass a likelihood calculator and lists of sterile nu parameters
     This can then scan the expectations and return all the LLHs to you!
     """
-    def __init__(self, llHooder : generalLLH, theta24s, theta34s, msqs):
+    def __init__(self, llHooder : generalLLH, theta24s, theta34s, msqs, th14_mode=False, theta14s=None):
         """
         Store the information, get ready to scan 
         """
@@ -317,8 +399,23 @@ class Scanner:
         if not isinstance(msqs, (np.ndarray, list, tuple)):
             raise TypeError()
 
-        self.theta24s = theta24s
+        if th14_mode or (theta14s is not None):
+            if theta14s is None:
+                self.theta14s = theta24s
+                self.theta24s = [0.1609]
+            else:
+                if not isinstance(theta14s, (np.ndarray,list,tuple)):
+                    raise TypeError()
+                self.theta14s = theta14s
+                self.theta24s = theta24s
+        else:
+            self.theta24s = theta24s
+            self.theta14s = [0.0]
+
+
+        self.th14_mode = th14_mode
         self.theta34s = theta34s
+
         self.msqs = msqs
 
         self._compare = False
@@ -335,44 +432,61 @@ class Scanner:
         """
         Scan over all the data files. This might take a while! 
         """
-        chi2 = np.zeros(shape=(len(self.theta24s),len(self.theta34s), len(self.msqs)))
+        if len(self.theta14s)==1:
+            chi2 = np.zeros(shape=(len(self.theta24s),len(self.theta34s), len(self.msqs)))
+        else:
+            chi2 = np.zeros(shape=(len(self.theta14s), len(self.theta24s),len(self.theta34s), len(self.msqs)))
         
-        n_todo = len(self.theta24s)*len(self.theta34s)*len(self.msqs)
+        n_todo = len(self.theta24s)*len(self.theta34s)*len(self.msqs)*len(self.theta14s)
         counter = 0
         pcent_i = 0
         pcents = np.concatenate((np.linspace(0,95,20), np.linspace(96,100,5)))
-
+        prediction_made = False
 
         how_long = "might take a while" if n_todo>20000 else "should be quick"
         print("Starting the scan! This "+how_long)
 
-        for i24 in range(len(self.theta24s)):
-            for i34 in range(len(self.theta34s)):
-                for jm in range(len(self.msqs)):
-                    counter += 1 
-                    if 100*(counter/n_todo) > pcents[pcent_i]:
-                        print("...{}%".format(pcents[pcent_i]))
-                        pcent_i+=1 
+        start = datetime.now()
+        for i14 in range(len(self.theta14s)):
+            for i24 in range(len(self.theta24s)):
+                for i34 in range(len(self.theta34s)):
+                    for jm in range(len(self.msqs)):
+                        counter += 1 
+                        if 100*(counter/n_todo) > pcents[pcent_i]:
+                            print("...{}%".format(pcents[pcent_i]))
+                            pcent_i+=1 
+                            if (not prediction_made) and (pcent_i!=1):
+                                end = datetime.now()
+                                t_total = ((end-start)*n_todo)/counter
+                                print("Estimated time of completion: {}".format(start + t_total))
 
-                    pam = SterileParams(theta13 = self.theta24s[i24],
-                                        theta23 = self.theta34s[i34],
-                                        msq2 = self.msqs[jm])
+                                prediction_made = True
 
-                    if self._compare:
-                        # if we _expect_ the sterile point, what's the llh of measuring what we measure?
-                        self.llh._set_central(pam)
-                        llh = self.llh.get_llh(self._central)
-                    else:
-                        # what are the odds of measuring PAM if we expect whatever the llh'er was configured to expect
-                        llh = self.llh.get_llh(pam)
+                        pam = SterileParams(theta03 = self.theta14s[i14],
+                                            theta13 = self.theta24s[i24],
+                                            theta23 = self.theta34s[i34],
+                                            msq2 = self.msqs[jm])
 
-                    chi2[i24][i34][jm] = -2*llh
+                        if self._compare:
+                            # if we _expect_ the sterile point, what's the llh of measuring what we measure?
+                            self.llh._set_central(pam)
+                            llh = self.llh.get_llh(self._central)
+                        else:
+                            # what are the odds of measuring PAM if we expect whatever the llh'er was configured to expect
+                            llh = self.llh.get_llh(pam)
+
+                        if len(self.theta14s)==1:
+                            chi2[i24][i34][jm] = -2*llh
+                        else:
+                            chi2[i14][i24][i34][jm] = -2*llh
         if self._compare:
             chi2 = chi2 - np.min(chi2)
 
         return {
+                "theta14s":self.theta14s,
                 "theta24s":self.theta24s,
                 "theta34s":self.theta34s,
+                "th14_mode":self.th14_mode,
                 "msqs":self.msqs,
                 "chi2s":chi2,
                 "options":self.llh.options

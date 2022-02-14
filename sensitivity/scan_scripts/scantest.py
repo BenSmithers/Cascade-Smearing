@@ -2,7 +2,7 @@
 Use the scanner to actually do a likelihood scan! 
 """
 
-from cascade.sensitivity.newSense import doLLH, Scanner, JointLLH
+from cascade.sensitivity.newSense import doLLH, Scanner  
 import numpy as np
 import os 
 import pickle
@@ -33,30 +33,27 @@ if False:
         for a_i in range(10):
             full_fudge[e_i][a_i] = fudge[j]
 
-true_fudge = np.load("full_fudge.npy")
+#true_fudge = np.load("../full_fudge.npy")
 
-systematics = True
-
+# fix_norm
 options ={
-    "fudge": true_fudge,
-    "use_syst": systematics
-}
-mc_options = {
-    "is_mc" : True,
-    "use_syst":systematics
+    "is_mc":False,
+    "skip_missing":True,
+    "use_syst":True,
+    "smear":True
+
 }
 
-llhood = doLLH("expected_flux_smearedwell.dat",central_exp=central, options=options)
-mcllhood = doLLH("expected_flux_from_mc.dat", central_exp=central, options=mc_options)
-jointllh = JointLLH(mcllhood, llhood)
 
+#llhood = doLLH("expected_flux_smearedwell.dat",central_exp=central, options=options)
+llhood = doLLH("best_expected_flux.dat",central_exp=central, options=options)
 x = np.concatenate(([0], np.arcsin(np.sqrt(np.logspace(-3,0,90)))/2))
-y = np.concatenate(([0], np.logspace(-2,2,40)))
-test = Scanner(jointllh, x, x, y) 
+y = np.concatenate(([0], np.logspace(-2,2,40))) 
+test = Scanner(llhood, x, x, y) 
 
 results = test.scan()
 
-write_dir = gen_filename(config["datapath"], "joint_likelihood.dat", central)
+write_dir = gen_filename(config["datapath"], "newSense_result_smear.dat", central)
 print("Wrote to {}".format(write_dir))
 f = open(write_dir, 'wb')
 pickle.dump(results, f, -1)

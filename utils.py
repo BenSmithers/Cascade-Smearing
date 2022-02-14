@@ -28,6 +28,23 @@ f = open(os.path.join(os.path.dirname(__file__), "config.json"), 'r')
 config = json.load(f)
 f.close()
 
+import matplotlib
+def shift_cmap(cmap, frac):
+    """Shifts a colormap by a certain fraction.
+
+    Keyword arguments:
+    cmap -- the colormap to be shifted. Can be a colormap name or a Colormap object
+    frac -- the fraction of the colorbar by which to shift (must be between 0 and 1)
+    """
+    N=256
+    if isinstance(cmap, str):
+        cmap = plt.get_cmap(cmap)
+    n = cmap.name
+    x = np.linspace(0,1,N)
+    out = np.roll(x, int(N*frac))
+    new_cmap = matplotlib.colors.LinearSegmentedColormap.from_list(f'{n}_s', cmap(out))
+    return new_cmap
+
 import matplotlib.pyplot as plt
 def get_color(n, colormax=3.0, cmap="viridis"):
     this_cmap = plt.get_cmap(cmap)
@@ -587,46 +604,63 @@ class Data:
 
         Creates a "flux" dictionary for each type of neutrino and interaction. This is in units of N/s/GeV/cm2/sr
         """
+
         location = os.path.join(config["datapath"], filename)
-        print("Loading Neutrino Flux from {}".format(location))
-        data = np.loadtxt(location, dtype=float, comments='#',delimiter=' ')
-        n_energies = 701
-        n_angles = 101
-        GeV=1e9
-        if not (len(data)==n_energies*n_angles):
-            raise ValueError("Datafile length error? {}!={}".format(len(data), n_energies*n_angles))
 
- 
-        # storing the energies and the angles...
-        # this was originally supposed to be agnostic to growing/shrinking energies/angles, but the code really assumes increasing.
-        self._energies = [10**data[i][0] for i in range(n_energies)]
-        self.growing = self._energies[1]>self._energies[0]  
-        en_width = get_width(self._energies)/GeV
-
-        self._angles = [data[n_energies*i][1] for i in range(n_angles)]
-        self._ang_width = get_width(np.arccos(self._angles))
-        self.ang_grow = self._angles[1]>self._angles[0]
-
-        if not (self.growing and self.ang_grow):
-            raise NotImplementedError("I didn't really account for the case that the angles or energies were dereasing")
-
+        nus_file = os.path.splitext(filename)[1] ==".hdf5"
+        
         # store the flavors, neutrinos, and currents
         self.flavors = flavors
         self.neuts = neuts
         self.currents = currents
 
-        # let's fill out some flux functions
-        # in the data file, these data are written in a big list. But that's not a very handy format
-        # so I'm converting these into 2D arrays
         self._fluxes = {}
-        for key in self.get_keys():
-            # indexed like [energy_bin][angle_bin]
-            # you may notice that NC and CC are treated as having separate fluxes, when really it'sthe same flux 
-            #       this is for the most part okay since the interactions are rare enough that the fluxes are unchanged 
-            self._fluxes[ key ] = [[ data[energy+angle*n_energies][get_index(key, n_flavor)] for angle in range(n_angles)] for energy in range(n_energies)]
 
-            if np.min(self._fluxes[key])<0:
-                raise ValueError("Tried loading a flux with a negative value {}".format(np.min(self._fluxes[key])))
+
+        if nus_file:
+            import nuSQuIDS as nsq
+            from cascade.nus_utils import get_flavor, get_neut
+            data = nsq.nuSQUIDSAtm(location)
+            self._energies = data.GetERange()
+            self._angles = data.GetCosthRange()
+
+            for key in self.get_keys():
+                self._fluxes[ key ] = [[ data.EvalFlavor(angle, energy, get_neut(key), get_flavor(key)) for angle in self._angles] for energy in self._energies]
+        else:
+            print("Loading Neutrino Flux from {}".format(location))
+            data = np.loadtxt(location, dtype=float, comments='#',delimiter=' ')
+            n_energies = 701
+            n_angles = 101
+            GeV=1e9
+            if not (len(data)==n_energies*n_angles):
+                raise ValueError("Datafile length error? {}!={}".format(len(data), n_energies*n_angles))
+
+    
+            # storing the energies and the angles...
+            # this was originally supposed to be agnostic to growing/shrinking energies/angles, but the code really assumes increasing.
+            self._energies = [10**data[i][0] for i in range(n_energies)]
+
+
+            self._angles = [data[n_energies*i][1] for i in range(n_angles)]
+            
+
+
+            # let's fill out some flux functions
+            # in the data file, these data are written in a big list. But that's not a very handy format
+            # so I'm converting these into 2D arrays
+            for key in self.get_keys():
+                # indexed like [energy_bin][angle_bin]
+                # you may notice that NC and CC are treated as having separate fluxes, when really it'sthe same flux 
+                #       this is for the most part okay since the interactions are rare enough that the fluxes are unchanged 
+                self._fluxes[ key ] = [[ data[energy+angle*n_energies][get_index(key, n_flavor)] for angle in range(n_angles)] for energy in range(n_energies)]
+
+                if np.min(self._fluxes[key])<0:
+                    raise ValueError("Tried loading a flux with a negative value {}".format(np.min(self._fluxes[key])))
+        
+        self.growing = self._energies[1]>self._energies[0]  
+        en_width = get_width(self._energies)/GeV
+        self._ang_width = get_width(np.arccos(self._angles))
+        self.ang_grow = self._angles[1]>self._angles[0]
     
     # define a few access functions to protect the important stuff 
     # the "@property" tag makes it so these are accessed like attributes, not functions! 

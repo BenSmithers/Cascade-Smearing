@@ -19,6 +19,12 @@ from cascade.utils import SterileParams, get_loc
 from scipy.optimize import curve_fit
 from scipy.integrate import dblquad
 
+import matplotlib
+matplotlib.use('Qt5Agg')
+from matplotlib import pyplot as plt
+plt.style.use("/home/benito/software/cascade/cascade/cascade.mplstyle")
+
+debug = False
 twop = 1/sqrt(2*pi)
 
 def poly_3(x,*args):
@@ -167,7 +173,7 @@ class AreaFit:
         i_ang = get_loc(cth, self.a_edges)[0]
         return self.fits[flavor][i_ang](energy)*1e4 #m2 to cm2
 
-master_fit = AreaFit(False)
+master_fit = AreaFit(debug)
 
 def get_expectation(*args):
     flavors = ["e", "mu", "tau"]
@@ -236,18 +242,12 @@ def get_expectation(*args):
            }
 
 if __name__=="__main__":
-    import matplotlib
-    matplotlib.use('Qt5Agg')
-    from matplotlib import pyplot as plt
-    plt.style.use("/home/benito/software/cascade/cascade/cascade.mplstyle")
-    
-
     import pickle
 
     from cascade.utils import get_color
 
     
-    do_fudge = True
+    do_fudge = False
     flavors = ["e", "mu", "tau"]
     
     if do_fudge:
@@ -349,7 +349,9 @@ if __name__=="__main__":
 
     if not do_fudge:
         e_range = np.logspace(2,8,1000)
-
+        
+        a_edges = np.linspace(-1,1,11)
+        e_edges = np.logspace(2,8,21)
 
         for flav in flavors:
             fig = plt.figure()
@@ -362,5 +364,20 @@ if __name__=="__main__":
             plt.xscale('log')
             plt.yscale('log')
             plt.xlim([1e2,1e8])
-            plt.ylim([1e-2,1e3])
+            #plt.ylim([1e-2,1e3])
+            plt.show()
+
+            
+            values = np.zeros(shape=(20,10))
+            # now the integrated area plot 
+            for i_e in range(len(e_edges)-1):
+                for i_a in range(len(a_edges)-1):
+                    values[i_e][i_a] = log10(dblquad(lambda e,a:master_fit(e, a, flav), a=a_edges[i_a], b=a_edges[i_a+1], gfun=e_edges[i_e], hfun=e_edges[i_e+1])[0])
+            plt.clf()
+            plt.pcolormesh(a_edges, e_edges, values)
+            plt.colorbar()
+            plt.xlim([-1,0.2])
+            plt.ylim([1e2,1e6])
+            plt.yscale('log')
+            plt.title("Looking at {}".format(flav))
             plt.show()

@@ -1,6 +1,5 @@
 *.png
 *.o
-*.dat
 *.log
 *.err
 *.out
@@ -10,6 +9,5 @@
 __pycache__/*
 
 *.submit
-*.dag
 *.swp
 

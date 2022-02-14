@@ -13,9 +13,12 @@ plt.style.use("/home/benito/software/cascade/cascade/cascade.mplstyle")
 
 
 #f = open("../cummulative_probs.dat",'rb')
+f = open("/home/benito/software/data/cascade/hg_sib/0.0/newSense_result_fixed_0.0_0.0_0.0_0.0.dat",'rb')
+#f = open("/home/benito/software/data/cascade/hg_sib/0.0/newSense_result_0.0_0.0_0.0_0.0.dat",'rb')
+#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.1641e0/scaled_cummulative_probs_special_nosys_0.0_0.1641e0_0.2566e0_4.6416e0.dat",'rb')
 #f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.0/scaled_cummulative_probs_special_0.0_0.0_0.0_0.0.dat",'rb')
 #f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.0/cummulative_probs_special_nosys_0.0_0.0_0.0_0.0.dat",'rb')
-f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.0/cummulative_probs_special_0.0_0.0_0.0_0.0.dat",'rb')
+#f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.0/cummulative_probs_special_0.0_0.0_0.0_0.0.dat",'rb')
 #f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.1609e0/cummulative_probs_flat_smear_0.0_0.1609e0_0.2276e0_4.4700e0.dat",'rb')
 #f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.0/cummulative_probs_flat_smear_0.0_0.0_0.0_0.0.dat",'rb')
 #f = open("/home/benito/software/data/cascade/hg_sib//expectations/0.1641e0/cummulative_probs_0.0_0.1641e0_0.2566e0_4.6410e0.dat",'rb')
@@ -31,8 +34,6 @@ f.close()
 theta24s = obj["theta24s"]
 theta34s = obj["theta34s"]
 msqs = obj["msqs"]
-raw_sorted = obj["raw_sorted"]
-c_prob = obj["c_prob"]
 
 print(np.min(obj["chi2s"]))
 chi2 = np.array(obj["chi2s"]) 
@@ -65,7 +66,7 @@ def set_lbls(ct_plot):
     loc = ((20,10),(30,5) )
     plt.clabel(ct_plot, ct_plot.levels, inline=True, fmt=fmt, fontsize=10,manual=loc)
 
-evs = [3.0, 5.0, 10.0]
+evs = [1.1, 5.0, 10.0]
 
 def s2(theta):
     si = np.sin(2*theta)
