@@ -610,7 +610,7 @@ class Data:
             self._angles = data.GetCosthRange()
 
             for key in self.get_keys():
-                self._fluxes[ key ] = [[ data.EvalFlavor(angle, energy, get_neut(key), get_flavor(key)) for angle in self._angles] for energy in self._energies]
+                self._fluxes[ key ] = [[ data.EvalFlavor(get_flavor(key), angle, energy, get_neut(key)) for angle in self._angles] for energy in self._energies]
         else:
             print("Loading Neutrino Flux from {}".format(location))
             data = np.loadtxt(location, dtype=float, comments='#',delimiter=' ')
@@ -957,7 +957,7 @@ def get_width( which_list ):
             widths[i] = abs(0.5*(use[i+1]-use[i-1]))
 
     if not all(width>0 for width in widths):
-        raise Exception("HOW {}".format(width))
+        raise Exception("HOW {}".format(widths))
 
     return(np.array(widths))
 
