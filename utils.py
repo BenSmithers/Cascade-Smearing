@@ -234,6 +234,12 @@ class SterileParams:
         self.theta23 = theta23
 
         self.msq2 = msq2
+    
+    def __eq__(self, other):
+        if isinstance(other, SterileParams):
+            return ( self.theta03==other.theta03 and self.theta13==other.theta13 and
+                     self.theta23==other.theta23 and self.msq2==other.msq2)
+        return False
 
     def __repr__(self):
         return("Sterile-nu Params Object")
@@ -298,20 +304,29 @@ def enumerate_failures(dirname, filename):
     """
     This function provides a list of the parameter points missing, assuming the normal spread of points 
     """
-    theta24s = np.concatenate( ([0], np.logspace(-3,0,90)) )
-    theta34s = np.concatenate( ([0], np.logspace(-3,0,90)) )
+    n_grid=90
+    theta24s = np.concatenate(( [0], np.arcsin(np.sqrt(np.logspace(-3, 0, n_grid)))/2.0 ))
+    theta34s = np.concatenate(( [0], np.arcsin(np.sqrt(np.logspace(-3, 0, n_grid)))/2.0))
     msqs = np.concatenate( ([0], np.logspace(-2,2,40)) )
 
     pams = []
-
+    
+    count = 0
+    found = 0
     for i24 in theta24s:
         for i34 in theta34s:
             for msq in msqs:
+                if count%5000==0:
+                    print("Done did {} many so far, found {}".format(count, found))
                 pam = SterileParams(theta13=i24, theta23=i34, msq2=msq)
 
                 fn = gen_filename(dirname, filename, pam)
                 if not os.path.exists(fn):
                     pams.append(pam)
+                else:
+                    found +=1 
+                count+=1
+    print("Found {} of {}, that's {:.1f}%".format(found, count, 100*float(found)/count))
     return pams
 
 def get_index( key, n_flavor=3 ):
