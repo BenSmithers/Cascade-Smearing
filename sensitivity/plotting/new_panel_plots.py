@@ -23,7 +23,7 @@ from matplotlib import pyplot as plt
 import pickle
 plt.style.use(os.path.join(os.path.dirname(__file__), "..", ".." , "cascade.mplstyle"))
 
-bestMode = False
+bestMode = True
 if bestMode:
     params=SterileParams(theta03=0.3555, theta13=0.1609,theta23=0.05,  msq2=3.3)
 else:
@@ -61,6 +61,7 @@ expected_fn = gen_filename(config["datapath"], "unitary_prob.dat", params)
 if os.path.exists(expected_fn):
     final_probs = Data(expected_fn)
 else:
+    print("Did not find {}, generating".format(expected_fn))
     kwargs = {}
     kwargs["as_data"]=False
     kwargs["state_setter"] = state_setter
@@ -114,7 +115,7 @@ for i in range(len(keys)):
             if bestMode:
                 stylized = r"1-P($\bar{\nu}_{\mu}\to \bar{\nu}_{\mu})$"
             else:
-                stylized = r"P($\bar{\nu}_{\mu}\to \bar{\nu}_{\mu})$"
+                stylized = r"1-P($\bar{\nu}_{\mu}\to \bar{\nu}_{\mu})$"
 
         elif i==2:
             stylized = r"$P(\bar{\nu}_{\mu}\to\bar{\nu}_{\tau})$" 
@@ -144,7 +145,7 @@ for i in range(len(keys)):
     axes[i].set_xlim([-1,0.2])
     minang = np.min(angles)
     flux = np.array([[ final_probs.get_flux(energy*(1e9), keys[i], angle=angle) for angle in angles] for energy in energies])
-    if i==1 and bestMode:
+    if i==1 :# and bestMode:
         flux = 1 - flux 
 
     for i_e in range(len(flux)):
@@ -153,15 +154,21 @@ for i in range(len(keys)):
     if bestMode:
         axes[i].text(-0.35, 2e5, stylized, color='black' if i==1 else 'black', fontsize='medium')
     else:
-        axes[i].text(-0.25, 4e5, stylized, color='black' if i!=1 else 'white', fontsize='medium')
+        axes[i].text(-0.35, 2e5, stylized, color='black' if i!=1 else 'black', fontsize='medium')
 
-    pt = axes[i].pcolormesh(angles, energies, flux, cmap=colorscale, vmin=0.0, vmax=0.3)
+    if bestMode:
+        pt = axes[i].pcolormesh(angles, energies, flux, cmap=colorscale, vmin=0.0, vmax=0.3)
+    else:
+        pt = axes[i].pcolormesh(angles, energies, flux, cmap=colorscale, vmin=0.0, vmax=1.0)
     #axes[i].vlines(core_b,ymin=1e2, ymax=10**6, colors="black", ls="-")
     #axes[i].text(core_b+0.02, 1.5e2, "Inner/Outer Core Bdr",fontsize="x-small",rotation='vertical',color='black')
     axes[i].vlines(mantle_b,ymin=1e2, ymax=10**6, colors="black", ls="--")
     axes[i].text(mantle_b+0.02, 1.5e2, "Core/Mantle Bdr",fontsize="x-small",rotation='vertical',color='black')
 
-cbar = plt.colorbar(pt, orientation = 'horizontal', pad=0.22, extend='max')
+if bestMode:
+    cbar = plt.colorbar(pt, orientation = 'horizontal', pad=0.22, extend='max')
+else:
+    cbar = plt.colorbar(pt, orientation = 'horizontal', pad=0.22)
 #cbar.set_label(r"P($\bar{\nu}_{\mu}\to \bar{\nu}_{\alpha}$ )")
 axes[-1].set_xlabel(r"$\cos\theta_{z}^{true}$")
 #plt.tight_layout()

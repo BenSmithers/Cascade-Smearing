@@ -14,7 +14,7 @@ from math import sqrt, asin
 import numpy as np
 
 import matplotlib
-matplotlib.use('Qt5Agg')
+matplotlib.use('GTK3Agg')
 import matplotlib.pyplot as plt
 
 plt.style.use(os.path.join(os.path.dirname(__file__), "..", ".." , "cascade.mplstyle"))

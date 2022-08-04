@@ -9,6 +9,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 # embedding matplotlib stuff
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+import matplotlib 
+matplotlib.use('GTK3Agg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 

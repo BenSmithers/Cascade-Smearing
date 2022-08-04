@@ -49,7 +49,10 @@ chis = data_dict["chi2s"]
 
 print("Chi Shape: {}".format(np.shape(chis)))
 
-cl = 4 * 1.9
+# one sigma 
+# cl = 4 * 1.2
+# two sigma
+cl = 4 * 2.4
 color_number = 0
 for i24 in range(len(th24s)):
     if i24==2:
@@ -83,11 +86,12 @@ for i24 in range(len(th24s)):
 
 
 title_1 = r"\textbf{Mixing Angles: }"
-title_2 = r"\textbf{Mass-Squared: }"
+title_2 = r"\textbf{Mass-Squared Diff:}"
 #title_2 = r"$ \Delta m_{41}^{2}:$"
 all_labels=[title_1]
-plt.gca().add_line(plt.Line2D([], [], color="none", label=title_1)) 
 
+plt.gca().add_line(plt.Line2D([], [], color="none", label=title_1)) 
+plt.subplots_adjust(left=0.135, right=0.66, top=0.94, bottom=0.136)
 
 plt.plot([],[],color='black', ls='solid',label=r"$\theta_{24}$: "+"{:.2f}, ".format(th24s[0])+ r"$\theta_{34}$: "+"{:.2f}, ".format(th34s[0]))
 plt.plot([],[],color='black', ls='dotted',label=r"$\theta_{24}$: "+"{:.2f}, ".format(th24s[0])+ r"$\theta_{34}$: "+"{:.2f}, ".format(th34s[1]))
@@ -119,6 +123,7 @@ def reorderLegend(ax=None, order=None):
     new_handles = [info[l] for l in order]
     return new_handles, order
 handles, labels = reorderLegend(ax=plt.gca(), order=all_labels)
+plt.fill_between([0.2,0.6],0, 1e3,color=(0,0,0,0.1))
 
 # plt.text(0.2, cl+0.5, "90\% CL, 4 DOF", color='red')
 plt.hlines(cl, 0, 0.5, color='red')
@@ -126,9 +131,8 @@ plt.legend( bbox_to_anchor=(1.0, 1.1))
 plt.xlabel(r"$\sin^{2}(\theta_{14})$")
 plt.ylabel(r"-2(LLH$_{null}$ - LLH$_{injected})$")
 plt.xlim([0, 0.5])
-plt.ylim([1e0,1e3])
+plt.ylim([1e0,2e2])
 plt.yscale('log')
-plt.tight_layout()
 plt.savefig("legendary.png",dpi=400)
 plt.show()
 

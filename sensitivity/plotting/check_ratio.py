@@ -12,7 +12,7 @@ import os
 import pickle
 from math import pi
 
-plt.style.use("/home/benito/software/cascade/cascade/cascade.mplstyle")
+plt.style.use("/home/bsmithers/software/cascade/cascade.mplstyle")
 
 # /home/benito/software/data/cascade/hg_sib//expected_fluxes_reco/0.1609e0/best_expected_flux_0.0_0.1609e0_0.2247e0_4.4700e0.dat
 
@@ -27,12 +27,12 @@ def load(param):
     pass on the sterileparams object so it knows what to load and what to pass to the data maker
     """
     #filename = "null_exp.dat" if null_bool else "ster_exp.dat"
-    where = "/home/benito/software/data/cascade/hg_sib/expected_fluxes_reco"
+    where = "/home/bsmithers/software/data/hg_sib/expected_fluxes_reco"
 
     #filename = gen_filename(where, "expected_flux_smeared.dat", param)
     filename = gen_filename(where, "best_expected_flux.dat", param)
     
-    if True: #os.path.exists(filename):
+    if os.path.exists(filename):
         print("Loading {}".format(filename))
         f = open(filename,'rb')
         data = pickle.load(f)
@@ -43,7 +43,7 @@ def load(param):
         from cascade.sensitivity.make_from_mc import build_mc_flux
         from cascade.sensitivity.generate_all_integrated_fluxes import make_meta_flux
 
-        data = make_meta_flux(param, do_mc=False, smeary=True, good_angles=True)
+        data = make_meta_flux(param, do_mc=False)
         return data
 
 

@@ -161,7 +161,7 @@ plt.xscale('log')
 plt.yscale('log')
 # plt.title(r"90% CL Sensitivity from Tracks", size=14)
 #plt.text(2,25, "Smithers Preliminary", color="r",size=14)
-plt.ylabel(r"$\Delta m_{14}^{2}$ [eV$^{2}$]",size=18)
+plt.ylabel(r"$\Delta m_{41}^{2}$ [eV$^{2}$]",size=18)
 plt.xlabel(r"$\sin^{2}(2\theta_{24})$",size=18)
 
 
