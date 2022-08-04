@@ -47,6 +47,9 @@ def shift_cmap(cmap, frac):
 
 import matplotlib.pyplot as plt
 def get_color(n, colormax=3.0, cmap="viridis"):
+    """
+        Discretize a colormap. Great getting nice colors for a series of trends on a single plot! 
+    """
     this_cmap = plt.get_cmap(cmap)
     return this_cmap(n/colormax)
 
@@ -210,7 +213,7 @@ class SterileParams:
     TODO:
         - figure out a way to cleanly bring in the phase parameters without making uglier filenames 
     """
-    def __init__(self, theta03=0.0, theta13=0.0, theta23=0.0, msq2=0.0):
+    def __init__(self, theta03=0.0, theta13=0.0, theta23=0.0, msq2=0.0, **kwargs):
         if not isinstance(theta03, (int, float)):
             raise TypeError("theta03 should be {}, not {}".format(float, type(theta03)))
         if not isinstance(theta13, (int, float)):
@@ -234,6 +237,34 @@ class SterileParams:
         self.theta23 = theta23
 
         self.msq2 = msq2
+
+        allowed = ["maj_phase_1","maj_phase_2", "maj_phase_3", "ordering"]
+
+        for kwarg in kwargs:
+            if kwarg not in allowed:
+                raise ValueError("Unrecognized argument {}".format(kwarg))
+
+        self.majorana = False
+        if "maj_phase_1" in kwargs:
+            self.maj_phase_1 = kwargs["maj_phase_1"]
+            self.majorana = True
+        else:
+            self.maj_phase_1 = 0.0
+        if "maj_phase_2" in kwargs:
+            self.maj_phase_2 = kwargs["maj_phase_2"]
+            self.majorana = True
+        else:
+            self.maj_phase_2 = 0.0
+        if "maj_phase_3" in kwargs:
+            self.maj_phase_3 = kwargs["maj_phase_3"]
+            self.majorana = True
+        else:
+            self.maj_phase_3 = 0.0
+        
+        if "ordering" in kwargs:
+            self.no_ordering = kwargs["ordering"] #NOrmal ordering 
+        else:
+            self.no_ordering = False
     
     def __eq__(self, other):
         if isinstance(other, SterileParams):
@@ -555,7 +586,9 @@ def bilinear_interp(p0, p1, p2, q11, q12, q21, q22):
     mat_mult_1 = [q11*(y2-y0) + q12*(y0-y1) , q21*(y2-y0) + q22*(y0-y1)]
     mat_mult_final = (x2-x0)*mat_mult_1[0] + (x0-x1)*mat_mult_1[1]
 
-    return( mat_mult_final/((x2-x1)*(y2-y1)) )
+    rval = mat_mult_final/((x2-x1)*(y2-y1))
+    return rval
+
 
 class Calculable:
     def __init__(self):
