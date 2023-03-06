@@ -206,7 +206,22 @@ def check_valid_angle(angle,is_zenith, radians=True):
 
     return True 
 
-class SterileParams:
+class NewPhysicsParams:
+    def __init__(self, **kwargs) -> None:
+        pass
+
+    def __eq__(self, other):
+        if isinstance(other, NewPhysicsParams):
+            return True
+        return False
+
+    def __repr__(self):
+        return("New Physics Object")
+
+    def __str__(self):
+        raise NotImplementedError("")
+
+class SterileParams(NewPhysicsParams):
     """
     This object is used to pass around the new sterile physics parameters around
 
@@ -277,6 +292,16 @@ class SterileParams:
 
     def __str__(self):
         return("_".join((sci(self.theta03), sci(self.theta13), sci(self.theta23), sci(self.msq2))))
+    
+class NSIParams(NewPhysicsParams):
+    def __init__(self, eps_mutau:complex, **kwargs) -> None:
+        super().__init__(**kwargs)
+
+        self._epsmutau = eps_mutau
+
+    def __str__(self):
+        return "nsiparam_"+"_".join(["{:.6E}".format(entry) for entry in [self._epsmutau.real, self._epsmutau.imag]])
+    
 
 def parse_filename(path, as_params=True):
     """

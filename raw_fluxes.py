@@ -9,10 +9,8 @@ Super cool though, it only uses MCEQ to make the fluxes at-atmosphere if this ha
 """
 
 # nusquids...
-try:
-    import nuSQuIDS as nsq
-except ImportError:
-    import nuSQUIDSpy as nsq
+
+import nuSQuIDS as nsq
 
 angular_bins = 50
 energy_bins = 121
@@ -23,7 +21,7 @@ from math import pi, acos, log10 # simple math things
 from math import asin, sin
 import os # filename and datapath stuff 
 
-from cascade.utils import gen_filename, SterileParams
+from cascade.utils import gen_filename, SterileParams, NewPhysicsParams, NSIParams
 from cascade.utils import sci # used to generate save names
 from cascade.utils import get_closest # interpolation
 from cascade.utils import config 
@@ -80,7 +78,7 @@ def get_initial_state(energies, zeniths, n_nu, kwargs):
     """
     path = os.path.join(config["datapath"], config["mceq_flux"])
     if os.path.exists(path): 
-#        print("Loading MCEq Flux")
+        print("Loading MCEq Flux {} ".format(path))
         f = open(path, 'rb')
         inistate = pickle.load(f)
         f.close()
@@ -117,7 +115,7 @@ def get_initial_state(energies, zeniths, n_nu, kwargs):
             flux['numu_flux'] = mceq.get_solution('numu',mag)+mceq.get_solution('pr_numu',mag)
             flux['numu_bar_flux'] = mceq.get_solution('antinumu',mag)+mceq.get_solution('pr_antinumu',mag)
             flux['nutau_flux'] = mceq.get_solution('nutau',mag)+mceq.get_solution('pr_nutau',mag)
-            flux['nutau_bar_flux'] = mceq.get_solution('antinutau',mag)+mceq.get_solution('pr_antinutau',mag) 
+            flux['nutau_bar_flux'] = mceq.get_solution('antinutau',mag)+mceq.get_solution('pr_antinutau',mag)
             
             for neut_type in range(2):
                 for flavor in range(n_nu):
@@ -138,7 +136,21 @@ def get_initial_state(energies, zeniths, n_nu, kwargs):
 
     return(inistate)
 
-def raw_flux(params, kwargs={}):
+def raw_flux(params:NewPhysicsParams, kwargs={}):
+    """
+    Wrapper to switch between doing sterile-nu oscillations and NSI oscillations 
+    """
+    if isinstance(params, SterileParams):
+        return _sterile_raw_flux(params, kwargs)
+    elif isinstance(params, NSIParams):
+        return _nsi_raw_flux(params,kwargs)
+    else:
+        raise NotImplementedError()
+    
+def _nsi_raw_flux(params, kwargs):
+    pass
+
+def _sterile_raw_flux(params, kwargs={}):
     """
     This is the main function. It saves a data file for the flux with a unique name for the given physics 
     """
@@ -172,11 +184,11 @@ def raw_flux(params, kwargs={}):
             raise TypeError("Forced filename should be {}, or {}".format(str, None))
   
     print("Propagating Neutrinos at {}".format(params))
-    n_nu = 4 
+    n_nu = 4
     Emin = 1.*un.GeV
-    Emax = 10.*un.PeV
-    cos_zenith_min = -0.999
-    cos_zenith_max = 0.2
+    Emax = 100.*un.PeV
+    cos_zenith_min = -1.
+    cos_zenith_max = 1.
 
     use_earth_interactions = True
 
@@ -225,7 +237,7 @@ def raw_flux(params, kwargs={}):
     int_cos = 100
     int_min_e = log10(Emin)
     int_max_e = log10(Emax)
-      
+    
     filename=""
     if not as_data:
         
