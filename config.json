@@ -1,8 +1,10 @@
 {
-  "datapath": "/data/user/bsmithers/data/cascades/hg_qgsjet",
-  "interaction_model":"QGSJet-II-04",
+  "datapath": "/home/bsmithers/software/data/hg_sib/",
+  "interaction_model":"SIBYLL23C",
   "use_pregen_mceq_flux":true,
   "mceq_flux":"mceq_flux.dat",
+  "astro_flux":"astro_flux.dat",
+  "prop_astro_flux":"prop_astro_flux.dat",
   "nu_flux": "raw_det_flux",
   "nu_flux_downsize":"downsized_raw_det_flux",
   "tau_data": "tau_branch.dat",

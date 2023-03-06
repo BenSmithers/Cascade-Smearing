@@ -22,7 +22,7 @@ from scipy.integrate import dblquad
 import matplotlib
 matplotlib.use('Qt5Agg')
 from matplotlib import pyplot as plt
-plt.style.use("/home/benito/software/cascade/cascade/cascade.mplstyle")
+plt.style.use("/home/bsmithers/software/cascade/cascade.mplstyle")
 
 debug = False
 twop = 1/sqrt(2*pi)
@@ -176,6 +176,9 @@ class AreaFit:
 master_fit = AreaFit(debug)
 
 def get_expectation(*args):
+    """
+    Takes a list of Data objects, calculates the actual expected event rate based off these effective areas 
+    """
     flavors = ["e", "mu", "tau"]
 
     n_e = 20
@@ -195,6 +198,12 @@ def get_expectation(*args):
         """
         nus = ["nu", "nuBar"]
         this_flav = flav[0].upper() + flav[1:].lower()
+        """
+        I know, this looks sus
+         
+        The effective areas used return the cascades expected per-flavor. They don't consider/care about whether it's a NC or CC interaction
+        Since I want these to be consistent with the keys used by the data objects, I just choose one of the two so we don't double count 
+        """
         keys = ["_".join([this_flav, nu, "NC"]) for nu in nus]
         net_f = 0.0
         # we take the average contribution from nu and nubar
@@ -203,7 +212,7 @@ def get_expectation(*args):
                 ff = master_fit(energy, angle, flav)
                 if ff<0:
                     raise ValueError("Area fit {}".format(ff))
-                flux = 0.5*args[dobj].get_flux((1e9)*energy, key, use_overflow=False, angle=angle)
+                flux = 0.5*args[dobj].get_flux((1e9)*energy, key, use_overflow=False, angle=angle) # 0.5 since we use nu and nubar. Different treatment from the NC/CC thing since these have different fluxes 
                 if flux <0:
                     print("Flux is {} in {} flux".format(flux, "atmo" if dobj==0 else "astro"))
                 net_f = net_f + flux*ff
@@ -360,14 +369,27 @@ if __name__=="__main__":
                 ys = fit(e_range)
                 plt.plot(e_range, ys, color=get_color(i_count, 9))
                 i_count +=1 
-            plt.title(flav,size=16)
+            if flav=="e":
+                flavstr=r"$\nu_{e}$ Eff. Area"
+            elif flav.lower()=="mu":
+                flavstr=r"$\nu_{\mu}$ Eff. Area"
+            elif flav.lower()=="tau":
+                flavstr=r"$\nu_{\tau}$ Eff. Area"
+            else:
+                raise ValueError("not sure what to do with {} flavor".format(flavstr.lower()))
+            plt.title(flavstr,size=16)
             plt.xscale('log')
             plt.yscale('log')
             plt.xlim([1e2,1e8])
+            plt.ylim([1e-15, 1e3])
+            plt.xlabel(r"$E_{\nu}^{true}$ [GeV]",size=14)
+            plt.ylabel(r"Eff. Area [m$^{2}$]",size=14)
+            plt.tight_layout()
             #plt.ylim([1e-2,1e3])
+            plt.savefig("./plotting/eff_area_{}.png".format(flav),dpi=400)
             plt.show()
 
-            
+            continue
             values = np.zeros(shape=(20,10))
             # now the integrated area plot 
             for i_e in range(len(e_edges)-1):

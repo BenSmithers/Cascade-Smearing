@@ -1,3 +1,12 @@
+"""
+This was used to create batches of fluxes! You can call the make_meta_flux function with a series of params
+
+if do_mc is true, it'll use the MEOWS MC to create the flux 
+
+otherwise it'll use the effective areas.
+It then saves the expectation to a file depending on the configuration json. 
+"""
+
 from cmath import pi
 from cascade.sensitivity.astro_flux_generator import generate_astr_flux
 from cascade.sensitivity.eff_area_reader import build_flux 

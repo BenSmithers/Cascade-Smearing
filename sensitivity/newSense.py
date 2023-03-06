@@ -18,6 +18,7 @@ from cascade.deporeco import DataReco
 
 
 from cascade.sensitivity.systematic_unc import unc_wrapper, Syst
+from cascade.sensitivity.generate_all_integrated_fluxes import make_meta_flux
 
 data_folder = os.path.join(config["datapath"], "expected_fluxes_reco")
 
@@ -55,6 +56,12 @@ class doLLH(generalLLH):
 
         self._parse_options(options)
         self._options = options
+
+        if not os.path.exists(gen_filename(data_folder, self._filenames, central_exp)):
+            print("Did not find expectation at {}, generating... ".format(gen_filename(data_folder, self._filenames, central_exp)))
+            print("    params {}".format(central_exp))
+            make_meta_flux(central_exp, self._is_mc)
+
         if self._smear:
             # get the edges
             fn = gen_filename(data_folder, self._filenames, central_exp)

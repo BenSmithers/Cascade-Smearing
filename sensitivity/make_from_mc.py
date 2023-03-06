@@ -31,7 +31,7 @@ def build_mc_flux(*dataobjs, livetime=10):
     cobalt = os.environ.get("_CONDOR_SCRATCH_DIR")
     filename = "NuFSGenMC_nominal.dat"
     if cobalt==None or cobalt=="" or cobalt==".":
-        file_dir = "/home/benito/Downloads/IC86SterileNeutrinoDataRelease/monte_carlo/" + filename
+        file_dir = "/home/bsmithers/Downloads/IC86SterileNeutrinoDataRelease/monte_carlo/" + filename
     else:
         file_dir = os.path.join(cobalt, "data", filename)
     

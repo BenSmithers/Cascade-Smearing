@@ -11,13 +11,13 @@ from math import asin, sqrt
 from cascade.utils import get_loc, config, gen_filename, SterileParams
 import sys
 print("Running with : {}".format(sys.argv))
-th14_mode = True
+th14_mode = False
 systematics = True
 
 #best_th14 = 0.3555
 #best_th14 = 0.0
 #best_th24 = 0.1609
-example_dm2 = 4.47
+example_dm2 = 4.5
 best_th24 = 0.3826
 #central = SterileParams()
 
@@ -28,8 +28,8 @@ th03 = 0.3555
 # central = SterileParams(theta03 = th03, theta13=0.1609, msq2=4.47)
 #central = SterileParams(theta13=0.1609, msq2=4.47)
 
-#central = SterileParams(theta13=0.1652, theta23=0.2293, msq2=4.6416)
-central = SterileParams(theta03=th03, theta13=best_th24, msq2=3.3)
+central = SterileParams(theta13=0.1652, theta23=0.2293, msq2=4.5)
+#central = SterileParams(theta03=th03, theta13=best_th24, msq2=3.3)
 print("Central point: {}".format(central))
 if False:
     # load fudge
@@ -79,10 +79,12 @@ thetas = np.concatenate(([0], np.arcsin(np.sqrt(np.logspace(-3,0,90)))/2))
 if th14_mode:
     msqs = [1.0, 3.3, 4.64]
     th24s = [0.1609, 0.3826]
+    test = Scanner(jointllh, theta24s=th24s, theta34s=thetas, msqs=msqs, th14_mode=th14_mode, theta14s=thetas)
 else:
     msqs = np.concatenate(([0], np.logspace(-2,2,40)))
     th24s = thetas
-test = Scanner(jointllh, theta24s=th24s, theta34s=thetas, msqs=msqs, th14_mode=th14_mode, theta14s=thetas) 
+    test = Scanner(jointllh, theta24s=th24s, theta34s=thetas, msqs=msqs)
+
 
 results = test.scan()
 results["central"] = central
