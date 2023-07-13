@@ -180,6 +180,7 @@ def get_expectation(*args):
     Takes a list of Data objects, calculates the actual expected event rate based off these effective areas 
     """
     flavors = ["e", "mu", "tau"]
+    nus = ["nu", "nuBar"]
 
     n_e = 20
     n_a = 10
@@ -191,12 +192,38 @@ def get_expectation(*args):
     muon = np.zeros(shape=(n_e, n_a))
     tau = np.zeros(shape=(n_e, n_a))
 
+    # evaluate these over a FINE grid to make an interpolator 
+    meta_flux_dict = {}
+    meta_flux_interps = {}
+    from scipy.interpolate import RectBivariateSpline
+    for flav in flavors:
+        this_flav = flav[0].upper() + flav[1:].lower()
+        keys = ["_".join([this_flav, nu, "NC"]) for nu in nus]
+        n_points = 300
+        fine_e = np.logspace(1.5,8, n_points)
+        fine_z = np.linspace(-1,1, n_points+1)
+        # at each point evaluate and add the nu flux  times the effective area
+        meta_flux_dict[flav] = np.zeros((n_points+1, n_points))
+        for iz in range(len(fine_z)):
+            for ie in range(len(fine_e)):
+                ff = master_fit(fine_e[ie], fine_z[iz], flav)
+                for dobj in range(len(args)):
+                    for key in keys:
+                        flux = 0.5*args[dobj].get_flux((1e9)*fine_e[ie], key, use_overflow=False, angle=fine_z[iz])
+                        meta_flux_dict[flav][iz][ie] = meta_flux_dict[flav][iz][ie] + flux*ff
+                    
+        meta_flux_dict[flav]*=2*pi
+
+        print(np.shape(fine_e), np.shape(fine_z), np.shape(meta_flux_dict[flav]))
+        meta_flux_interps[flav] = RectBivariateSpline(fine_e, fine_z, np.transpose(meta_flux_dict[flav]))
+
+
 
     def metaflux(energy, angle, flav):
         """
         This little function sums the contributions for each flux making up this combined flux 
         """
-        nus = ["nu", "nuBar"]
+        
         this_flav = flav[0].upper() + flav[1:].lower()
         """
         I know, this looks sus
@@ -217,12 +244,14 @@ def get_expectation(*args):
                     print("Flux is {} in {} flux".format(flux, "atmo" if dobj==0 else "astro"))
                 net_f = net_f + flux*ff
         return net_f*2*pi
+    
+
 
     for flav in flavors:
         for i_a in range(n_a):
             for i_e in range(n_e):
 
-                integral = dblquad(lambda energy, angle:metaflux(energy, angle, flav), a=a_bins[i_a], b=a_bins[i_a+1], gfun=e_bins[i_e], hfun=e_bins[i_e+1])[0]
+                integral = dblquad(meta_flux_interps[flav], a=a_bins[i_a], b=a_bins[i_a+1], gfun=e_bins[i_e], hfun=e_bins[i_e+1])[0]
                 if integral<0:
                     print("{} {} {}".format(i_e, i_a, flav))
                     raise ValueError("Negative value in integral: {}".format(integral))

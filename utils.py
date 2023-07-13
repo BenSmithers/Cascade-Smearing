@@ -687,8 +687,8 @@ class Data:
         else:
             print("Loading Neutrino Flux from {}".format(location))
             data = np.loadtxt(location, dtype=float, comments='#',delimiter=' ')
-            n_energies = 701
-            n_angles = 101
+            n_energies = len(np.unique(data.T[0]))
+            n_angles = len(np.unique(data.T[1]))
             GeV=1e9
             if not (len(data)==n_energies*n_angles):
                 raise ValueError("Datafile length error? {}!={}".format(len(data), n_energies*n_angles))
