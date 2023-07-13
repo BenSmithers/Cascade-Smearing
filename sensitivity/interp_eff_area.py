@@ -20,9 +20,7 @@ from scipy.optimize import curve_fit
 from scipy.integrate import dblquad
 
 import matplotlib
-matplotlib.use('Qt5Agg')
 from matplotlib import pyplot as plt
-plt.style.use("/home/bsmithers/software/cascade/cascade.mplstyle")
 
 debug = False
 twop = 1/sqrt(2*pi)
